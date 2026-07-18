@@ -1,24 +1,18 @@
-LOVEC VLTAVÍNŮ REBORN 4.5 — BUILD REPORT
+Lovec vltavínů Reborn 5.1 — Real Localities
 
-Opravy:
-- přesná detekce hráče uvnitř kuželu: PASS
-- detekce Karlovy svítilny: PASS
-- alarm VE SVĚTLE: PASS
-- růst ukazatele nebezpečí: PASS
-- výstražná barva kuželu: PASS
-- dopadení po 1,55 s v Karlově světle: PASS
-- ústup pozornosti mimo kužel: PASS
-- nulová vzdálenost a přechod úhlu ±π: ošetřeno
+Static validation:
+- JavaScript syntax: OK (node --check)
+- Missing HTML element IDs: 0
+- Duplicate named functions: 0
+- Required reference environments: 4/4
+- Offline music files: 5
+- Build size: 8,915,731 B
 
-Mobilní runtime test 390 × 844:
-- po 0,45 s v kuželu: heat 18,46 %, alarm zobrazen
-- Karlova svítilna seesPlayer: true
-- po delším pobytu: caught 1, hráč vrácen na start
-- JavaScript runtime errors: 0
+Environment mapping:
+- Chlum: open agricultural field, distant treeline, large excavation pits, soil heaps, stubble
+- Locenice: sparse pine forest, sandy mounds, sandy pits, fallen trunks
+- Besednice: disturbed mining ground, excavators, crawler tracks, earth banks, mining pits
+- Slavie: historic facade with pediment plus modern white/glass annex and plaza
 
-Statické kontroly:
-- JavaScript syntax: PASS
-- HTML reference IDs: PASS
-- manifest JSON: PASS
-- hudební WAV soubory: 5
-- nová offline cache: v4-5
+Limitations:
+- The automated browser in this environment was blocked by administrator policy, so final visual confirmation must be performed after GitHub Pages deployment on the target iPhone.

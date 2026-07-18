@@ -1,16 +1,7 @@
-# Lovec vltavínů: Zelená vlna — Reborn 4.5
+# Lovec vltavínů Reborn 5.1 — Real Localities
 
-## Oprava nebezpečí
-
-Vstup do viditelného kuželu hlídky nebo do světla Krystalového Karla nyní:
-
-1. rozsvítí alarm **VE SVĚTLE**,
-2. změní barvu kuželu,
-3. začne zvyšovat ukazatel pozornosti,
-4. při delším pobytu způsobí dopadení.
-
-Mimo kužel pozornost postupně klesá.
+Prostředí hlavních levelů bylo přepracováno podle uživatelem dodaných fotografií skutečných míst. Vizuál je stylizovaný pro čitelnost mobilní hry, ale kompozice, typ povrchu a dominantní prvky odpovídají předlohám.
 
 ## Nasazení
 
-Nahrajte rozbalený obsah ZIPu do kořene větve `main`.
+Nahrajte rozbalený obsah této složky do kořene větve `main` v GitHub Pages repozitáři.

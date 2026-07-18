@@ -1,12 +1,9 @@
-# Changelog
+# Lovec vltavínů Reborn 5.1
 
-## 4.5.0 — Danger Detection Fix
+## Reálnější lokality
 
-- opraven přesný výpočet hráče uvnitř kuželu svítilny;
-- Krystalový Karel má nyní vlastní funkční svítilnu;
-- pobyt ve světle zvyšuje ukazatel nebezpečí;
-- kužel při odhalení změní barvu a zvýrazní okraj;
-- nový alarm „VE SVĚTLE“;
-- po příliš dlouhém odhalení následuje skutečné dopadení;
-- ukazatel má stavy klid, varování, odhalení a kritické nebezpečí;
-- ošetřena nulová vzdálenost a přesný rozdíl úhlů přes hranici ±π.
+- Chlum: otevřené zvlněné pole, vzdálený les, hluboké výkopy, haldy hlíny a strniště.
+- Ločenice: řídký borový les, světlé písčité podloží, valy, jámy a popadané kmeny.
+- Besednice: rozrytá těžební plocha, pásové stopy, zemní valy, hlubší jámy a bagry.
+- Slávie: historická fasáda s trojúhelníkovým štítem spojená s moderní bílou přístavbou a proskleným parterem.
+- Herní logika, bossové, hudba a ovládání zůstaly zachované.

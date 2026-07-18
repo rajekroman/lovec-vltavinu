@@ -20,23 +20,38 @@
   <canvas id="game" aria-label="Herní plocha"></canvas>
 
   <section id="hud" class="hud hidden" aria-live="polite">
-    <div class="hud-top">
-      <div class="mission-pill">
-        <span id="missionNumber">1</span>
-        <div><small id="placeLabel">CHLUM</small><strong id="objectiveLabel">Najdi 4 kameny</strong></div>
+    <div class="hud-topbar">
+      <div class="mission-panel">
+        <span id="missionNumber" class="mission-index">1</span>
+        <div class="mission-copy"><small id="placeLabel">CHLUM</small><strong id="objectiveLabel">Najdi 4 kameny</strong></div>
       </div>
-      <div class="hud-right">
-        <div class="bag-pill"><span>◆</span><b id="bagValue">0</b></div>
-        <div id="heatPill" class="heat-pill" aria-label="Pozornost hlídky"><span>!</span><i><em id="heatFill"></em></i></div>
+      <div class="system-panel">
+        <div class="bag-pill" aria-label="Počet kamenů"><span>◆</span><b id="bagValue">0</b></div>
         <button id="soundButton" class="icon-button" type="button" aria-label="Zvuk">♫</button>
         <button id="pauseButton" class="icon-button" type="button" aria-label="Pauza">Ⅱ</button>
       </div>
+    </div>
+    <div id="heatPill" class="danger-meter" aria-label="Pozornost hlídky">
+      <div class="danger-copy"><span>POZORNOST</span><strong id="dangerMeterText">KLID</strong></div>
+      <i><em id="heatFill"></em></i>
+    </div>
+    <div id="bossHud" class="boss-hud hidden">
+      <div><small>HROZBA</small><strong id="bossName">KRYSTALOVÝ KAREL</strong></div>
+      <i><em id="bossFill"></em></i>
+      <span id="bossPhase">STOPUJ HO</span>
     </div>
     <div id="dangerBanner" class="danger-banner hidden"><span>⚠</span><strong id="dangerText">VE SVĚTLE</strong></div>
     <div id="combo" class="combo hidden">KOMBO ×2</div>
     <div id="hint" class="hint hidden">Rozhlédni se po okolí</div>
     <div id="toast" class="toast"></div>
   </section>
+
+  <div id="bossIntro" class="boss-intro hidden" aria-live="assertive">
+    <div class="boss-intro-line"></div>
+    <small id="bossIntroKicker">HROZBA V LOKALITĚ</small>
+    <strong id="bossIntroName">KRYSTALOVÝ KAREL</strong>
+    <span id="bossIntroText">Nenech ho zmizet se vzácným nálezem.</span>
+  </div>
 
   <section id="controls" class="controls hidden" aria-label="Dotykové ovládání">
     <div id="moveZone" class="move-zone"><div id="stick" class="stick"></div></div>
@@ -60,7 +75,7 @@
         <button id="howButton" class="text-button" type="button">Jak se hraje</button>
         <button id="recordsButton" class="text-button" type="button">Rekordy</button>
       </div>
-      <p class="version">v4.5 · Danger Detection Fix</p>
+      <p class="version">v5.1 · Real Localities</p>
     </div>
   </section>
 
