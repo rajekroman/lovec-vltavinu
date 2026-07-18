@@ -1,24 +1,48 @@
-LOVEC VLTAVÍNŮ 3D – BUILD REPORT
-Version: 2.0.0
-Files: 35
-Uncompressed size: 2,281,655 bytes
-Music tracks: 7
-Sound effects: 12
-Total WAV files: 19
-HTML element references missing: none
-Manifest name: Lovec vltavínů 3D – Cesta na Zelenou vlnu
+LOVEC VLTAVÍNŮ: ZELENÁ VLNA — REBORN EDITION
+Version: 4.0.0
 
-Validated:
-- JavaScript module syntax
-- HTML-to-JavaScript element references
-- manifest JSON
-- local Three.js module presence
-- all WAV headers (mono, unsigned 8-bit PCM, 11025 Hz)
-- all source and asset paths
-- GitHub Pages deployment workflow
-- ZIP integrity
+ARCHITECTURE
+- Canvas 2D
+- Vanilla JavaScript
+- No WebGL
+- No Three.js
+- No external runtime dependencies
+- Procedural Web Audio music and sound effects
 
-Runtime note:
-The container used to build the game cannot initialize a WebGL display, so a complete
-interactive GPU playthrough could not be automated here. The game includes a visible
-WebGL error message if a target browser cannot initialize the 3D engine.
+MOBILE RUNTIME TEST
+Viewport: 390 × 844
+- Title screen and one-tap start: PASS
+- Chapter briefing: PASS
+- Touch controls visible: PASS
+- NPC interaction and permission: PASS
+- Scan reveals hotspot: PASS
+- Dig timing minigame: PASS
+- Three successful hits: PASS
+- Stone added to bag: PASS
+- JavaScript runtime errors: NONE
+
+LANDSCAPE STARTUP TEST
+Viewport: 844 × 390
+- Chlum: PASS
+- Ločenice: PASS
+- Nesměň: PASS
+- Besednice: PASS
+- Malše: PASS
+- Touch controls visible in every level: PASS
+- JavaScript runtime errors: NONE
+
+FINAL JURY TEST
+- Five test stones loaded: PASS
+- Three-stone selection: PASS
+- Jury button validation: PASS
+- Result calculation: PASS
+- Main prize ending reachable: PASS
+- JavaScript runtime errors: NONE
+
+STATIC VALIDATION
+- JavaScript syntax: PASS
+- HTML element references: PASS
+- Manifest JSON: PASS
+- HTML local asset references: PASS
+- Service worker local asset references: PASS
+- GitHub Pages workflow: PASS

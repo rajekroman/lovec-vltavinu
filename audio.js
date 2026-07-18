@@ -45,6 +45,11 @@ export class AudioManager {
     if (this.current) this.current.volume = this.musicVolume;
   }
 
+  setSfxVolume(value) {
+    this.sfxVolume = Math.max(0, Math.min(1, value));
+    for (const sound of this.sfx.values()) sound.volume = this.sfxVolume;
+  }
+
   async playMusic(key) {
     if (!MUSIC_TRACKS[key]) return;
     await this.unlock();

@@ -1,2462 +1,587 @@
-import * as THREE from "./vendor/three.module.min.js";
-import {
-  GAME_VERSION, DIFFICULTY, LEVELS, UPGRADES, IDENTIFY_SAMPLES, DIALOGUES
-} from "./data.js";
-import { AudioManager } from "./audio.js";
+(() => {
+  "use strict";
 
-const $ = id => document.getElementById(id);
-const canvas = $("gameCanvas");
-const app = $("app");
-const audio = new AudioManager();
+  const $ = id => document.getElementById(id);
+  const canvas = $("game");
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+  const app = $("app");
+  const hud = $("hud");
+  const controls = $("controls");
 
-const screens = {
-  title: $("titleScreen"),
-  chapter: $("chapterScreen"),
-  dialogue: $("dialogueScreen"),
-  identify: $("identifyScreen"),
-  inventory: $("inventoryScreen"),
-  camp: $("campScreen"),
-  final: $("finalSelectionScreen"),
-  pause: $("pauseScreen"),
-  records: $("recordsScreen"),
-  ending: $("endingScreen")
-};
-
-const hud = $("hud");
-const touchControls = $("touchControls");
-const ui = {
-  chapterLabel: $("chapterLabel"),
-  locationLabel: $("locationLabel"),
-  health: $("healthValue"),
-  reputation: $("reputationValue"),
-  grams: $("gramsValue"),
-  money: $("moneyValue"),
-  score: $("scoreValue"),
-  questTitle: $("questTitle"),
-  questProgress: $("questProgress"),
-  questText: $("questText"),
-  questFill: $("questFill"),
-  interactionHint: $("interactionHint"),
-  interactionIcon: $("interactionIcon"),
-  interactionText: $("interactionText"),
-  bossHud: $("bossHud"),
-  bossName: $("bossName"),
-  bossHpText: $("bossHpText"),
-  bossFill: $("bossFill"),
-  toast: $("toast"),
-  actionIcon: $("actionIcon"),
-  actionLabel: $("actionLabel")
-};
-
-const STORAGE_KEY = "lovecVltavinuFullSaveV2";
-const RECORDS_KEY = "lovecVltavinuFullRecordsV2";
-const coarsePointer = matchMedia("(pointer: coarse)");
-
-function defaultState() {
-  return {
-    version: GAME_VERSION,
-    playerName: "Lovec",
-    difficulty: "normal",
-    levelIndex: 0,
-    hp: 5,
-    maxHp: 5,
-    reputation: 80,
-    money: 300,
-    score: 0,
-    inventory: [],
-    upgrades: { shovel: 0, boots: 0, lamp: 0, case: 0 },
-    completed: [],
-    sound: true,
-    startedAt: Date.now()
+  const screens = {
+    title: $("titleScreen"), brief: $("briefScreen"), dig: $("digScreen"), identify: $("identifyScreen"),
+    dialog: $("dialogScreen"), perk: $("perkScreen"), jury: $("juryScreen"), result: $("resultScreen"),
+    pause: $("pauseScreen"), how: $("howScreen"), records: $("recordsScreen")
   };
-}
 
-let state = defaultState();
-let checkpoint = structuredClone(state);
-let runtime = {};
-let mode = "menu";
-let endingIsFinal = false;
-let selectedFinal = new Set();
+  const ui = {
+    missionNumber: $("missionNumber"), place: $("placeLabel"), objective: $("objectiveLabel"), bag: $("bagValue"),
+    heat: $("heatFill"), combo: $("combo"), hint: $("hint"), toast: $("toast"),
+    actionIcon: $("actionIcon"), actionText: $("actionText")
+  };
 
-let renderer, scene, camera, clock;
-let world, terrainGroup, decorGroup, entityGroup, effectGroup;
-let player, playerBody, playerLegs = [], playerTool, playerLight;
-let ambient, hemi, sun;
-let rain = null;
+  const SAVE_KEY = "lovecVltavinuRebornSaveV4";
+  const RECORD_KEY = "lovecVltavinuRebornRecordsV4";
+  const isTouch = navigator.maxTouchPoints > 0 || "ontouchstart" in window || matchMedia("(pointer: coarse)").matches;
+  const storage = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } },
+    remove(k) { try { localStorage.removeItem(k); } catch {} }
+  };
 
-let interactables = [];
-let enemies = [];
-let hazards = [];
-let colliders = [];
-let mudZones = [];
-let effects = [];
-let nearest = null;
-let boss = null;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[ch]);
 
-let keyboard = new Set();
-let moveInput = new THREE.Vector2();
-let joystickInput = new THREE.Vector2();
-let sprintHeld = false;
-let actionHeld = false;
-let actionRepeat = 0;
-let invulnerableUntil = 0;
-let toastTimer = 0;
-let lastUiUpdate = 0;
-let lastFootstep = 0;
-let currentSample = null;
-let currentDialogue = null;
-let dialogueIndex = 0;
-let dialogueDone = null;
-let frameId = 0;
+  const LEVELS = [
+    {
+      id: "chlum", name: "Chlum", title: "Chlum po bouřce", theme: "field",
+      text: "Déšť omyl tmavou ornici. V brázdách leží první zelené záblesky, ale traktor už znovu vyráží do pole.",
+      goal: "Získej souhlas Václava a odnes 4 pravé kameny.", music: "field"
+    },
+    {
+      id: "locenice", name: "Ločenice", title: "Štěrková hrana", theme: "meadow",
+      text: "Erozní rýha odkryla vltavíny i lahvové střepy. Tentokrát rozhoduje rychlé oko, ne síla lopaty.",
+      goal: "Správně urči 5 vzorků a najdi 3 pravé kusy.", music: "meadow"
+    },
+    {
+      id: "nesmen", name: "Nesměň", title: "Lesní profily", theme: "forest",
+      text: "Mělké jílové profily jsou povolené, pokud po sobě nezůstane ani jedna otevřená jáma.",
+      goal: "Vykopej a zasyp 3 profily bez zbytečného hluku.", music: "forest"
+    },
+    {
+      id: "besednice", name: "Besednice", title: "Ježková noc", theme: "night",
+      text: "Tři stopy vedou k ježkové vrstvě. Ve tmě se ale pohybuje rival, který čeká na cizí nález.",
+      goal: "Najdi 3 stopy, vykopej ježek a dostaň ho zpět od Karla.", music: "night"
+    },
+    {
+      id: "malse", name: "Malše", title: "Cesta ke Slávii", theme: "city",
+      text: "Podél Malše vede poslední úsek. Dokumentace se rozsypala mezi promenádou, lávkou a provozem před Slávií.",
+      goal: "Seber 3 složky, dožeň Frantu a vstup do Slávie.", music: "city"
+    }
+  ];
 
-const tmpVec3 = new THREE.Vector3();
-const tmpVec2 = new THREE.Vector2();
+  const PERKS = [
+    { id: "boots", icon: "↟", name: "Lehké boty", text: "+12 % rychlost pohybu", max: 3 },
+    { id: "scanner", icon: "◎", name: "Citlivý skener", text: "větší dosah a kratší čekání", max: 3 },
+    { id: "shovel", icon: "⛏", name: "Přesná lopatka", text: "širší zelené pole při kopání", max: 3 },
+    { id: "quiet", icon: "◌", name: "Tichý postup", text: "méně pozornosti za chyby", max: 3 },
+    { id: "case", icon: "▣", name: "Pevné pouzdro", text: "při dopadení neztratíš nejlepší kus", max: 2 },
+    { id: "eye", icon: "◉", name: "Zkušené oko", text: "vyšší kvalita správně určených kusů", max: 3 }
+  ];
 
-function saveGame() {
-  const payload = structuredClone(state);
-  payload.version = GAME_VERSION;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  refreshContinueButton();
-}
+  const SAMPLES = [
+    { real: true, title: "Olivový úlomek", text: "Matný povrch, nepravidelné hrany a drobné podélné bubliny." },
+    { real: false, title: "Jasně zelený střep", text: "Dokonale hladký povrch, ostrý rovný lom a nepřirozeně sytá barva." },
+    { real: true, title: "Hnědozelený splash", text: "Proměnlivá barva, zvlněná skulptace a nestejná tloušťka." },
+    { real: false, title: "Lesklý odlitek", text: "Stejnoměrná barva, kulaté hrany a opakující se povrchový vzor." },
+    { real: true, title: "Drobný celotvar", text: "Přirozeně leptaný povrch a jemná průsvitnost proti světlu." },
+    { real: false, title: "Lahvové sklo", text: "Ploché stěny, pravidelná tloušťka a hladké průmyslové plochy." }
+  ];
 
-function loadGame() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!saved || !Array.isArray(saved.inventory)) return false;
-    state = {
-      ...defaultState(),
-      ...saved,
-      upgrades: { ...defaultState().upgrades, ...(saved.upgrades || {}) },
-      completed: Array.isArray(saved.completed) ? saved.completed : []
+  class AudioEngine {
+    constructor() {
+      this.ctx = null; this.master = null; this.musicGain = null; this.sfxGain = null;
+      this.enabled = true; this.timer = 0; this.step = 0; this.theme = "field";
+      this.nextNote = 0; this.ambienceTimer = 0;
+    }
+    start() {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+        this.master = this.ctx.createGain();
+        this.musicGain = this.ctx.createGain();
+        this.sfxGain = this.ctx.createGain();
+        this.master.gain.value = .42;
+        this.musicGain.gain.value = .13;
+        this.sfxGain.gain.value = .62;
+        this.musicGain.connect(this.master); this.sfxGain.connect(this.master); this.master.connect(this.ctx.destination);
+      }
+      if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+      this.nextNote = this.ctx.currentTime + .08;
+    }
+    setTheme(theme) { this.theme = theme; this.step = 0; }
+    toggle() { this.enabled = !this.enabled; if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.enabled ? .42 : 0, this.ctx.currentTime, .03); return this.enabled; }
+    tone(freq, dur=.1, type="triangle", vol=.16, when=0, slide=0) {
+      if (!this.enabled || !this.ctx) return;
+      const t = this.ctx.currentTime + when;
+      const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, t); if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t+dur);
+      gain.gain.setValueAtTime(.0001,t); gain.gain.linearRampToValueAtTime(vol,t+.008); gain.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      osc.connect(gain); gain.connect(this.sfxGain); osc.start(t); osc.stop(t+dur+.03);
+    }
+    noise(dur=.08, vol=.08, cutoff=1200) {
+      if (!this.enabled || !this.ctx) return;
+      const n=Math.floor(this.ctx.sampleRate*dur), b=this.ctx.createBuffer(1,n,this.ctx.sampleRate), d=b.getChannelData(0);
+      for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+      const src=this.ctx.createBufferSource(), filter=this.ctx.createBiquadFilter(), g=this.ctx.createGain();
+      src.buffer=b; filter.type="lowpass"; filter.frequency.value=cutoff; g.gain.value=vol;
+      src.connect(filter); filter.connect(g); g.connect(this.sfxGain); src.start();
+    }
+    sfx(name) {
+      const f = {
+        scan:()=>{this.tone(260,.18,"sine",.08,0,420);this.tone(520,.22,"sine",.05,.08,260);},
+        dig:()=>{this.noise(.11,.13,800);this.tone(82,.12,"triangle",.06);},
+        good:()=>{this.tone(620,.12,"triangle",.11);this.tone(930,.15,"sine",.08,.07);},
+        rare:()=>[523,659,784,1047].forEach((x,i)=>this.tone(x,.25,"triangle",.08,i*.06)),
+        bad:()=>{this.tone(180,.22,"square",.07,0,-70);this.noise(.09,.08,600);},
+        catch:()=>{this.tone(95,.28,"sawtooth",.1);this.noise(.16,.13,900);},
+        paper:()=>{this.tone(420,.08,"square",.06);this.tone(620,.1,"triangle",.06,.06);},
+        win:()=>[392,494,587,784].forEach((x,i)=>this.tone(x,.36,"triangle",.1,i*.1)),
+        click:()=>this.tone(360,.05,"square",.04),
+        step:()=>this.noise(.025,.025,500)
+      }; f[name]?.();
+    }
+    update(dt, active) {
+      if (!this.enabled || !this.ctx || !active) return;
+      this.timer -= dt; this.ambienceTimer -= dt;
+      if (this.timer <= 0) {
+        const scales = {
+          field:[146.8,174.6,220,261.6,293.7], meadow:[130.8,164.8,196,246.9,293.7], forest:[110,146.8,164.8,220,246.9],
+          night:[98,123.5,146.8,196,220], city:[130.8,174.6,220,261.6,329.6]
+        };
+        const scale=scales[this.theme]||scales.field;
+        if (Math.random()>.28) {
+          const base=scale[(this.step*2 + (Math.random()<.25?1:0))%scale.length];
+          this.tone(base,.34,"triangle",.018); if(this.step%4===2) this.tone(base*2,.18,"square",.007,.1);
+        }
+        this.step=(this.step+1)%16; this.timer=.42+(Math.random()*.18);
+      }
+      if (this.ambienceTimer<=0) {
+        if(this.theme==="night"||this.theme==="forest") this.noise(.18,.008,1800);
+        this.ambienceTimer=2.5+Math.random()*3;
+      }
+    }
+  }
+  const audio = new AudioEngine();
+
+  function freshState() {
+    return {
+      version:"4.0.0", levelIndex:0, score:0, stones:[], heat:0, combo:1, comboTimer:0, caught:0,
+      perks:{boots:0,scanner:0,shovel:0,quiet:0,case:0,eye:0}, stats:{digs:0,correct:0,misses:0,rare:0}, sound:true
     };
-    checkpoint = structuredClone(state);
-    audio.setEnabled(state.sound);
-    return true;
-  } catch {
+  }
+
+  let state = freshState();
+  let mode = "menu";
+  let viewport = {w:innerWidth,h:innerHeight,dpr:1};
+  let world = null;
+  let player = {x:0,y:0,r:17,angle:0,step:0,invuln:0};
+  let camera = {x:0,y:0};
+  let input = {x:0,y:0,pressed:false};
+  let nearest = null;
+  let last = performance.now();
+  let scanCooldown = 0;
+  let scanPulse = 0;
+  let toastTimer = 0;
+  let currentDig = null;
+  let currentSample = null;
+  let digMarker = 0;
+  let digDir = 1;
+  let digHits = 0;
+  let jurySelection = new Set();
+  let dialogueCallback = null;
+  let shake = 0;
+  let flash = 0;
+  let flashColor = "255,255,255";
+
+  function save() { storage.set(SAVE_KEY, JSON.stringify(state)); refreshContinue(); }
+  function load() {
+    try {
+      const data=JSON.parse(storage.get(SAVE_KEY)||"null");
+      if(!data || !Array.isArray(data.stones)) return false;
+      state={...freshState(),...data,perks:{...freshState().perks,...(data.perks||{})},stats:{...freshState().stats,...(data.stats||{})}};
+      audio.enabled=state.sound!==false; return true;
+    } catch { return false; }
+  }
+  function refreshContinue(){ $("continueButton").classList.toggle("hidden",!storage.get(SAVE_KEY)); }
+  function getRecords(){try{return JSON.parse(storage.get(RECORD_KEY)||"[]");}catch{return[];}}
+  function addRecord(score,title){const rows=getRecords();rows.push({score,title,stones:state.stones.length,date:new Date().toISOString()});rows.sort((a,b)=>b.score-a.score);storage.set(RECORD_KEY,JSON.stringify(rows.slice(0,10)));}
+
+  function showOnly(screen){Object.values(screens).forEach(s=>s.classList.remove("visible"));if(screen)screen.classList.add("visible");}
+  function setPlaying(on){hud.classList.toggle("hidden",!on);controls.classList.toggle("hidden",!on||!isTouch);app.classList.toggle("playing",on);}
+  function toast(text,type="",duration=1500){clearTimeout(toastTimer);ui.toast.textContent=text;ui.toast.className=`toast show ${type}`;toastTimer=setTimeout(()=>ui.toast.className="toast",duration);}
+  function showHint(text){ui.hint.textContent=text;ui.hint.classList.remove("hidden");}
+  function hideHint(){ui.hint.classList.add("hidden");}
+
+  function resize(){
+    const dpr=Math.min(devicePixelRatio||1,1.7); viewport={w:innerWidth,h:innerHeight,dpr};
+    canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);canvas.style.width=`${innerWidth}px`;canvas.style.height=`${innerHeight}px`;
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;
+  }
+
+  function addProp(type,x,y,o={}){world.props.push({type,x,y,...o});}
+  function addObstacle(x,y,w,h,o={}){world.obstacles.push({x,y,w,h,...o});}
+  function addHotspot(x,y,o={}){world.hotspots.push({x,y,r:24,revealed:Boolean(o.revealed),active:true,ttl:0,...o});}
+  function addItem(type,x,y,o={}){world.items.push({type,x,y,r:20,active:true,...o});}
+  function addPatrol(type,points,o={}){const p=points[0];world.patrols.push({type,x:p.x,y:p.y,points,index:1,speed:o.speed||80,vision:o.vision||180,angle:0,active:true,...o});}
+
+  function generateLevel(index){
+    const level=LEVELS[index];
+    world={id:level.id,theme:level.theme,w:1800,h:1200,props:[],obstacles:[],hotspots:[],items:[],patrols:[],hazards:[],particles:[],exit:null,runtime:{},rain:level.theme==="field"?1:0};
+    if(level.id==="chlum") generateChlum();
+    if(level.id==="locenice") generateLocenice();
+    if(level.id==="nesmen") generateNesmen();
+    if(level.id==="besednice") generateBesednice();
+    if(level.id==="malse") generateMalse();
+    camera.x=player.x-viewport.w/2;camera.y=player.y-viewport.h/2;nearest=null;scanCooldown=0;scanPulse=0;
+    state.heat=0;state.combo=1;state.comboTimer=0;audio.setTheme(level.music);updateHUD(true);
+  }
+
+  function generateChlum(){
+    world.runtime={permit:false,collected:0}; player.x=360;player.y=1070;
+    addProp("farm",150,1050,{scale:1.05}); addProp("npc",280,990,{name:"Václav",avatar:"V",role:"farmer"});
+    for(let y=180;y<1050;y+=125) for(let x=120;x<1720;x+=240) if(Math.random()<.58)addProp("puddle",x+rand(-40,40),y+rand(-25,25),{r:rand(18,40)});
+    for(let i=0;i<22;i++)addProp("tree",rand(30,1770),rand(20,150),{scale:rand(.8,1.35)});
+    for(const p of [[500,840],[820,910],[1120,760],[1440,900],[620,480],[1040,420],[1500,500]]) addHotspot(p[0],p[1],{rarity:Math.random()<.18?"rare":"common",documented:true});
+    addItem("stone",440,690,{rarity:"common",documented:true}); addItem("stone",1250,640,{rarity:"good",documented:true});
+    addPatrol("tractor",[{x:350,y:300},{x:1570,y:300},{x:1570,y:470},{x:350,y:470}],{speed:115,vision:0});
+    addPatrol("farmer",[{x:1580,y:920},{x:1480,y:650},{x:1660,y:520}],{speed:65,vision:140,requires:"permit"});
+    world.exit={x:1650,y:150,r:54,label:"Odjezd"};
+  }
+
+  function generateLocenice(){
+    world.runtime={correct:0,real:0,identified:0};player.x=160;player.y=1040;
+    for(let i=0;i<36;i++) addProp(Math.random()<.65?"bush":"tree",rand(20,1780),rand(20,1180),{scale:rand(.65,1.05)});
+    for(let i=0;i<18;i++)addProp("rock",rand(310,1470),rand(150,1050),{scale:rand(.5,1.1)});
+    addProp("sign",220,1010,{text:"Ločenice"});
+    const samples=[...SAMPLES,...SAMPLES].sort(()=>Math.random()-.5).slice(0,9);
+    const pts=[[420,850],[660,950],[910,820],[1210,950],[1480,820],[520,520],[840,410],[1180,560],[1510,390]];
+    samples.forEach((s,i)=>addItem("sample",pts[i][0],pts[i][1],{sample:s}));
+    addPatrol("farmer",[{x:400,y:250},{x:1500,y:250},{x:1500,y:690},{x:400,y:690}],{speed:72,vision:150});
+    world.exit={x:1650,y:150,r:54,label:"Pokračovat"};
+  }
+
+  function generateNesmen(){
+    world.runtime={permit:false,dug:0,filled:0,open:0};player.x=360;player.y=1050;
+    addProp("npc",290,980,{name:"Lesník",avatar:"L",role:"owner"}); addProp("hut",120,1060,{scale:.9});
+    for(let i=0;i<62;i++){const x=rand(30,1770),y=rand(30,1170);if(Math.hypot(x-900,y-650)>180)addProp("tree",x,y,{scale:rand(.75,1.45)});}
+    for(let i=0;i<24;i++)addProp("bush",rand(30,1770),rand(30,1170),{scale:rand(.6,1)});
+    [[520,880],[930,860],[1290,740],[720,390]].forEach((p,i)=>addHotspot(p[0],p[1],{rarity:i===3?"good":"common",documented:true,needsFill:true,marked:true}));
+    addPatrol("ranger",[{x:420,y:560},{x:840,y:300},{x:1420,y:470},{x:1320,y:980},{x:650,y:1030}],{speed:82,vision:190});
+    world.exit={x:1650,y:150,r:54,label:"Lesní cesta"};
+  }
+
+  function generateBesednice(){
+    world.runtime={clues:0,hedgehog:false,bossStarted:false,bossHits:0,bossDefeated:false};player.x=150;player.y=1030;
+    for(let i=0;i<72;i++){const x=rand(20,1780),y=rand(20,1180);if(Math.hypot(x-900,y-600)>170)addProp("pine",x,y,{scale:rand(.75,1.35)});}
+    for(let i=0;i<12;i++)addProp("pit",rand(300,1500),rand(240,990),{r:rand(22,38)});
+    [[440,850],[930,580],[1420,330]].forEach((p,i)=>addItem("clue",p[0],p[1],{hidden:true,label:["čerstvá hlína","otisk krumpáče","zelený úlomek"][i]}));
+    addPatrol("digger",[{x:500,y:250},{x:1450,y:280},{x:1480,y:880},{x:640,y:930}],{speed:88,vision:175});
+    world.exit={x:1650,y:150,r:54,label:"Výjezd"};
+  }
+
+  function generateMalse(){
+    world.runtime={papers:0,bossStarted:false,bossHits:0,bossDefeated:false};player.x=640;player.y=1040;
+    for(let y=150;y<1100;y+=145){addProp("tree",510,y,{scale:1.05});addProp("lamp",650,y);}
+    addProp("bridge",330,520,{scale:1}); addProp("slavie",1450,210,{scale:1.15}); addProp("sign",780,1000,{text:"Zátkovo nábřeží"});
+    [[760,860],[1040,560],[1280,360]].forEach((p,i)=>addItem("paper",p[0],p[1],{label:["fotografie nálezů","souhlasy vlastníků","vážní protokol"][i]}));
+    addPatrol("bike",[{x:620,y:1020},{x:620,y:180}],{speed:155,vision:0});
+    addPatrol("car",[{x:970,y:1080},{x:970,y:160}],{speed:190,vision:0});
+    addPatrol("police",[{x:1180,y:980},{x:1220,y:260}],{speed:92,vision:190});
+    world.exit={x:1450,y:250,r:66,label:"KD Slávie"};
+  }
+
+  function startNew(){
+    audio.start();audio.sfx("click");state=freshState();storage.remove(SAVE_KEY);showBrief(0);
+  }
+  function continueGame(){audio.start();if(!load()){startNew();return;}showBrief(state.levelIndex);}
+  function showBrief(index){
+    state.levelIndex=index;mode="brief";setPlaying(false);const l=LEVELS[index];
+    $("briefKicker").textContent=`LOKALITA ${index+1} / ${LEVELS.length}`;$("briefTitle").textContent=l.title;$("briefText").textContent=l.text;$("briefGoal").textContent=l.goal;
+    showOnly(screens.brief);
+  }
+  function enterLevel(){generateLevel(state.levelIndex);mode="playing";showOnly(null);setPlaying(true);audio.start();save();}
+
+  function levelGoal(){
+    const r=world.runtime;
+    if(world.id==="chlum")return r.permit?`Kameny ${r.collected}/4`:`Promluv s Václavem`;
+    if(world.id==="locenice")return `Správně ${r.correct}/5 · pravé ${r.real}/3`;
+    if(world.id==="nesmen")return r.permit?`Profily ${r.dug}/3 · zasypáno ${r.filled}/3`:`Získej souhlas lesníka`;
+    if(world.id==="besednice")return r.bossStarted?(r.bossDefeated?"Ježek je v bezpečí":"Dostaň ježek zpět"):r.clues<3?`Stopy ${r.clues}/3`:`Vykopej ježkový profil`;
+    if(world.id==="malse")return r.bossStarted?(r.bossDefeated?"Vstup do Slávie":"Dožeň Frantu"): `Dokumenty ${r.papers}/3`;
+    return "Výprava";
+  }
+  function goalComplete(){
+    const r=world.runtime;
+    if(world.id==="chlum")return r.permit&&r.collected>=4;
+    if(world.id==="locenice")return r.correct>=5&&r.real>=3;
+    if(world.id==="nesmen")return r.permit&&r.dug>=3&&r.filled>=3;
+    if(world.id==="besednice")return r.bossDefeated;
+    if(world.id==="malse")return r.papers>=3&&r.bossDefeated;
     return false;
   }
-}
 
-function refreshContinueButton() {
-  $("continueGameBtn").classList.toggle("hidden", !localStorage.getItem(STORAGE_KEY));
-}
-
-function records() {
-  try { return JSON.parse(localStorage.getItem(RECORDS_KEY) || "[]"); }
-  catch { return []; }
-}
-
-function addRecord(finalScore, ending) {
-  const list = records();
-  list.push({
-    name: state.playerName,
-    score: Math.round(finalScore),
-    grams: totalWeight(state.inventory),
-    reputation: Math.round(state.reputation),
-    ending,
-    difficulty: state.difficulty,
-    date: new Date().toISOString()
-  });
-  list.sort((a, b) => b.score - a.score);
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(list.slice(0, 10)));
-}
-
-function totalWeight(items) {
-  return items.reduce((sum, item) => sum + Number(item.weight || 0), 0);
-}
-
-function totalValue(items) {
-  return items.reduce((sum, item) => sum + Number(item.value || 0), 0);
-}
-
-function visibleInventory() {
-  return [...state.inventory, ...(runtime.loot || [])];
-}
-
-function showOnly(screen) {
-  for (const item of Object.values(screens)) item.classList.remove("visible");
-  if (screen) screen.classList.add("visible");
-}
-
-function setPlaying(value) {
-  app.classList.toggle("playing", value);
-  hud.classList.toggle("hidden", !value);
-  touchControls.classList.toggle("hidden", !value || !coarsePointer.matches);
-}
-
-function toast(text, type = "", duration = 1700) {
-  clearTimeout(toastTimer);
-  ui.toast.textContent = text;
-  ui.toast.className = `toast show ${type}`;
-  toastTimer = setTimeout(() => { ui.toast.className = "toast"; }, duration);
-}
-
-function initThree() {
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: false,
-    powerPreference: "high-performance"
-  });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.15));
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x07150f);
-  camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, .1, 250);
-  camera.position.set(8, 11, 13);
-  clock = new THREE.Clock();
-
-  world = new THREE.Group();
-  terrainGroup = new THREE.Group();
-  decorGroup = new THREE.Group();
-  entityGroup = new THREE.Group();
-  effectGroup = new THREE.Group();
-  world.add(terrainGroup, decorGroup, entityGroup, effectGroup);
-  scene.add(world);
-
-  hemi = new THREE.HemisphereLight(0xd9f1ff, 0x4a3526, 1.1);
-  ambient = new THREE.AmbientLight(0xffffff, .32);
-  sun = new THREE.DirectionalLight(0xffefcf, 2.1);
-  sun.position.set(-10, 16, 10);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = -28;
-  sun.shadow.camera.right = 28;
-  sun.shadow.camera.top = 28;
-  sun.shadow.camera.bottom = -28;
-  scene.add(hemi, ambient, sun);
-
-  createPlayer();
-  addEventListener("resize", resize);
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && mode === "playing") pauseGame();
-  });
-}
-
-function material(color, roughness = .82, metalness = 0, extra = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
-}
-
-function makeMesh(geometry, mat, cast = true, receive = true) {
-  const obj = new THREE.Mesh(geometry, mat);
-  obj.castShadow = cast;
-  obj.receiveShadow = receive;
-  return obj;
-}
-
-function createPlayer() {
-  player = new THREE.Group();
-  const shadow = makeMesh(
-    new THREE.CircleGeometry(.62, 16),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .24 }),
-    false,
-    false
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = .025;
-  player.add(shadow);
-
-  for (const x of [-.2, .2]) {
-    const leg = makeMesh(new THREE.BoxGeometry(.22, .72, .24), material(0x273238));
-    leg.position.set(x, .55, 0);
-    player.add(leg);
-    playerLegs.push(leg);
-    const boot = makeMesh(new THREE.BoxGeometry(.28, .18, .42), material(0x191b18));
-    boot.position.set(x, .13, .08);
-    player.add(boot);
+  function updateHUD(force=false){
+    if(!world)return;ui.missionNumber.textContent=state.levelIndex+1;ui.place.textContent=LEVELS[state.levelIndex].name.toUpperCase();ui.objective.textContent=levelGoal();
+    ui.bag.textContent=state.stones.length;ui.heat.style.width=`${clamp(state.heat,0,100)}%`;
+    ui.combo.textContent=`KOMBO ×${state.combo}`;ui.combo.classList.toggle("hidden",state.combo<=1);
   }
 
-  playerBody = makeMesh(new THREE.CapsuleGeometry(.38, .72, 4, 8), material(0x3d6a49));
-  playerBody.position.y = 1.42;
-  player.add(playerBody);
+  function playerSpeed(){return 185*(1+state.perks.boots*.12);}
+  function blocked(x,y){
+    if(x<24||y<24||x>world.w-24||y>world.h-24)return true;
+    for(const o of world.obstacles){if(x+player.r>o.x-o.w/2&&x-player.r<o.x+o.w/2&&y+player.r>o.y-o.h/2&&y-player.r<o.y+o.h/2)return true;}
+    return false;
+  }
 
-  const vest = makeMesh(new THREE.BoxGeometry(.78, .62, .42), material(0x71804d));
-  vest.position.set(0, 1.48, .02);
-  player.add(vest);
+  function scan(){
+    if(scanCooldown>0){toast(`Skener se dobíjí ${scanCooldown.toFixed(1)} s`,"",700);return;}
+    const radius=260+state.perks.scanner*55;scanPulse=.01;scanCooldown=Math.max(2.1,5-state.perks.scanner*.7);audio.sfx("scan");state.heat=clamp(state.heat+1.5,0,100);
+    let count=0;
+    for(const h of world.hotspots){if(h.active&&dist(player,h)<=radius){h.revealed=true;h.ttl=9;count++;}}
+    for(const item of world.items){if(item.active&&item.hidden&&dist(player,item)<=radius){item.hidden=false;count++;}}
+    toast(count?`Sken odhalil ${count} stop${count===1?"u":"y"}`:"Tady nic není",count?"good":"",900);
+  }
 
-  const head = makeMesh(new THREE.SphereGeometry(.28, 12, 8), material(0xc68d67));
-  head.position.y = 2.25;
-  player.add(head);
+  function performAction(){
+    if(mode!=="playing")return;
+    if(nearest){
+      if(nearest.kind==="npc")talkNpc(nearest.ref);
+      else if(nearest.kind==="hotspot")startDig(nearest.ref);
+      else if(nearest.kind==="item")interactItem(nearest.ref);
+      else if(nearest.kind==="hole")fillHole(nearest.ref);
+      else if(nearest.kind==="rival")hitRival();
+      else if(nearest.kind==="exit")tryExit();
+    }else scan();
+  }
 
-  const cap = makeMesh(new THREE.CylinderGeometry(.3, .31, .16, 10), material(0x203a2a));
-  cap.position.y = 2.5;
-  player.add(cap);
-  const brim = makeMesh(new THREE.BoxGeometry(.4, .05, .25), material(0x203a2a));
-  brim.position.set(0, 2.45, .22);
-  player.add(brim);
+  function talkNpc(npc){
+    if(world.id==="chlum"&&!world.runtime.permit){showDialog("Václav","V","Sbírej jen v holých brázdách a před odjezdem nic nerozjeď. Pak jsme domluvení.",()=>{world.runtime.permit=true;npc.used=true;toast("Souhlas získán","good");});return;}
+    if(world.id==="nesmen"&&!world.runtime.permit){showDialog("Lesník","L","Tři označené profily jsou povolené. Každou jámu ale hned zasyp.",()=>{world.runtime.permit=true;npc.used=true;toast("Profily jsou povolené","good");});return;}
+    showDialog(npc.name,npc.avatar,"Drž se úkolu a sleduj okolí.");
+  }
+  function showDialog(name,avatar,text,callback=null){mode="dialog";setPlaying(false);$("dialogName").textContent=name.toUpperCase();$("dialogAvatar").textContent=avatar;$("dialogText").textContent=text;dialogueCallback=callback;showOnly(screens.dialog);}
+  function closeDialog(){screens.dialog.classList.remove("visible");dialogueCallback?.();dialogueCallback=null;mode="playing";setPlaying(true);updateHUD(true);}
 
-  const backpack = makeMesh(new THREE.BoxGeometry(.58, .7, .3), material(0x68482d));
-  backpack.position.set(0, 1.45, -.34);
-  player.add(backpack);
-
-  playerTool = new THREE.Group();
-  const handle = makeMesh(new THREE.CylinderGeometry(.025, .035, 1.5, 6), material(0x885c35));
-  handle.position.y = .2;
-  playerTool.add(handle);
-  const blade = makeMesh(new THREE.BoxGeometry(.32, .38, .06), material(0x778080, .35, .25));
-  blade.position.y = -.64;
-  playerTool.add(blade);
-  playerTool.position.set(.55, 1.38, 0);
-  playerTool.rotation.z = -.28;
-  player.add(playerTool);
-
-  playerLight = new THREE.SpotLight(0xffedb0, 0, 18, Math.PI / 4.8, .55, 1.2);
-  playerLight.position.set(0, 2.45, .15);
-  playerLight.target.position.set(0, .2, -8);
-  player.add(playerLight, playerLight.target);
-
-  scene.add(player);
-}
-
-function disposeObject(obj) {
-  obj.traverse(child => {
-    child.geometry?.dispose?.();
-    if (child.material) {
-      if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.());
-      else child.material.dispose?.();
+  function startDig(h){
+    if(!h.active)return;if(world.id==="chlum"&&!world.runtime.permit){state.heat=clamp(state.heat+15,0,100);toast("Nejdřív získej souhlas","bad");return;}
+    currentDig=h;digMarker=Math.random();digDir=Math.random()<.5?-1:1;digHits=0;mode="dig";setPlaying(false);$("digHits").textContent="◇ ◇ ◇";$("digTitle").textContent=h.special==="hedgehog"?"Ježkový profil":"Drž rytmus lopaty";
+    const width=18+state.perks.shovel*6;$("sweetZone").style.left=`${50-width/2}%`;$("sweetZone").style.width=`${width}%`;showOnly(screens.dig);
+  }
+  function digAttempt(){
+    if(mode!=="dig")return;audio.sfx("dig");const width=.18+state.perks.shovel*.06;const good=Math.abs(digMarker-.5)<=width/2;
+    if(good){shake=Math.max(shake,2.5);digHits++;audio.sfx("good");$("digHits").textContent=[0,1,2].map(i=>i<digHits?"◆":"◇").join(" ");if(digHits>=3)setTimeout(finishDig,160);}
+    else{shake=Math.max(shake,7);flash=.12;flashColor="255,105,96";state.stats.misses++;state.heat=clamp(state.heat+Math.max(4,10-state.perks.quiet*2),0,100);audio.sfx("bad");toast("Hlučný úder","bad",650);}
+  }
+  function finishDig(){
+    if(!currentDig)return;const h=currentDig;h.active=false;state.stats.digs++;screens.dig.classList.remove("visible");mode="playing";setPlaying(true);
+    if(h.needsFill){world.runtime.dug++;world.runtime.open=(world.runtime.open||0)+1;world.items.push({type:"hole",x:h.x,y:h.y,r:28,active:true});}
+    if(h.special==="hedgehog"){
+      world.runtime.hedgehog=true;startRival("karel",h.x+120,h.y-80);toast("Ježek! Karel ho bere!","rare",1800);audio.sfx("rare");
+    }else{
+      const stone=makeStone(LEVELS[state.levelIndex].name,h.rarity||"common",h.documented!==false);addStone(stone,h.x,h.y);
+      if(world.id==="chlum")world.runtime.collected++;
     }
-  });
-}
-
-function clearWorld() {
-  if (rain) {
-    scene.remove(rain);
-    disposeObject(rain);
-    rain = null;
+    currentDig=null;updateHUD(true);
   }
-  for (const group of [terrainGroup, decorGroup, entityGroup, effectGroup]) {
-    while (group.children.length) {
-      const obj = group.children.pop();
-      disposeObject(obj);
+
+  function makeStone(locality,rarity="common",documented=true,qualityBonus=0){
+    const bases={common:[.5,1.8],good:[1.5,3.8],rare:[3.2,7.2],hedgehog:[5.5,10.5]};const b=bases[rarity]||bases.common;
+    const weight=+rand(b[0],b[1]).toFixed(2);const quality=clamp(Math.round(rand(58,92)+qualityBonus+state.perks.eye*2),45,100);
+    const names={common:"Drobný vltavín",good:"Olivový splash",rare:"Výstavní celotvar",hedgehog:"Besednický ježek"};
+    return{id:`s${Date.now()}${Math.random()}`,locality,rarity,weight,quality,documented,name:names[rarity],value:Math.round(weight*(rarity==="hedgehog"?4200:rarity==="rare"?1900:rarity==="good"?900:420)*(quality/75))};
+  }
+  function addStone(stone,x=player.x,y=player.y){
+    state.stones.push(stone);state.stats.rare+=stone.rarity==="rare"||stone.rarity==="hedgehog"?1:0;
+    const mult=stone.rarity==="hedgehog"?6:stone.rarity==="rare"?3:stone.rarity==="good"?1.6:1;state.score+=Math.round(stone.value*.18*state.combo*mult);
+    boostCombo(stone.rarity==="rare"||stone.rarity==="hedgehog"?2:1);burst(x,y,stone.rarity==="rare"||stone.rarity==="hedgehog"?"#f2cb72":"#63e49b",stone.rarity==="hedgehog"?28:15);
+    if(stone.rarity==="rare"||stone.rarity==="hedgehog"){shake=Math.max(shake,6);flash=.16;flashColor="242,203,114";}audio.sfx(stone.rarity==="rare"||stone.rarity==="hedgehog"?"rare":"good");toast(`${stone.name} · ${stone.weight.toFixed(2)} g`,stone.rarity==="rare"||stone.rarity==="hedgehog"?"rare":"good",1300);
+  }
+  function boostCombo(amount=1){state.combo=clamp(state.combo+amount,1,6);state.comboTimer=12;}
+  function breakCombo(){state.combo=1;state.comboTimer=0;}
+
+  function interactItem(item){
+    if(!item.active)return;
+    if(item.type==="stone"){
+      item.active=false;const stone=makeStone(LEVELS[state.levelIndex].name,item.rarity||"common",item.documented!==false);addStone(stone,item.x,item.y);if(world.id==="chlum")world.runtime.collected++;return;
+    }
+    if(item.type==="sample"){currentSample=item;mode="identify";setPlaying(false);$("sampleTitle").textContent=item.sample.title;$("sampleDescription").textContent=item.sample.text;$("sampleGem").style.color=item.sample.real?"#70d999":"#33f48b";showOnly(screens.identify);return;}
+    if(item.type==="clue"){
+      item.active=false;world.runtime.clues++;audio.sfx("paper");toast(`Stopa: ${item.label}`,"good");boostCombo();if(world.runtime.clues>=3){addHotspot(980,520,{rarity:"hedgehog",documented:true,special:"hedgehog",revealed:true,marked:true});toast("Ježkový profil odhalen","rare",1700);}return;
+    }
+    if(item.type==="paper"){
+      item.active=false;world.runtime.papers++;audio.sfx("paper");toast(`Nalezena: ${item.label}`,"good");boostCombo();if(world.runtime.papers>=3&&!world.runtime.bossStarted){setTimeout(()=>startRival("franta",1120,300),450);}return;
     }
   }
-  interactables = [];
-  enemies = [];
-  hazards = [];
-  colliders = [];
-  mudZones = [];
-  effects = [];
-  nearest = null;
-  boss = null;
-  ui.bossHud.classList.add("hidden");
-}
-
-function setLevelLighting(level) {
-  scene.background = new THREE.Color(level.sky);
-  scene.fog = new THREE.FogExp2(level.fog, level.theme === "expo" ? .012 : .018);
-  const night = level.theme === "night";
-  const indoor = level.theme === "expo";
-  hemi.color.set(night ? 0x536e9f : indoor ? 0xe7dcc4 : 0xd9f1ff);
-  hemi.groundColor.set(night ? 0x11170f : indoor ? 0x413a31 : 0x4a3526);
-  hemi.intensity = night ? .45 : indoor ? .8 : 1.08;
-  ambient.intensity = night ? .18 : indoor ? .65 : .32;
-  sun.color.set(night ? 0x8ea8ee : indoor ? 0xffe7bd : 0xffefcf);
-  sun.intensity = night ? .36 : indoor ? .8 : 2.05;
-  playerLight.intensity = night ? 3 + state.upgrades.lamp * 1.5 : 0;
-  playerLight.distance = 12 + state.upgrades.lamp * 4;
-}
-
-function createGround(level) {
-  const size = level.size;
-  const ground = makeMesh(
-    new THREE.PlaneGeometry(size, size),
-    material(level.ground, 1),
-    false,
-    true
-  );
-  ground.rotation.x = -Math.PI / 2;
-  terrainGroup.add(ground);
-
-  const boundaryMat = material(level.theme === "expo" ? 0x3e453f : 0x314632);
-  const wallH = level.theme === "expo" ? 3.8 : .45;
-  const thickness = level.theme === "expo" ? .45 : .6;
-  const positions = [
-    [0, wallH / 2, -size / 2, size, wallH, thickness],
-    [0, wallH / 2, size / 2, size, wallH, thickness],
-    [-size / 2, wallH / 2, 0, thickness, wallH, size],
-    [size / 2, wallH / 2, 0, thickness, wallH, size]
-  ];
-  for (const [x, y, z, w, h, d] of positions) {
-    const wall = makeMesh(new THREE.BoxGeometry(w, h, d), boundaryMat);
-    wall.position.set(x, y, z);
-    terrainGroup.add(wall);
-    colliders.push({ x, z, w, d });
+  function resolveSample(choice){
+    if(!currentSample)return;const correct=choice===currentSample.sample.real;currentSample.active=false;world.runtime.identified++;screens.identify.classList.remove("visible");mode="playing";setPlaying(true);
+    if(correct){world.runtime.correct++;state.stats.correct++;boostCombo();state.score+=220*state.combo;audio.sfx("good");toast("Správně","good");if(currentSample.sample.real){world.runtime.real++;addStone(makeStone("Ločenice",Math.random()<.2?"good":"common",true,state.perks.eye*3),currentSample.x,currentSample.y);}}
+    else{state.heat=clamp(state.heat+12-state.perks.quiet*2,0,100);breakCombo();audio.sfx("bad");toast("Špatné určení","bad");}
+    currentSample=null;updateHUD(true);
   }
-}
 
-function addBoxCollider(x, z, w, d) {
-  colliders.push({ x, z, w, d });
-}
+  function fillHole(hole){hole.active=false;world.runtime.filled++;world.runtime.open=Math.max(0,(world.runtime.open||0)-1);state.score+=160*state.combo;boostCombo();audio.sfx("dig");toast("Jáma zasypána","good");}
 
-function addCircleCollider(x, z, r) {
-  colliders.push({ x, z, r });
-}
+  function startRival(name,x,y){
+    world.runtime.bossStarted=true;world.rival={name,x,y,r:24,hits:0,maxHits:name==="karel"?3:2,speed:name==="karel"?155:170,angle:0,target:{x:rand(250,1550),y:rand(220,950)},throwTimer:1.2,active:true};
+    toast(name==="karel"?"Krystalový Karel utíká s ježkem!":"Franta bere poslední certifikát!","bad",1900);
+  }
+  function hitRival(){
+    const r=world.rival;if(!r||!r.active)return;r.hits++;audio.sfx("catch");burst(r.x,r.y,"#ff8a72",18);r.target={x:rand(180,1620),y:rand(160,1020)};
+    if(r.hits>=r.maxHits){r.active=false;world.runtime.bossDefeated=true;state.stats.rare++;if(r.name==="karel")addStone(makeStone("Besednice","hedgehog",true,8),r.x,r.y);else{state.score+=1800;toast("Certifikát je zpět","rare");audio.sfx("win");} }
+    else toast(`Dostal jsi ho ${r.hits}/${r.maxHits}`,"good",750);
+  }
 
-function blocked(x, z, r = .48) {
-  const level = LEVELS[state.levelIndex];
-  const half = level.size / 2 - .8;
-  if (x - r < -half || x + r > half || z - r < -half || z + r > half) return true;
-  for (const c of colliders) {
-    if ("r" in c) {
-      if (Math.hypot(x - c.x, z - c.z) < r + c.r) return true;
-    } else {
-      if (
-        x + r > c.x - c.w / 2 &&
-        x - r < c.x + c.w / 2 &&
-        z + r > c.z - c.d / 2 &&
-        z - r < c.z + c.d / 2
-      ) return true;
+  function tryExit(){if(!goalComplete()){toast(levelGoal(),"bad");return;}finishLevel();}
+  function finishLevel(){
+    mode="transition";setPlaying(false);state.score+=700+state.combo*120;save();
+    if(state.levelIndex>=LEVELS.length-1){showJury();return;}
+    showPerks();
+  }
+  function showPerks(){
+    const candidates=PERKS.filter(p=>(state.perks[p.id]||0)<p.max).sort(()=>Math.random()-.5).slice(0,3);const list=$("perkList");list.innerHTML="";
+    candidates.forEach(p=>{const b=document.createElement("button");b.type="button";b.className="perk-option";b.innerHTML=`<b>${p.icon}</b><span><strong>${p.name}</strong><small>${p.text}</small></span>`;b.addEventListener("click",()=>{audio.sfx("click");state.perks[p.id]++;state.levelIndex++;save();showBrief(state.levelIndex);});list.append(b);});
+    showOnly(screens.perk);
+  }
+
+  function showJury(){mode="jury";jurySelection.clear();setPlaying(false);const list=$("juryList");list.innerHTML="";
+    [...state.stones].sort((a,b)=>b.value-a.value).forEach(s=>{const b=document.createElement("button");b.type="button";b.className="stone-card";b.innerHTML=`<span>◆</span><div><strong>${escapeHtml(s.name)}</strong><small>${escapeHtml(s.locality)} · ${s.weight.toFixed(2)} g · stav ${s.quality}%${s.documented?" · doložený":""}</small></div>`;b.addEventListener("click",()=>{if(jurySelection.has(s.id)){jurySelection.delete(s.id);b.classList.remove("selected");}else if(jurySelection.size<3){jurySelection.add(s.id);b.classList.add("selected");}$("juryCount").textContent=`${jurySelection.size} / 3`;$("juryButton").disabled=jurySelection.size!==3;});list.append(b);});
+    $("juryCount").textContent="0 / 3";$("juryButton").disabled=true;showOnly(screens.jury);
+  }
+  function judge(){
+    const chosen=state.stones.filter(s=>jurySelection.has(s.id));let jury=0;for(const s of chosen){jury+=s.value*.45+s.quality*18+(s.documented?700:0)+(s.rarity==="hedgehog"?3800:s.rarity==="rare"?1700:s.rarity==="good"?500:100);}jury=Math.round(jury+state.score+Math.max(0,100-state.caught*12)*18);
+    let title="Sbírka byla přijata",text="Výprava dorazila do Slávie a našla své místo mezi vystavovateli.";
+    if(jury>=25000){title="Hlavní cena Zelené vlny";text="Pestrá, doložená a dobře zvolená kolekce získala hlavní ocenění večera.";}
+    else if(jury>=17500){title="Výstavní uznání";text="Porota ocenila kvalitu kamenů i cestu napříč jihočeskými lokalitami.";}
+    state.score=jury;addRecord(jury,title);storage.remove(SAVE_KEY);audio.sfx("win");
+    $("resultTitle").textContent=title;$("resultScore").textContent=jury.toLocaleString("cs-CZ");$("resultText").textContent=text;
+    $("resultStats").innerHTML=`<div><span>KAMENY</span><strong>${state.stones.length}</strong></div><div><span>VZÁCNÉ</span><strong>${state.stats.rare}</strong></div><div><span>DOPADENÍ</span><strong>${state.caught}</strong></div>`;showOnly(screens.result);mode="result";
+  }
+
+  function caught(reason){
+    if(player.invuln>0)return;player.invuln=2;shake=12;flash=.22;flashColor="255,90,80";state.caught++;state.heat=20;breakCombo();audio.sfx("catch");
+    let lost=null;if(state.stones.length){const sorted=[...state.stones].sort((a,b)=>a.value-b.value);lost=state.perks.case>0&&sorted.length>1?sorted[0]:pick(sorted.slice(0,Math.min(2,sorted.length)));state.stones=state.stones.filter(s=>s.id!==lost.id);}
+    player.x=world.id==="malse"?640:world.id==="chlum"?360:world.id==="nesmen"?360:170;player.y=world.id==="malse"?1040:world.id==="chlum"?1070:world.id==="nesmen"?1050:1030;toast(`${reason}${lost?` · ztracen ${lost.name}`:""}`,"bad",1800);updateHUD(true);
+  }
+
+  function update(dt){
+    audio.update(dt,mode==="playing");
+    if(mode==="dig"){digMarker+=digDir*dt*1.4;if(digMarker>=1){digMarker=1;digDir=-1;}if(digMarker<=0){digMarker=0;digDir=1;}$("digMarker").style.left=`calc(${digMarker*100}% - 5px)`;return;}
+    if(mode!=="playing"||!world)return;
+    scanCooldown=Math.max(0,scanCooldown-dt);player.invuln=Math.max(0,player.invuln-dt);shake=Math.max(0,shake-dt*24);flash=Math.max(0,flash-dt*.9);state.heat=Math.max(0,state.heat-dt*4.2);state.comboTimer=Math.max(0,state.comboTimer-dt);if(state.comboTimer<=0&&state.combo>1){state.combo--;state.comboTimer=5;}
+    const len=Math.hypot(input.x,input.y);if(len>.04){const nx=input.x/Math.max(1,len),ny=input.y/Math.max(1,len);const speed=playerSpeed()*(len>.78?1.28:1);const x=player.x+nx*speed*dt,y=player.y+ny*speed*dt;if(!blocked(x,player.y))player.x=x;if(!blocked(player.x,y))player.y=y;player.angle=Math.atan2(ny,nx);player.step+=dt*(len>.78?13:9);if(Math.floor(player.step*2)%4===0&&Math.random()<.08)audio.sfx("step");}
+    updateHotspots(dt);updatePatrols(dt);updateRival(dt);updateParticles(dt);findNearest();
+    camera.x=lerp(camera.x,clamp(player.x-viewport.w/2,0,Math.max(0,world.w-viewport.w)),1-Math.exp(-5*dt));camera.y=lerp(camera.y,clamp(player.y-viewport.h/2,0,Math.max(0,world.h-viewport.h)),1-Math.exp(-5*dt));
+    if(scanPulse>0){scanPulse+=dt*1.4;if(scanPulse>1)scanPulse=0;}
+    if(state.heat>=100)caught("Hlídka tě zastavila");updateHUD();
+  }
+
+  function updateHotspots(dt){for(const h of world.hotspots){if(!h.active)continue;if(h.revealed){h.ttl-=dt;if(h.ttl<=0&&!h.marked)h.revealed=false;}}}
+  function updatePatrols(dt){
+    for(const p of world.patrols){if(!p.active)continue;const target=p.points[p.index],dx=target.x-p.x,dy=target.y-p.y,d=Math.hypot(dx,dy)||1;p.x+=dx/d*p.speed*dt;p.y+=dy/d*p.speed*dt;p.angle=Math.atan2(dy,dx);if(d<12)p.index=(p.index+1)%p.points.length;
+      if(p.type==="tractor"||p.type==="bike"||p.type==="car"){const rr=p.type==="tractor"?42:25;if(Math.hypot(p.x-player.x,p.y-player.y)<rr+player.r)caught(p.type==="tractor"?"Traktor tě srazil":"Pozor na provoz");continue;}
+      let suspicious=true;if(p.requires==="permit"&&world.runtime.permit)suspicious=false;if(p.type==="ranger"&&world.runtime.open<=0)suspicious=false;if(p.type==="police"&&world.runtime.papers>=3&&!world.rival?.active)suspicious=false;
+      if(!suspicious||!p.vision)continue;const vx=player.x-p.x,vy=player.y-p.y,dd=Math.hypot(vx,vy);const dot=(vx/dd)*Math.cos(p.angle)+(vy/dd)*Math.sin(p.angle);if(dd<p.vision&&dot>.52){state.heat=clamp(state.heat+dt*34,0,100);}
     }
   }
-  return false;
-}
-
-function marker(color = 0x66ff9b, symbol = "!") {
-  const group = new THREE.Group();
-  const gem = makeMesh(
-    new THREE.OctahedronGeometry(.23, 0),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .8 })
-  );
-  gem.position.y = 2.7;
-  group.add(gem);
-  group.userData.symbol = symbol;
-  return group;
-}
-
-function addInteractable(obj, type, data = {}) {
-  obj.userData.interactable = { type, ...data };
-  interactables.push(obj);
-  entityGroup.add(obj);
-  return obj;
-}
-
-function addColliderForObject(obj, w, d, ox = 0, oz = 0) {
-  addBoxCollider(obj.position.x + ox, obj.position.z + oz, w, d);
-}
-
-function createTree(x, z, dark = false, scale = 1) {
-  const group = new THREE.Group();
-  const trunk = makeMesh(new THREE.CylinderGeometry(.18, .29, 2.9, 7), material(dark ? 0x291f19 : 0x5b4029));
-  trunk.position.y = 1.45;
-  group.add(trunk);
-  for (let i = 0; i < 3; i++) {
-    const crown = makeMesh(
-      new THREE.ConeGeometry(1.05 - i * .13, 1.65, 7),
-      material(dark ? 0x183224 : 0x2b6139)
-    );
-    crown.position.y = 2.65 + i * .72;
-    group.add(crown);
-  }
-  group.position.set(x, 0, z);
-  group.scale.setScalar(scale);
-  decorGroup.add(group);
-  addCircleCollider(x, z, .58 * scale);
-  return group;
-}
-
-function createBush(x, z, color = 0x3d793f) {
-  const group = new THREE.Group();
-  for (let i = 0; i < 4; i++) {
-    const b = makeMesh(new THREE.DodecahedronGeometry(.38 + Math.random() * .2, 0), material(color));
-    b.position.set((Math.random() - .5) * .75, .32 + Math.random() * .22, (Math.random() - .5) * .7);
-    group.add(b);
-  }
-  group.position.set(x, 0, z);
-  decorGroup.add(group);
-  addCircleCollider(x, z, .52);
-}
-
-function createRock(x, z, scale = 1) {
-  const rock = makeMesh(new THREE.DodecahedronGeometry(.55 * scale, 0), material(0x646257));
-  rock.position.set(x, .32 * scale, z);
-  rock.rotation.set(Math.random(), Math.random(), Math.random());
-  decorGroup.add(rock);
-  addCircleCollider(x, z, .42 * scale);
-}
-
-function createMud(x, z, r = 1.25) {
-  const mud = makeMesh(
-    new THREE.CircleGeometry(r, 18),
-    new THREE.MeshStandardMaterial({ color: 0x2c211c, roughness: .36, metalness: .03 }),
-    false,
-    true
-  );
-  mud.rotation.x = -Math.PI / 2;
-  mud.position.set(x, .025, z);
-  decorGroup.add(mud);
-  mudZones.push({ x, z, r });
-}
-
-function createFence(x, z, length = 6, horizontal = false) {
-  const group = new THREE.Group();
-  const posts = Math.max(2, Math.round(length / 2));
-  for (let i = 0; i <= posts; i++) {
-    const p = makeMesh(new THREE.BoxGeometry(.13, 1.05, .13), material(0x806443));
-    const offset = -length / 2 + i * (length / posts);
-    p.position.set(horizontal ? offset : 0, .52, horizontal ? 0 : offset);
-    group.add(p);
-  }
-  for (const y of [.38, .82]) {
-    const rail = makeMesh(
-      new THREE.BoxGeometry(horizontal ? length : .12, .11, horizontal ? .12 : length),
-      material(0x8b6c47)
-    );
-    rail.position.y = y;
-    group.add(rail);
-  }
-  group.position.set(x, 0, z);
-  decorGroup.add(group);
-  addBoxCollider(x, z, horizontal ? length : .3, horizontal ? .3 : length);
-}
-
-function createBuilding(x, z, w, d, h, color = 0xb5a68e, roof = 0x6f3d30) {
-  const group = new THREE.Group();
-  const body = makeMesh(new THREE.BoxGeometry(w, h, d), material(color));
-  body.position.y = h / 2;
-  group.add(body);
-  const roofMesh = makeMesh(new THREE.ConeGeometry(Math.max(w, d) * .72, h * .35, 4), material(roof));
-  roofMesh.position.y = h + h * .17;
-  roofMesh.rotation.y = Math.PI / 4;
-  roofMesh.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
-  group.add(roofMesh);
-  group.position.set(x, 0, z);
-  decorGroup.add(group);
-  addBoxCollider(x, z, w, d);
-  return group;
-}
-
-function createVan(x, z, color = 0xe7ded0) {
-  const group = new THREE.Group();
-  const body = makeMesh(new THREE.BoxGeometry(2.7, 1.25, 4.4), material(color, .55, .05));
-  body.position.y = .9;
-  group.add(body);
-  const cab = makeMesh(new THREE.BoxGeometry(2.4, 1.05, 1.65), material(0x526c75, .35, .08));
-  cab.position.set(0, 1.55, 1.05);
-  group.add(cab);
-  for (const dx of [-1.25, 1.25]) for (const dz of [-1.25, 1.25]) {
-    const wheel = makeMesh(new THREE.CylinderGeometry(.38, .38, .22, 10), material(0x181818));
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(dx, .38, dz);
-    group.add(wheel);
-  }
-  group.position.set(x, 0, z);
-  decorGroup.add(group);
-  addBoxCollider(x, z, 2.9, 4.6);
-  return group;
-}
-
-function createNpc(name, x, z, colors = [0x385944, 0x2b3133], portrait = "?") {
-  const group = createHumanoid(colors[1], colors[0], 0xc68c67);
-  group.position.set(x, 0, z);
-  group.add(marker(0x6bffa5, "!"));
-  group.userData.npcName = name;
-  group.userData.portrait = portrait;
-  return group;
-}
-
-function createHumanoid(pants = 0x263238, shirt = 0x4b6c50, skin = 0xc68c67) {
-  const group = new THREE.Group();
-  for (const x of [-.18, .18]) {
-    const leg = makeMesh(new THREE.BoxGeometry(.19, .65, .22), material(pants));
-    leg.position.set(x, .42, 0);
-    group.add(leg);
-  }
-  const body = makeMesh(new THREE.CapsuleGeometry(.33, .56, 4, 7), material(shirt));
-  body.position.y = 1.25;
-  group.add(body);
-  const head = makeMesh(new THREE.SphereGeometry(.25, 10, 7), material(skin));
-  head.position.y = 2.05;
-  group.add(head);
-  return group;
-}
-
-function createGemObject(x, z, options = {}) {
-  const rare = Boolean(options.rare);
-  const fake = Boolean(options.fake);
-  const color = fake ? 0x29fa84 : rare ? 0xb8e26f : 0x4ca963;
-  const geometry = rare
-    ? new THREE.DodecahedronGeometry(.38, 1)
-    : new THREE.IcosahedronGeometry(.31, 1);
-  const mat = new THREE.MeshPhysicalMaterial({
-    color,
-    roughness: fake ? .06 : .38,
-    transmission: fake ? .38 : .16,
-    thickness: .7,
-    transparent: true,
-    opacity: .93,
-    emissive: rare ? 0x4a3b12 : 0x0b2312,
-    emissiveIntensity: rare ? .5 : .22
-  });
-  const gem = makeMesh(geometry, mat);
-  gem.position.set(x, .43, z);
-  gem.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
-  const beam = makeMesh(
-    new THREE.CylinderGeometry(.035, .18, 1.4, 8),
-    new THREE.MeshBasicMaterial({ color: rare ? 0xffdd79 : 0x72ffab, transparent: true, opacity: .18 }),
-    false,
-    false
-  );
-  beam.position.y = .9;
-  gem.add(beam);
-  return gem;
-}
-
-function makeStone(locality, options = {}) {
-  const rarity = options.rarity || "common";
-  const fake = Boolean(options.fake);
-  const documented = Boolean(options.documented);
-  const weights = {
-    common: [0.45, 2.6],
-    good: [1.4, 4.8],
-    rare: [3.6, 8.5],
-    hedgehog: [5.5, 12]
-  };
-  const [min, max] = weights[rarity] || weights.common;
-  const weight = Number((min + Math.random() * (max - min)).toFixed(2));
-  const gradeRoll = Math.random() + (rarity === "rare" ? .25 : rarity === "hedgehog" ? .45 : 0);
-  const grade = fake ? "?" : gradeRoll > .95 ? "A" : gradeRoll > .48 ? "B" : "C";
-  const names = {
-    common: ["drobný splash", "nepravidelný úlomek", "kapkovitý kus", "plochý fragment"],
-    good: ["celotvar", "protáhlý splash", "kapka s bublinou", "vrstevnatý kus"],
-    rare: ["výstavní celotvar", "hluboce skulptovaný kus", "vzácný splash"],
-    hedgehog: ["besednický ježek"]
-  };
-  const pool = names[rarity] || names.common;
-  const name = fake ? "zelený skleněný odlitek" : pool[Math.floor(Math.random() * pool.length)];
-  const base = fake ? 20 : rarity === "hedgehog" ? 1450 : rarity === "rare" ? 580 : rarity === "good" ? 280 : 120;
-  const gradeMult = grade === "A" ? 1.65 : grade === "B" ? 1.15 : grade === "C" ? .75 : .1;
-  const value = Math.round(weight * base * gradeMult + (documented ? 180 : 0));
-  return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    locality,
-    name,
-    weight,
-    grade,
-    rarity,
-    fake,
-    documented,
-    value
-  };
-}
-
-function createStonePickup(x, z, options = {}) {
-  const obj = createGemObject(x, z, options);
-  addInteractable(obj, "gem", options);
-  return obj;
-}
-
-function createSample(x, z, sampleIndex) {
-  const sample = IDENTIFY_SAMPLES[sampleIndex % IDENTIFY_SAMPLES.length];
-  const obj = createGemObject(x, z, { fake: !sample.real, rare: false });
-  obj.scale.setScalar(.92);
-  addInteractable(obj, "sample", { sampleIndex, sample });
-  return obj;
-}
-
-function createDigSpot(x, z, options = {}) {
-  const group = new THREE.Group();
-  const soil = makeMesh(new THREE.CylinderGeometry(.78, .9, .12, 16), material(0x6b4a31));
-  soil.position.y = .06;
-  group.add(soil);
-  const stake = makeMesh(new THREE.BoxGeometry(.08, 1.05, .08), material(options.special ? 0xf2ce62 : 0xd9c58d));
-  stake.position.set(.65, .52, 0);
-  group.add(stake);
-  const flag = makeMesh(new THREE.BoxGeometry(.5, .26, .04), material(options.special ? 0xeebd45 : 0xded7b9));
-  flag.position.set(.88, .82, 0);
-  group.add(flag);
-  group.position.set(x, 0, z);
-  addInteractable(group, "dig", {
-    hits: 0,
-    required: Math.max(1, (options.required || 4) - state.upgrades.shovel),
-    special: Boolean(options.special),
-    clue: Boolean(options.clue),
-    locality: options.locality || LEVELS[state.levelIndex].location,
-    rarity: options.rarity || "good",
-    documented: Boolean(options.documented),
-    dug: false,
-    filled: false
-  });
-  return group;
-}
-
-function createHoleFromDig(dig) {
-  const data = dig.userData.interactable;
-  const group = new THREE.Group();
-  const ring = makeMesh(new THREE.TorusGeometry(.82, .13, 7, 18), material(0x2d2118));
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = .03;
-  group.add(ring);
-  const pit = makeMesh(new THREE.CircleGeometry(.7, 18), material(0x17120f), false, false);
-  pit.rotation.x = -Math.PI / 2;
-  pit.position.y = .025;
-  group.add(pit);
-  group.position.copy(dig.position);
-  addInteractable(group, "hole", { filled: false, source: data });
-  entityGroup.remove(dig);
-  dig.userData.interactable.disabled = true;
-  return group;
-}
-
-function createDocument(x, z, label = "Dokumentace") {
-  const group = new THREE.Group();
-  const paper = makeMesh(new THREE.BoxGeometry(.7, .04, .92), material(0xf0e3b7));
-  paper.position.y = .12;
-  paper.rotation.y = Math.random() * .7;
-  group.add(paper);
-  const mark = marker(0x75bfff, "?");
-  mark.scale.setScalar(.75);
-  group.add(mark);
-  group.position.set(x, 0, z);
-  addInteractable(group, "document", { label });
-}
-
-function createExit(x, z, label = "Pokračovat") {
-  const group = new THREE.Group();
-  const pad = makeMesh(
-    new THREE.CylinderGeometry(1.25, 1.25, .08, 24),
-    new THREE.MeshStandardMaterial({ color: 0x2f9a61, emissive: 0x154829, emissiveIntensity: .7 })
-  );
-  pad.position.y = .04;
-  group.add(pad);
-  const arrow = marker(0x83ffb4, "→");
-  arrow.position.y = .3;
-  group.add(arrow);
-  group.position.set(x, 0, z);
-  addInteractable(group, "exit", { label });
-}
-
-function createTable(x, z, type, label) {
-  const group = new THREE.Group();
-  const top = makeMesh(new THREE.BoxGeometry(3, .18, 1.5), material(0x7b5636));
-  top.position.y = 1.05;
-  group.add(top);
-  for (const dx of [-1.2, 1.2]) for (const dz of [-.55, .55]) {
-    const leg = makeMesh(new THREE.BoxGeometry(.13, 1, .13), material(0x5c3d27));
-    leg.position.set(dx, .5, dz);
-    group.add(leg);
-  }
-  group.add(marker(type === "display" ? 0xffd874 : 0x79ffae, type === "display" ? "◆" : "!"));
-  group.position.set(x, 0, z);
-  addInteractable(group, type, { label });
-  addBoxCollider(x, z, 3.1, 1.6);
-  return group;
-}
-
-function createPolice(x, z, path) {
-  const group = createHumanoid(0x222b38, 0x2b5f93, 0xc68c67);
-  const cap = makeMesh(new THREE.BoxGeometry(.48, .12, .38), material(0x1d3c5e));
-  cap.position.y = 2.32;
-  group.add(cap);
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  enemies.push({
-    obj: group,
-    type: "police",
-    hp: 99,
-    path,
-    pathIndex: 0,
-    speed: 2.2,
-    cooldown: 0,
-    chase: false,
-    alive: true
-  });
-  return group;
-}
-
-function createFarmerEnemy(x, z, path) {
-  const group = createHumanoid(0x5d442d, 0x4b6d3c, 0xc68c67);
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  enemies.push({
-    obj: group,
-    type: "farmer",
-    hp: 99,
-    path,
-    pathIndex: 0,
-    speed: 1.8,
-    cooldown: 0,
-    chase: false,
-    alive: true
-  });
-}
-
-function createDigger(x, z, path = null) {
-  const group = createHumanoid(0x211f20, 0x65302d, 0xb77755);
-  const pick = makeMesh(new THREE.BoxGeometry(.12, 2, .12), material(0x745035));
-  pick.rotation.z = .65;
-  pick.position.set(.65, 1.25, 0);
-  group.add(pick);
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  enemies.push({
-    obj: group,
-    type: "digger",
-    hp: 2,
-    path: path || [[x, z], [x + 3, z + 2]],
-    pathIndex: 0,
-    speed: 2.4,
-    cooldown: 0,
-    chase: false,
-    alive: true
-  });
-}
-
-function createBoss(name, x, z, hp, kind) {
-  const group = createHumanoid(0x181719, kind === "franta" ? 0x563345 : 0x6a2d2c, 0xb77755);
-  group.scale.setScalar(1.45);
-  const tool = makeMesh(new THREE.BoxGeometry(.16, 2.7, .16), material(0x775234));
-  tool.rotation.z = .7;
-  tool.position.set(.95, 1.7, 0);
-  group.add(tool);
-  const blade = makeMesh(new THREE.BoxGeometry(.85, .28, .14), material(0x737c7d, .35, .3));
-  blade.rotation.z = .7;
-  blade.position.set(1.78, .65, 0);
-  group.add(blade);
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  boss = {
-    obj: group,
-    name,
-    kind,
-    hp,
-    maxHp: hp,
-    cooldown: 0,
-    attackTimer: 1.4,
-    phase: "stalk",
-    vulnerable: false,
-    stunTimer: 0,
-    alive: true
-  };
-  ui.bossName.textContent = name;
-  ui.bossHud.classList.remove("hidden");
-  audio.play("boss");
-  audio.playMusic("boss");
-  toast(`${name} vstupuje do hry!`, "bad", 2400);
-}
-
-function createMovingCar(x, z, axis = "x", speed = 4.5, range = 20) {
-  const group = new THREE.Group();
-  const body = makeMesh(new THREE.BoxGeometry(1.65, .68, 3), material(Math.random() < .5 ? 0x386e88 : 0x8b4137, .5, .08));
-  body.position.y = .62;
-  group.add(body);
-  const roof = makeMesh(new THREE.BoxGeometry(1.2, .6, 1.35), material(0x435c65, .38, .1));
-  roof.position.set(0, 1.16, -.2);
-  group.add(roof);
-  for (const dx of [-.74, .74]) for (const dz of [-.85, .85]) {
-    const wheel = makeMesh(new THREE.CylinderGeometry(.25, .25, .18, 9), material(0x171717));
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(dx, .3, dz);
-    group.add(wheel);
-  }
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  hazards.push({ obj: group, type: "car", axis, speed, range, origin: axis === "x" ? x : z, dir: Math.random() < .5 ? -1 : 1, cooldown: 0 });
-}
-
-function createTractor(x, z, path) {
-  const group = new THREE.Group();
-  const body = makeMesh(new THREE.BoxGeometry(2.1, 1, 2.5), material(0xb54829));
-  body.position.y = .95;
-  group.add(body);
-  const cab = makeMesh(new THREE.BoxGeometry(1.1, 1.2, 1.1), material(0x526f78, .35, .08));
-  cab.position.set(0, 1.8, -.2);
-  group.add(cab);
-  for (const dx of [-1, 1]) for (const dz of [-.75, .75]) {
-    const wheel = makeMesh(new THREE.CylinderGeometry(.44, .44, .25, 10), material(0x171717));
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(dx, .4, dz);
-    group.add(wheel);
-  }
-  group.position.set(x, 0, z);
-  entityGroup.add(group);
-  hazards.push({ obj: group, type: "tractor", path, pathIndex: 0, speed: 2.1, cooldown: 0 });
-}
-
-function createRain() {
-  const count = 760;
-  const pos = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    pos[i * 3] = (Math.random() - .5) * 64;
-    pos[i * 3 + 1] = Math.random() * 18;
-    pos[i * 3 + 2] = (Math.random() - .5) * 64;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9ab6ce, size: .055, transparent: true, opacity: .48 }));
-  scene.add(rain);
-}
-
-function buildLevel() {
-  clearWorld();
-  const level = LEVELS[state.levelIndex];
-  setLevelLighting(level);
-  createGround(level);
-  runtime = {
-    step: 0,
-    permit: false,
-    collected: 0,
-    correct: 0,
-    trueFound: 0,
-    identified: new Set(),
-    dug: 0,
-    filled: 0,
-    openHoles: 0,
-    clues: 0,
-    hedgehog: false,
-    documents: 0,
-    bossDefeated: false,
-    organizer: false,
-    registered: false,
-    loot: [],
-    enemiesDefeated: 0,
-    finalReady: false,
-    startedAt: performance.now()
-  };
-  player.position.set(level.start[0], 0, level.start[1]);
-  player.rotation.set(0, 0, 0);
-  checkpoint = structuredClone(state);
-
-  if (level.id === "chlum") generateChlum(level);
-  if (level.id === "locenice") generateLocenice(level);
-  if (level.id === "nesmen") generateNesmen(level);
-  if (level.id === "besednice") generateBesednice(level);
-  if (level.id === "malse") generateMalse(level);
-  if (level.id === "slavie") generateSlavie(level);
-
-  audio.playMusic(level.music);
-  updateHUD(true);
-}
-
-function randomClearPosition(size, margin = 5) {
-  for (let tries = 0; tries < 80; tries++) {
-    const x = (Math.random() - .5) * (size - margin * 2);
-    const z = (Math.random() - .5) * (size - margin * 2);
-    if (!blocked(x, z, .8) && Math.hypot(x - player.position.x, z - player.position.z) > 4) return [x, z];
-  }
-  return [0, 0];
-}
-
-function generateChlum(level) {
-  for (let x = -18; x <= 18; x += 3.2) {
-    const row = makeMesh(new THREE.BoxGeometry(.8, .14, 36), material(0x4d3728), false, true);
-    row.position.set(x, .05, -1);
-    terrainGroup.add(row);
-  }
-  const path = makeMesh(new THREE.PlaneGeometry(6.5, 42), material(0x7a6046), false, true);
-  path.rotation.x = -Math.PI / 2;
-  path.position.set(0, .07, 0);
-  terrainGroup.add(path);
-
-  createBuilding(-15, 15, 6.5, 6, 3.8, 0xc5b499, 0x7d4938);
-  createVan(7.5, 18);
-  for (let i = 0; i < 10; i++) {
-    const side = i % 2 ? 1 : -1;
-    createFence(side * 20, -15 + i * 3.1, 4, false);
-  }
-  for (let i = 0; i < 9; i++) {
-    const [x, z] = randomClearPosition(level.size, 4);
-    createBush(x, z);
-  }
-  createMud(-3, 8, 1.4);
-  createMud(5, -4, 1.25);
-  createMud(-10, -11, 1.35);
-  const npc = createNpc("Sedlák Václav", -7, 16, [0x4f6c3a, 0x5b432e], "V");
-  addInteractable(npc, "npc", { id: "vaclav" });
-
-  const positions = [
-    [-11, 9], [8, 9], [-6, 4], [12, 1], [-13, -5], [6, -8], [-8, -13], [13, -16]
-  ];
-  positions.forEach((p, i) => createStonePickup(p[0], p[1], { rarity: i === 7 ? "good" : "common", rare: i === 7 }));
-  createTractor(-15, 2, [[-15, 13], [-15, -15], [15, -15], [15, 13]]);
-  createFarmerEnemy(15, 14, [[15, 14], [15, -12], [-15, -12], [-15, 14]]);
-  createExit(level.exit[0], level.exit[1], "Vrátit se k dodávce");
-}
-
-function generateLocenice(level) {
-  const path = makeMesh(new THREE.PlaneGeometry(8, 44), material(0x8a7048), false, true);
-  path.rotation.x = -Math.PI / 2;
-  path.position.y = .06;
-  terrainGroup.add(path);
-  for (let i = 0; i < 26; i++) {
-    const [x, z] = randomClearPosition(level.size, 4);
-    if (Math.random() < .6) createBush(x, z, Math.random() < .5 ? 0x477f42 : 0x587b3c);
-    else createRock(x, z, .65 + Math.random() * .45);
-  }
-  const table = createTable(-8, 15, "info", "Určovací stůl");
-  table.userData.interactable.disabled = true;
-  const npc = createNpc("Geolog Martin", -8, 12, [0x3e6255, 0x31383a], "M");
-  addInteractable(npc, "npc", { id: "geologist" });
-
-  const samplePositions = [
-    [-12, 6], [-5, 7], [6, 8], [12, 5], [-14, -1],
-    [-5, 0], [5, 1], [14, -3], [-8, -10], [8, -12]
-  ];
-  samplePositions.forEach((p, i) => createSample(p[0], p[1], i));
-  createMud(-2, 5, 1.5);
-  createMud(7, -6, 1.35);
-  createExit(level.exit[0], level.exit[1], "Pokračovat do Nesměně");
-}
-
-function generateNesmen(level) {
-  const path = makeMesh(new THREE.PlaneGeometry(7, 48), material(0x66523b), false, true);
-  path.rotation.x = -Math.PI / 2;
-  path.position.y = .055;
-  terrainGroup.add(path);
-  for (let i = 0; i < 46; i++) {
-    let [x, z] = randomClearPosition(level.size, 3);
-    if (Math.abs(x) < 4) x += x >= 0 ? 5 : -5;
-    createTree(x, z, false, .8 + Math.random() * .45);
-  }
-  for (let i = 0; i < 8; i++) {
-    const [x, z] = randomClearPosition(level.size, 4);
-    createRock(x, z, .6 + Math.random() * .5);
-  }
-  const owner = createNpc("Majitel lesa", -6, 20, [0x4b6a3e, 0x3c332d], "L");
-  addInteractable(owner, "npc", { id: "owner" });
-
-  createMud(-2, 3, 1.45);
-  createMud(5, -9, 1.25);
-  const spots = [[-11, 10], [10, 7], [-12, -5], [11, -12]];
-  spots.forEach((p, i) => createDigSpot(p[0], p[1], {
-    required: 4,
-    locality: "Nesměň",
-    rarity: i === 3 ? "rare" : "good",
-    documented: true
-  }));
-  createPolice(0, -2, [[0, 18], [0, -18]]);
-  createExit(level.exit[0], level.exit[1], "Pokračovat k Besednici");
-}
-
-function generateBesednice(level) {
-  const path = makeMesh(new THREE.PlaneGeometry(6, 50), material(0x3b3929), false, true);
-  path.rotation.x = -Math.PI / 2;
-  path.position.y = .055;
-  terrainGroup.add(path);
-  for (let i = 0; i < 52; i++) {
-    let [x, z] = randomClearPosition(level.size, 3);
-    if (Math.abs(x) < 3.6) x += x >= 0 ? 4.5 : -4.5;
-    createTree(x, z, true, .8 + Math.random() * .45);
-  }
-  createRain();
-  createMud(4, 8, 1.5);
-  createMud(-5, -2, 1.35);
-  const cluePositions = [[-12, 10], [11, 2], [-9, -8]];
-  cluePositions.forEach((p, i) => createDocument(p[0], p[1], `Stopa nočních kopáčů ${i + 1}`));
-  createDigSpot(0, -13, { required: 6, special: true, locality: "Besednice", rarity: "hedgehog", documented: true });
-  createDigger(12, 12, [[12, 12], [9, -2], [15, -10]]);
-  createDigger(-14, 1, [[-14, 1], [-9, -12], [-16, -17]]);
-  createExit(level.exit[0], level.exit[1], "Odjet do Budějovic");
-}
-
-function createRiver(x, width, levelSize) {
-  const water = makeMesh(
-    new THREE.PlaneGeometry(width, levelSize),
-    new THREE.MeshStandardMaterial({ color: 0x315c69, roughness: .25, metalness: .06, transparent: true, opacity: .86 }),
-    false,
-    true
-  );
-  water.rotation.x = -Math.PI / 2;
-  water.position.set(x, .025, 0);
-  terrainGroup.add(water);
-  addBoxCollider(x, 0, width - 1, levelSize);
-}
-
-function createLamp(x, z) {
-  const group = new THREE.Group();
-  const pole = makeMesh(new THREE.CylinderGeometry(.045, .07, 4, 7), material(0x3e4548, .5, .18));
-  pole.position.y = 2;
-  group.add(pole);
-  const bulb = makeMesh(
-    new THREE.SphereGeometry(.18, 8, 6),
-    new THREE.MeshStandardMaterial({ color: 0xffe6a9, emissive: 0x6b511c, emissiveIntensity: .8 })
-  );
-  bulb.position.y = 4;
-  group.add(bulb);
-  group.position.set(x, 0, z);
-  decorGroup.add(group);
-}
-
-function generateMalse(level) {
-  createRiver(-19, 9, level.size);
-  const road = makeMesh(new THREE.PlaneGeometry(11, 52), material(0x45484d, .95), false, true);
-  road.rotation.x = -Math.PI / 2;
-  road.position.set(5, .055, 0);
-  terrainGroup.add(road);
-  for (let z = -22; z <= 22; z += 8) {
-    const dash = makeMesh(new THREE.BoxGeometry(.12, .02, 3.3), material(0xe9e4ce), false, false);
-    dash.position.set(5, .07, z);
-    terrainGroup.add(dash);
-  }
-  for (let z = -22; z <= 22; z += 7) {
-    createLamp(-10, z);
-    createLamp(11, z);
-  }
-  createBuilding(17, 14, 7, 8, 5.5, 0x98908a, 0x6e4e45);
-  createBuilding(18, -7, 8, 9, 6, 0x9f917b, 0x614238);
-  createVan(-5, 20, 0x7f9b79);
-
-  createDocument(-8, 10, "Fotografie nálezů");
-  createDocument(10, 4, "Seznam hmotností");
-  createDocument(-7, -8, "Souhlasy vlastníků");
-  createMovingCar(5, 13, "x", 5.3, 8);
-  createMovingCar(5, 0, "x", 6, 8);
-  createMovingCar(5, -14, "x", 5, 8);
-  createPolice(10, -18, [[10, -18], [10, 18]]);
-  createExit(level.exit[0], level.exit[1], "Vstoupit do Slávie");
-}
-
-function createSlavieInterior() {
-  const back = createBuilding(0, -17.5, 30, 1, 7, 0xd9d1bd, 0x55463c);
-  back.children[1].visible = false;
-  const stage = makeMesh(new THREE.BoxGeometry(14, .8, 5), material(0x503b2e));
-  stage.position.set(0, .4, -15);
-  decorGroup.add(stage);
-  addBoxCollider(0, -15, 14, 5);
-
-  for (const x of [-13, 13]) {
-    for (let z = -10; z <= 10; z += 5) {
-      const booth = makeMesh(new THREE.BoxGeometry(4.2, 1.1, 2.2), material(z % 10 === 0 ? 0x72513d : 0x5e4938));
-      booth.position.set(x, .55, z);
-      decorGroup.add(booth);
-      addBoxCollider(x, z, 4.3, 2.3);
-    }
-  }
-  for (let x = -8; x <= 8; x += 4) {
-    const banner = makeMesh(
-      new THREE.BoxGeometry(2.7, 1.2, .12),
-      material(0x22563a, .8, 0, { emissive: 0x102e1d, emissiveIntensity: .35 })
-    );
-    banner.position.set(x, 4.2, -17);
-    decorGroup.add(banner);
-  }
-}
-
-function generateSlavie(level) {
-  createSlavieInterior();
-  const organizer = createNpc("Organizátorka", -6, 10, [0x6b3f5e, 0x33323a], "Z");
-  addInteractable(organizer, "npc", { id: "organizer" });
-  const registrar = createNpc("Registrace", 6, 7, [0x405f73, 0x303338], "R");
-  addInteractable(registrar, "npc", { id: "registrar" });
-  createTable(0, -5, "display", "Výstavní stůl");
-  createTable(-8, -1, "info", "Přednáškový stůl");
-  createTable(8, -1, "info", "Geologická burza");
-}
-
-function questStatus() {
-  const id = LEVELS[state.levelIndex].id;
-  if (id === "chlum") {
-    if (!runtime.permit) return { title: "Povolení", text: "Promluv se Sedlákem Václavem u statku.", current: 0, max: 1 };
-    if (runtime.collected < 6) return { title: "Povrchový sběr", text: "Najdi v tmavých brázdách šest vltavínů.", current: runtime.collected, max: 6 };
-    return { title: "Odjezd", text: "Vrať se k zelenému kruhu u dodávky.", current: 1, max: 1 };
-  }
-  if (id === "locenice") {
-    return {
-      title: "Určování vzorků",
-      text: `Správně určeno ${runtime.correct}/6, pravé nálezy ${runtime.trueFound}/4.`,
-      current: Math.min(runtime.correct, 6) + Math.min(runtime.trueFound, 4),
-      max: 10
-    };
-  }
-  if (id === "nesmen") {
-    if (!runtime.permit) return { title: "Souhlas vlastníka", text: "Promluv s majitelem lesa.", current: 0, max: 1 };
-    return {
-      title: "Šetrný profil",
-      text: `Vykopáno ${runtime.dug}/4, zasypáno ${runtime.filled}/4.`,
-      current: runtime.dug + runtime.filled,
-      max: 8
-    };
-  }
-  if (id === "besednice") {
-    if (runtime.clues < 3) return { title: "Stopy v noci", text: "Najdi tři modře označené indicie.", current: runtime.clues, max: 3 };
-    if (!runtime.hedgehog) return { title: "Ježková vrstva", text: "Odkryj žlutě označený profil uprostřed lesa.", current: 0, max: 1 };
-    if (!runtime.bossDefeated) return { title: "Krystalový Karel", text: "Uhýbej výpadům a udeř, když se zarazí krumpáč.", current: boss ? boss.maxHp - boss.hp : 0, max: boss ? boss.maxHp : 1 };
-    return { title: "Odjezd", text: "Dojdi k výjezdu z lokality.", current: 1, max: 1 };
-  }
-  if (id === "malse") {
-    if (runtime.documents < 3) return { title: "Ztracená dokumentace", text: "Najdi tři modré složky podél Malše.", current: runtime.documents, max: 3 };
-    if (!runtime.bossDefeated) return { title: "Feták Franta", text: "Ochraň sbírku a poraz Frantu.", current: boss ? boss.maxHp - boss.hp : 0, max: boss ? boss.maxHp : 1 };
-    return { title: "Slávie", text: "Projdi zeleným vstupem do kulturního domu.", current: 1, max: 1 };
-  }
-  if (id === "slavie") {
-    if (!runtime.organizer) return { title: "Přivítání", text: "Promluv s organizátorkou u vstupu.", current: 0, max: 1 };
-    if (!runtime.registered) return { title: "Registrace", text: "Předlož dokumentaci registračnímu stolu.", current: 0, max: 1 };
-    return { title: "Výstavní pětice", text: "Připrav pět kamenů na centrálním stole.", current: 0, max: 1 };
-  }
-  return { title: "Výprava", text: "", current: 0, max: 1 };
-}
-
-function objectiveCompleteForExit() {
-  const id = LEVELS[state.levelIndex].id;
-  if (id === "chlum") return runtime.permit && runtime.collected >= 6;
-  if (id === "locenice") return runtime.correct >= 6 && runtime.trueFound >= 4;
-  if (id === "nesmen") return runtime.permit && runtime.dug >= 4 && runtime.filled >= 4;
-  if (id === "besednice") return runtime.hedgehog && runtime.bossDefeated;
-  if (id === "malse") return runtime.documents >= 3 && runtime.bossDefeated;
-  return false;
-}
-
-function updateHUD(force = false) {
-  const now = performance.now();
-  if (!force && now - lastUiUpdate < 90) return;
-  lastUiUpdate = now;
-  const level = LEVELS[state.levelIndex];
-  ui.chapterLabel.textContent = `Kapitola ${state.levelIndex + 1} / ${LEVELS.length}`;
-  ui.locationLabel.textContent = level.location;
-  ui.health.textContent = "♥".repeat(Math.max(0, state.hp)) + "♡".repeat(Math.max(0, state.maxHp - state.hp));
-  ui.reputation.textContent = Math.round(state.reputation);
-  ui.grams.textContent = totalWeight(visibleInventory()).toFixed(1);
-  ui.money.textContent = Math.round(state.money).toLocaleString("cs-CZ");
-  ui.score.textContent = Math.round(state.score).toLocaleString("cs-CZ");
-  const q = questStatus();
-  ui.questTitle.textContent = q.title;
-  ui.questText.textContent = q.text;
-  ui.questProgress.textContent = q.max > 1 ? `${Math.min(q.current, q.max)} / ${q.max}` : "";
-  ui.questFill.style.width = `${Math.min(100, q.max ? q.current / q.max * 100 : 0)}%`;
-}
-
-function interactionLabel(data) {
-  const map = {
-    npc: ["!", "Promluvit"],
-    gem: ["◆", "Sebrat"],
-    sample: ["?", "Prozkoumat"],
-    dig: ["⛏", "Kopat"],
-    hole: ["▨", "Zasypat"],
-    document: ["▤", "Sebrat"],
-    exit: ["→", data.label || "Pokračovat"],
-    display: ["◆", "Připravit vitrínu"],
-    info: ["i", data.label || "Prohlédnout"]
-  };
-  return map[data.type] || ["!", "Akce"];
-}
-
-function updateNearest() {
-  nearest = null;
-  let best = 2.35;
-  for (const obj of interactables) {
-    const data = obj.userData.interactable;
-    if (!data || data.disabled || !obj.parent) continue;
-    const dx = obj.position.x - player.position.x;
-    const dz = obj.position.z - player.position.z;
-    const d = Math.hypot(dx, dz);
-    if (d < best) {
-      best = d;
-      nearest = obj;
-    }
-  }
-  if (nearest) {
-    const label = interactionLabel(nearest.userData.interactable);
-    ui.interactionIcon.textContent = label[0];
-    ui.interactionText.textContent = label[1];
-    ui.interactionHint.classList.remove("hidden");
-    ui.actionIcon.textContent = label[0];
-    ui.actionLabel.textContent = label[1].toUpperCase().slice(0, 8);
-  } else {
-    ui.interactionHint.classList.add("hidden");
-    ui.actionIcon.textContent = boss ? "⚒" : "✋";
-    ui.actionLabel.textContent = boss ? "ÚDER" : "AKCE";
-  }
-}
-
-function collectGem(obj) {
-  const data = obj.userData.interactable;
-  if (LEVELS[state.levelIndex].id === "chlum" && !runtime.permit) {
-    adjustReputation(-6, "Sbíráš bez povolení.");
-  }
-  const stone = makeStone(LEVELS[state.levelIndex].location, {
-    rarity: data.rarity || (data.rare ? "good" : "common"),
-    documented: Boolean(data.documented)
-  });
-  runtime.loot.push(stone);
-  runtime.collected++;
-  state.score += Math.round(stone.weight * (stone.rarity === "good" ? 220 : 130));
-  removeInteractable(obj);
-  burst(obj.position, data.rare ? 0xffd76e : 0x5ee797, data.rare ? 22 : 12);
-  audio.play(data.rare ? "rare" : "collect");
-  toast(`${stone.name}: +${stone.weight.toFixed(2)} g`, data.rare ? "rare" : "good");
-}
-
-function removeInteractable(obj) {
-  const data = obj.userData.interactable;
-  if (data) data.disabled = true;
-  entityGroup.remove(obj);
-}
-
-function inspectSample(obj) {
-  const data = obj.userData.interactable;
-  if (runtime.identified.has(data.sampleIndex)) return;
-  currentSample = { obj, ...data };
-  const sample = data.sample;
-  $("sampleDescription").textContent = sample.description;
-  $("sampleFacts").innerHTML = `
-    <dt>Barva</dt><dd>${sample.color}</dd>
-    <dt>Povrch</dt><dd>${sample.surface}</dd>
-    <dt>Hrany</dt><dd>${sample.edges}</dd>
-    <dt>Bubliny</dt><dd>${sample.bubbles}</dd>`;
-  $("sampleGem").style.color = sample.real ? "#54d987" : "#28ff8b";
-  mode = "modal";
-  setPlaying(false);
-  screens.identify.classList.add("visible");
-}
-
-function resolveSample(markedReal) {
-  if (!currentSample) return;
-  const sample = currentSample.sample;
-  const correct = markedReal === sample.real;
-  runtime.identified.add(currentSample.sampleIndex);
-  if (correct) {
-    runtime.correct++;
-    state.score += 350;
-    adjustReputation(2);
-    audio.play("collect");
-    toast("Správné určení.", "good");
-  } else {
-    state.score = Math.max(0, state.score - 180);
-    adjustReputation(-4);
-    audio.play("wrong");
-    toast("Chybné určení.", "bad");
-  }
-  if (markedReal) {
-    const stone = makeStone("Ločenice", {
-      rarity: sample.real ? (Math.random() < .25 ? "good" : "common") : "common",
-      fake: !sample.real,
-      documented: false
-    });
-    runtime.loot.push(stone);
-    if (sample.real) runtime.trueFound++;
-  }
-  removeInteractable(currentSample.obj);
-  currentSample = null;
-  screens.identify.classList.remove("visible");
-  mode = "playing";
-  setPlaying(true);
-  updateHUD(true);
-}
-
-function dig(obj) {
-  const data = obj.userData.interactable;
-  const levelId = LEVELS[state.levelIndex].id;
-  if (levelId === "nesmen" && !runtime.permit) {
-    adjustReputation(-5, "Nejdřív potřebuješ souhlas vlastníka.");
-    return;
-  }
-  if (levelId === "besednice" && data.special && runtime.clues < 3) {
-    toast("Nejdřív najdi všechny tři indicie.", "bad");
-    return;
-  }
-  data.hits++;
-  swingTool();
-  audio.play("dig", .9, .92 + Math.random() * .12);
-  burst(obj.position.clone().add(new THREE.Vector3(0, .1, 0)), 0x785036, 8);
-  toast(`Kopání ${data.hits} / ${data.required}`);
-  if (data.hits < data.required) return;
-
-  data.dug = true;
-  runtime.dug++;
-  const stone = makeStone(data.locality, {
-    rarity: data.rarity,
-    documented: data.documented,
-    fake: false
-  });
-  runtime.loot.push(stone);
-  state.score += Math.round(stone.value * .65);
-  if (data.rarity === "hedgehog") {
-    runtime.hedgehog = true;
-    audio.play("rare");
-    toast(`Besednický ježek! ${stone.weight.toFixed(2)} g`, "rare", 2600);
-    setTimeout(() => {
-      if (!boss) createBoss("Krystalový Karel", 0, -2, 10, "karel");
-    }, 900);
-  } else {
-    audio.play(data.rarity === "rare" ? "rare" : "collect");
-    toast(`Nález v profilu: ${stone.weight.toFixed(2)} g`, data.rarity === "rare" ? "rare" : "good");
-  }
-  if (levelId === "nesmen") {
-    runtime.openHoles++;
-    createHoleFromDig(obj);
-  } else {
-    removeInteractable(obj);
-  }
-}
-
-function fillHole(obj) {
-  const data = obj.userData.interactable;
-  if (data.filled) return;
-  data.filled = true;
-  runtime.filled++;
-  runtime.openHoles = Math.max(0, runtime.openHoles - 1);
-  state.score += 300;
-  adjustReputation(5);
-  swingTool();
-  audio.play("fill");
-  burst(obj.position.clone(), 0x6e5138, 10);
-  toast("Jáma bezpečně zasypána: +5 pověst", "good");
-  removeInteractable(obj);
-  const patch = makeMesh(new THREE.CylinderGeometry(.82, .82, .05, 16), material(0x57412f));
-  patch.position.copy(obj.position);
-  patch.position.y = .025;
-  decorGroup.add(patch);
-}
-
-function collectDocument(obj) {
-  const data = obj.userData.interactable;
-  const levelId = LEVELS[state.levelIndex].id;
-  if (levelId === "besednice") runtime.clues++;
-  else runtime.documents++;
-  state.score += 250;
-  audio.play("collect");
-  toast(`${data.label} nalezena.`, "good");
-  removeInteractable(obj);
-  if (levelId === "malse" && runtime.documents >= 3 && !boss) {
-    setTimeout(() => createBoss("Feták Franta", -2, -4, 12, "franta"), 650);
-  }
-}
-
-function interactNpc(data) {
-  if (data.id === "vaclav") {
-    showDialogue(DIALOGUES.vaclav, () => {
-      if (!runtime.permit) {
-        runtime.permit = true;
-        adjustReputation(5);
-        state.score += 300;
-        toast("Povolení získáno.", "good");
-      } else toast("Drž se tmavých brázd.", "");
-    });
-  }
-  if (data.id === "geologist") {
-    showDialogue(DIALOGUES.geologist, () => toast("Vzorky jsou rozmístěné po celé rýze.", "good"));
-  }
-  if (data.id === "owner") {
-    showDialogue(DIALOGUES.owner, () => {
-      if (!runtime.permit) {
-        runtime.permit = true;
-        state.score += 350;
-        adjustReputation(6);
-        toast("Mapa profilů a souhlas získány.", "good");
-      }
-    });
-  }
-  if (data.id === "organizer") {
-    showDialogue(DIALOGUES.organizer, () => {
-      runtime.organizer = true;
-      state.score += 300;
-      toast("Registrace je napravo od vstupu.", "good");
-    });
-  }
-  if (data.id === "registrar") {
-    if (!runtime.organizer) {
-      toast("Nejdřív se přihlas u organizátorky.", "bad");
-      return;
-    }
-    showDialogue(DIALOGUES.registrar, () => {
-      runtime.registered = true;
-      const docs = state.inventory.filter(s => s.documented).length;
-      const bonus = docs * 90 + Math.round(state.reputation * 4);
-      state.score += bonus;
-      toast(`Dokumentace přijata: +${bonus} bodů`, "good");
-    });
-  }
-}
-
-function interactExit(data) {
-  if (!objectiveCompleteForExit()) {
-    toast(questStatus().text, "bad");
-    return;
+  function updateRival(dt){
+    const r=world.rival;
+    if(r&&r.active){const dx=r.target.x-r.x,dy=r.target.y-r.y,d=Math.hypot(dx,dy)||1;r.x+=dx/d*r.speed*dt;r.y+=dy/d*r.speed*dt;r.angle=Math.atan2(dy,dx);if(d<28)r.target={x:rand(170,1630),y:rand(150,1040)};
+      r.throwTimer-=dt;if(r.throwTimer<=0){r.throwTimer=1.1+Math.random()*.8;world.hazards.push({type:"clod",x:r.x,y:r.y,vx:Math.cos(r.angle+Math.PI)*150,vy:Math.sin(r.angle+Math.PI)*150,life:2,r:10});}}
+    for(const h of world.hazards){if(h.type!=="clod")continue;h.x+=h.vx*dt;h.y+=h.vy*dt;h.life-=dt;if(h.life>0&&Math.hypot(h.x-player.x,h.y-player.y)<h.r+player.r){h.life=0;state.heat=clamp(state.heat+15,0,100);toast("Zásah hroudou","bad",650);}}
+    world.hazards=world.hazards.filter(h=>h.life>0);
+  }
+  function updateParticles(dt){for(const p of world.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=20*dt;}world.particles=world.particles.filter(p=>p.life>0);}
+
+  function findNearest(){
+    nearest=null;let best=68;const check=(kind,ref,x,y)=>{const d=Math.hypot(x-player.x,y-player.y);if(d<best){best=d;nearest={kind,ref,x,y};}};
+    for(const p of world.props)if(p.type==="npc"&&!p.used)check("npc",p,p.x,p.y);
+    for(const h of world.hotspots)if(h.active&&h.revealed)check("hotspot",h,h.x,h.y);
+    for(const i of world.items)if(i.active&&!i.hidden)check(i.type==="hole"?"hole":"item",i,i.x,i.y);
+    if(world.rival?.active)check("rival",world.rival,world.rival.x,world.rival.y);
+    if(world.exit)check("exit",world.exit,world.exit.x,world.exit.y);
+    if(nearest){const map={npc:["!","MLUVIT"],hotspot:["⛏","KOPAT"],item:["◆","SEBRAT"],hole:["▨","ZASYPAT"],rival:["✋","CHYTIT"],exit:["→","ODEJÍT"]};const m=map[nearest.kind]||["◎","AKCE"];ui.actionIcon.textContent=m[0];ui.actionText.textContent=m[1];$("actionButton").classList.add("ready");showHint(nearest.kind==="exit"?nearest.ref.label:m[1]);}
+    else{ui.actionIcon.textContent="◎";ui.actionText.textContent=scanCooldown>0?`${Math.ceil(scanCooldown)}`:"SKEN";$("actionButton").classList.remove("ready");hideHint();}
+  }
+
+  function burst(x,y,color,count=14){for(let i=0;i<count;i++)world.particles.push({x,y,vx:rand(-90,90),vy:rand(-120,-30),life:rand(.45,.9),color,r:rand(2,5)});}
+
+  function render(){
+    ctx.setTransform(viewport.dpr,0,0,viewport.dpr,0,0);ctx.clearRect(0,0,viewport.w,viewport.h);
+    if(!world){drawMenuBackdrop();return;}
+    ctx.save();const sx=shake?(Math.random()-.5)*shake:0,sy=shake?(Math.random()-.5)*shake:0;ctx.translate(sx-camera.x,sy-camera.y);drawGround();drawWorldObjects();drawEffects();ctx.restore();drawScreenVignette();drawObjectiveArrow();
+  }
+
+  function drawMenuBackdrop(){const g=ctx.createLinearGradient(0,0,0,viewport.h);g.addColorStop(0,"#142a35");g.addColorStop(.52,"#2b4633");g.addColorStop(1,"#3b2d22");ctx.fillStyle=g;ctx.fillRect(0,0,viewport.w,viewport.h);}
+
+  function drawGround(){
+    if(world.theme==="field")drawField();
+    else if(world.theme==="meadow")drawMeadow();
+    else if(world.theme==="forest"||world.theme==="night")drawForest();
+    else drawCity();
+  }
+  function drawField(){ctx.fillStyle="#493526";ctx.fillRect(0,0,world.w,world.h);for(let y=150;y<world.h;y+=118){ctx.fillStyle=y%236===0?"#5b412d":"#3c2d22";roundRect(ctx,50,y,1700,54,28);ctx.fill();ctx.strokeStyle="rgba(218,170,108,.12)";ctx.lineWidth=2;for(let x=80;x<1740;x+=55){ctx.beginPath();ctx.moveTo(x,y+8);ctx.lineTo(x+28,y+44);ctx.stroke();}}ctx.fillStyle="#253b2c";ctx.fillRect(0,0,world.w,150);}
+  function drawMeadow(){ctx.fillStyle="#4f6b39";ctx.fillRect(0,0,world.w,world.h);for(let i=0;i<180;i++){const x=(i*97)%world.w,y=(i*53)%world.h;ctx.fillStyle=i%3?"rgba(202,222,142,.18)":"rgba(44,72,42,.2)";ctx.fillRect(x,y,3,9);}ctx.strokeStyle="#8c7b58";ctx.lineWidth=130;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(260,1110);ctx.bezierCurveTo(470,740,830,760,940,530);ctx.bezierCurveTo(1110,230,1400,390,1630,100);ctx.stroke();ctx.strokeStyle="rgba(218,209,166,.32)";ctx.lineWidth=4;ctx.stroke();}
+  function drawForest(){ctx.fillStyle=world.theme==="night"?"#203329":"#3a4930";ctx.fillRect(0,0,world.w,world.h);for(let i=0;i<210;i++){const x=(i*113)%world.w,y=(i*71)%world.h;ctx.fillStyle=i%2?"rgba(93,77,48,.22)":"rgba(25,53,34,.25)";ctx.beginPath();ctx.arc(x,y,rand(2,8),0,Math.PI*2);ctx.fill();}ctx.strokeStyle=world.theme==="night"?"#2f3024":"#6d563a";ctx.lineWidth=105;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(150,1100);ctx.bezierCurveTo(500,900,520,580,890,620);ctx.bezierCurveTo(1250,660,1330,330,1660,130);ctx.stroke();}
+  function drawCity(){ctx.fillStyle="#46514b";ctx.fillRect(0,0,world.w,world.h);ctx.fillStyle="#315e67";ctx.fillRect(0,0,420,world.h);for(let y=0;y<world.h;y+=42){ctx.fillStyle=y%84?"rgba(255,255,255,.04)":"rgba(179,224,230,.05)";ctx.fillRect(0,y,420,20);}ctx.fillStyle="#7b786d";ctx.fillRect(420,0,120,world.h);ctx.fillStyle="#b2ad9f";ctx.fillRect(540,0,340,world.h);ctx.fillStyle="#3e4145";ctx.fillRect(880,0,210,world.h);ctx.strokeStyle="#e3dcbf";ctx.setLineDash([28,25]);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(985,0);ctx.lineTo(985,world.h);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#85877f";ctx.fillRect(1090,0,710,world.h);}
+
+  function drawWorldObjects(){
+    const drawables=[];world.props.forEach(o=>drawables.push({y:o.y,kind:"prop",o}));world.items.filter(o=>o.active&&!o.hidden).forEach(o=>drawables.push({y:o.y,kind:"item",o}));world.hotspots.filter(o=>o.active&&o.revealed).forEach(o=>drawables.push({y:o.y,kind:"hotspot",o}));world.patrols.filter(o=>o.active).forEach(o=>drawables.push({y:o.y,kind:"patrol",o}));if(world.rival?.active)drawables.push({y:world.rival.y,kind:"rival",o:world.rival});drawables.push({y:player.y,kind:"player",o:player});drawables.sort((a,b)=>a.y-b.y);
+    for(const d of drawables){if(d.kind==="prop")drawProp(d.o);else if(d.kind==="item")drawItem(d.o);else if(d.kind==="hotspot")drawHotspot(d.o);else if(d.kind==="patrol")drawPatrol(d.o);else if(d.kind==="rival")drawActor(d.o.x,d.o.y,"rival",d.o.angle,d.o.name);else drawPlayer();}
+    if(world.exit)drawExit(world.exit);
+  }
+
+  function drawProp(p){ctx.save();ctx.translate(p.x,p.y);const s=p.scale||1;ctx.scale(s,s);
+    if(p.type==="tree"||p.type==="pine"){ctx.fillStyle="rgba(0,0,0,.25)";ellipse(0,17,35,13);ctx.fillStyle="#5b4029";roundRect(ctx,-8,-12,16,48,7);ctx.fill();const col=p.type==="pine"?(world.theme==="night"?"#173527":"#285c39"):"#3e713d";ctx.fillStyle=col;for(const q of p.type==="pine"?[[0,-55,32],[0,-30,38],[0,-5,42]]:[[-16,-35,28],[14,-38,30],[0,-58,34],[0,-18,38]]){ctx.beginPath();ctx.arc(q[0],q[1],q[2],0,Math.PI*2);ctx.fill();}}
+    else if(p.type==="bush"){ctx.fillStyle="rgba(0,0,0,.2)";ellipse(0,12,28,10);ctx.fillStyle="#3c743c";for(const q of [[-14,-2,17],[10,-8,20],[0,-20,19]]){ctx.beginPath();ctx.arc(q[0],q[1],q[2],0,Math.PI*2);ctx.fill();}}
+    else if(p.type==="puddle"){ctx.fillStyle="rgba(99,151,153,.46)";ellipse(0,0,p.r||28,(p.r||28)*.45);ctx.strokeStyle="rgba(214,242,238,.25)";ctx.stroke();}
+    else if(p.type==="rock"){ctx.fillStyle="rgba(0,0,0,.22)";ellipse(0,12,20,8);ctx.fillStyle="#767465";ctx.beginPath();ctx.moveTo(-18,10);ctx.lineTo(-12,-11);ctx.lineTo(5,-18);ctx.lineTo(21,1);ctx.lineTo(12,16);ctx.closePath();ctx.fill();}
+    else if(p.type==="farm"||p.type==="hut"){ctx.fillStyle="rgba(0,0,0,.25)";ellipse(0,22,58,15);ctx.fillStyle=p.type==="farm"?"#d7c7a7":"#74543a";roundRect(ctx,-47,-38,94,60,5);ctx.fill();ctx.fillStyle="#7c392f";ctx.beginPath();ctx.moveTo(-57,-38);ctx.lineTo(0,-78);ctx.lineTo(57,-38);ctx.closePath();ctx.fill();ctx.fillStyle="#49342a";ctx.fillRect(-12,-12,24,34);}
+    else if(p.type==="npc")drawActor(0,0,p.role==="owner"?"ranger":"farmer",0,p.name,true);
+    else if(p.type==="pit"){ctx.fillStyle="rgba(0,0,0,.4)";ellipse(0,0,p.r||28,(p.r||28)*.65);ctx.strokeStyle="#6e5138";ctx.lineWidth=7;ctx.stroke();}
+    else if(p.type==="sign"){ctx.fillStyle="#744e2f";ctx.fillRect(-4,-30,8,50);ctx.fillStyle="#d5c49d";roundRect(ctx,-42,-52,84,28,5);ctx.fill();ctx.fillStyle="#3f3427";ctx.font="bold 10px sans-serif";ctx.textAlign="center";ctx.fillText(p.text||"",0,-34);}
+    else if(p.type==="lamp"){ctx.fillStyle="#3c4344";ctx.fillRect(-3,-55,6,70);ctx.fillStyle="#ffe6a0";ctx.beginPath();ctx.arc(0,-57,8,0,Math.PI*2);ctx.fill();}
+    else if(p.type==="bridge"){ctx.fillStyle="#4f6f78";roundRect(ctx,-115,-28,230,56,16);ctx.fill();ctx.strokeStyle="#a8cad0";ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,25,105,Math.PI,0);ctx.stroke();}
+    else if(p.type==="slavie"){ctx.fillStyle="rgba(0,0,0,.25)";ellipse(0,40,125,20);ctx.fillStyle="#ded8c7";roundRect(ctx,-120,-95,240,135,5);ctx.fill();ctx.fillStyle="#e8e1cf";ctx.beginPath();ctx.moveTo(-128,-95);ctx.lineTo(0,-145);ctx.lineTo(128,-95);ctx.closePath();ctx.fill();ctx.fillStyle="#3b5964";for(let yy=-75;yy<10;yy+=38)for(let xx=-92;xx<=92;xx+=46)roundRect(ctx,xx-11,yy,22,25,8),ctx.fill();ctx.fillStyle="#5b3928";roundRect(ctx,-15,5,30,35,4);ctx.fill();ctx.fillStyle="#2e6e4c";roundRect(ctx,-55,-125,110,19,5);ctx.fill();ctx.fillStyle="#e7f5ea";ctx.font="bold 10px sans-serif";ctx.textAlign="center";ctx.fillText("NA ZELENÉ VLNĚ",0,-112);}
+    ctx.restore();
+  }
+
+  function drawActor(x,y,type,angle=0,name="",local=false){ctx.save();if(!local)ctx.translate(x,y);ctx.rotate(0);ctx.fillStyle="rgba(0,0,0,.28)";ellipse(0,13,18,7);let shirt="#386849",pants="#26353a",skin="#c78d67",cap="#203b2a";if(type==="farmer"){shirt="#7a5336";cap="#8a693e";}if(type==="ranger"){shirt="#355a3a";cap="#1f3525";}if(type==="police"){shirt="#2e5f8c";cap="#24445f";}if(type==="digger"||type==="rival"){shirt="#6b3330";cap="#2b2524";}ctx.fillStyle=pants;ctx.fillRect(-10,1,8,22);ctx.fillRect(2,1,8,22);ctx.fillStyle=shirt;roundRect(ctx,-14,-26,28,32,8);ctx.fill();ctx.fillStyle=skin;ctx.beginPath();ctx.arc(0,-38,10,0,Math.PI*2);ctx.fill();ctx.fillStyle=cap;ctx.fillRect(-11,-48,22,8);if(type==="rival"){ctx.strokeStyle="#8b633d";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(12,-20);ctx.lineTo(25,16);ctx.stroke();}ctx.restore();}
+  function drawPlayer(){ctx.save();ctx.translate(player.x,player.y);const blink=player.invuln>0&&Math.floor(player.invuln*10)%2===0;ctx.globalAlpha=blink?.4:1;ctx.fillStyle="rgba(0,0,0,.28)";ellipse(0,16,20,8);const swing=Math.sin(player.step)*8;ctx.fillStyle="#25343a";ctx.fillRect(-11,2,8,21+swing*.15);ctx.fillRect(3,2,8,21-swing*.15);ctx.fillStyle="#3d754e";roundRect(ctx,-15,-28,30,35,9);ctx.fill();ctx.fillStyle="#6c4a2f";roundRect(ctx,-13,-25,26,23,5);ctx.fill();ctx.fillStyle="#c88e67";ctx.beginPath();ctx.arc(0,-40,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#173c28";ctx.fillRect(-12,-50,24,8);ctx.strokeStyle="#8a5d35";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(14,-20);ctx.lineTo(23,18);ctx.stroke();ctx.restore();}
+  function drawPatrol(p){if(p.vision){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);ctx.fillStyle=p.type==="police"?"rgba(80,145,255,.11)":"rgba(255,213,104,.09)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,p.vision,-.57,.57);ctx.closePath();ctx.fill();ctx.restore();}if(p.type==="tractor"){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);ctx.fillStyle="#b94c2f";roundRect(ctx,-32,-19,64,38,8);ctx.fill();ctx.fillStyle="#26343b";ctx.fillRect(-8,-29,28,23);ctx.fillStyle="#171717";for(const q of [[-25,-22],[-25,22],[25,-22],[25,22]]){ctx.beginPath();ctx.arc(q[0],q[1],10,0,Math.PI*2);ctx.fill();}ctx.restore();return;}if(p.type==="car"||p.type==="bike"){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);if(p.type==="car"){ctx.fillStyle="#8a4742";roundRect(ctx,-24,-13,48,26,8);ctx.fill();ctx.fillStyle="#273f48";ctx.fillRect(-9,-16,22,12);}else{ctx.strokeStyle="#263a40";ctx.lineWidth=3;ctx.beginPath();ctx.arc(-10,8,8,0,Math.PI*2);ctx.arc(10,8,8,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#d1a16e";ctx.beginPath();ctx.arc(0,-10,7,0,Math.PI*2);ctx.fill();}ctx.restore();return;}drawActor(p.x,p.y,p.type,p.angle,p.type);}
+  function drawItem(i){ctx.save();ctx.translate(i.x,i.y);const bob=Math.sin(performance.now()*.005+i.x)*4;if(i.type==="stone"||i.type==="sample"){ctx.translate(0,bob);ctx.fillStyle="rgba(64,230,135,.15)";ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();ctx.fillStyle=i.type==="sample"?"#43f58a":"#5bd98d";gemPath(0,0,13);ctx.fill();}else if(i.type==="clue"){ctx.fillStyle="#74adff";ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#d6e7ff";ctx.lineWidth=3;ctx.stroke();}else if(i.type==="paper"){ctx.fillStyle="#e7dfbd";ctx.rotate(-.12);ctx.fillRect(-14,-18,28,36);ctx.strokeStyle="#607b8f";ctx.strokeRect(-14,-18,28,36);ctx.fillStyle="#6f8798";ctx.fillRect(-8,-8,16,3);ctx.fillRect(-8,0,14,3);}else if(i.type==="hole"){ctx.fillStyle="#17120e";ellipse(0,0,28,17);ctx.strokeStyle="#76583d";ctx.lineWidth=6;ctx.stroke();ctx.fillStyle="#a07d51";ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.fillText("↶",0,6);}ctx.restore();}
+  function drawHotspot(h){ctx.save();ctx.translate(h.x,h.y);const pulse=1+Math.sin(performance.now()*.006+h.x)*.12;ctx.scale(pulse,pulse);ctx.strokeStyle=h.special?"#f2cb72":"#72e5a1";ctx.lineWidth=3;ctx.setLineDash([7,6]);ctx.beginPath();ctx.arc(0,0,27,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=h.special?"rgba(242,203,114,.12)":"rgba(114,229,161,.1)";ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();ctx.restore();}
+  function drawExit(e){ctx.save();ctx.translate(e.x,e.y);const pulse=1+Math.sin(performance.now()*.004)*.08;ctx.scale(pulse,pulse);ctx.fillStyle=goalComplete()?"rgba(99,228,155,.19)":"rgba(255,255,255,.05)";ctx.beginPath();ctx.arc(0,0,e.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=goalComplete()?"#63e49b":"rgba(255,255,255,.25)";ctx.lineWidth=4;ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 12px sans-serif";ctx.textAlign="center";ctx.fillText(e.label,0,4);ctx.restore();}
+  function drawEffects(){if(scanPulse>0){ctx.strokeStyle=`rgba(106,236,163,${1-scanPulse})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(player.x,player.y,(260+state.perks.scanner*55)*scanPulse,0,Math.PI*2);ctx.stroke();}for(const h of world.hazards){ctx.fillStyle="#7b5635";ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,Math.PI*2);ctx.fill();}for(const p of world.particles){ctx.globalAlpha=clamp(p.life*1.4,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}if(world.theme==="night"){ctx.save();ctx.fillStyle="rgba(2,7,6,.56)";ctx.fillRect(camera.x,camera.y,viewport.w,viewport.h);ctx.globalCompositeOperation="destination-out";const g=ctx.createRadialGradient(player.x,player.y,45,player.x,player.y,285);g.addColorStop(0,"rgba(0,0,0,1)");g.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(player.x,player.y,295,0,Math.PI*2);ctx.fill();ctx.restore();}}
+  function drawScreenVignette(){const g=ctx.createRadialGradient(viewport.w/2,viewport.h/2,Math.min(viewport.w,viewport.h)*.25,viewport.w/2,viewport.h/2,Math.max(viewport.w,viewport.h)*.72);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,.26)");ctx.fillStyle=g;ctx.fillRect(0,0,viewport.w,viewport.h);if(world?.theme==="field"){ctx.strokeStyle="rgba(190,225,229,.15)";ctx.lineWidth=1;const t=performance.now()*.18;for(let i=0;i<28;i++){const x=(i*83+t)% (viewport.w+80)-40;const y=(i*47+t*.7)% (viewport.h+60)-30;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-8,y+18);ctx.stroke();}}if(flash>0){ctx.fillStyle=`rgba(${flashColor},${flash})`;ctx.fillRect(0,0,viewport.w,viewport.h);}if(state.heat>65){ctx.strokeStyle=`rgba(255,90,80,${(state.heat-65)/90})`;ctx.lineWidth=16;ctx.strokeRect(0,0,viewport.w,viewport.h);}}
+  function drawObjectiveArrow(){if(!world||!world.exit)return;let target=world.exit;if(!goalComplete()){const candidates=[];for(const h of world.hotspots)if(h.active&&h.revealed)candidates.push(h);for(const i of world.items)if(i.active&&!i.hidden)candidates.push(i);if(candidates.length)target=candidates.sort((a,b)=>dist(player,a)-dist(player,b))[0];}const sx=target.x-camera.x,sy=target.y-camera.y;if(sx>40&&sy>70&&sx<viewport.w-40&&sy<viewport.h-100)return;const cx=viewport.w/2,cy=viewport.h/2,ang=Math.atan2(sy-cy,sx-cx),rad=Math.min(viewport.w,viewport.h)*.38;ctx.save();ctx.translate(cx+Math.cos(ang)*rad,cy+Math.sin(ang)*rad);ctx.rotate(ang);ctx.fillStyle=goalComplete()?"#63e49b":"#f2cb72";ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(-10,-9);ctx.lineTo(-10,9);ctx.closePath();ctx.fill();ctx.restore();}
+
+  function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);}
+  function ellipse(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill();}
+  function gemPath(x,y,r){ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r*.8,y-r*.35);ctx.lineTo(x+r*.65,y+r*.7);ctx.lineTo(x,y+r);ctx.lineTo(x-r*.75,y+r*.35);ctx.lineTo(x-r*.8,y-r*.4);ctx.closePath();}
+
+  function loop(now){const dt=Math.min(.035,(now-last)/1000||.016);last=now;update(dt);render();requestAnimationFrame(loop);}
+
+  function setupControls(){
+    const zone=$("moveZone"),stick=$("stick");let pid=null;
+    const move=e=>{const r=zone.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),max=r.width*.33,len=Math.hypot(dx,dy)||1,s=Math.min(1,max/len),x=dx*s,y=dy*s;input.x=x/max;input.y=y/max;stick.style.transform=`translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;};
+    zone.addEventListener("pointerdown",e=>{pid=e.pointerId;zone.setPointerCapture(pid);move(e);});zone.addEventListener("pointermove",e=>{if(e.pointerId===pid)move(e);});
+    const end=e=>{if(e.pointerId!==pid)return;pid=null;input.x=input.y=0;stick.style.transform="translate(-50%,-50%)";};zone.addEventListener("pointerup",end);zone.addEventListener("pointercancel",end);
+    const action=$("actionButton");action.addEventListener("pointerdown",e=>{e.preventDefault();action.classList.add("active");performAction();});const stop=()=>action.classList.remove("active");action.addEventListener("pointerup",stop);action.addEventListener("pointercancel",stop);
+    addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Space")performAction();if(e.code==="Escape"&&mode==="playing")pause();const x=(e.code==="KeyD"||e.code==="ArrowRight")?1:(e.code==="KeyA"||e.code==="ArrowLeft")?-1:0;const y=(e.code==="KeyS"||e.code==="ArrowDown")?1:(e.code==="KeyW"||e.code==="ArrowUp")?-1:0;if(x)input.x=x;if(y)input.y=y;});
+    addEventListener("keyup",e=>{if(["KeyA","KeyD","ArrowLeft","ArrowRight"].includes(e.code))input.x=0;if(["KeyW","KeyS","ArrowUp","ArrowDown"].includes(e.code))input.y=0;});
+  }
+
+  function pause(){if(mode!=="playing")return;mode="pause";setPlaying(false);showOnly(screens.pause);}
+  function resume(){screens.pause.classList.remove("visible");mode="playing";setPlaying(true);last=performance.now();}
+  function toMenu(){save();mode="menu";world=null;setPlaying(false);showOnly(screens.title);refreshContinue();}
+  function showRecords(){const list=$("recordsList"),rows=getRecords();list.innerHTML="";if(!rows.length){list.innerHTML="<li><span>–</span><div>Zatím žádná dokončená výprava</div></li>";}else rows.forEach((r,i)=>{const li=document.createElement("li");li.innerHTML=`<b>${i+1}.</b><div><strong>${escapeHtml(r.title)}</strong><small>${r.stones} kamenů · ${new Date(r.date).toLocaleDateString("cs-CZ")}</small></div><strong>${Number(r.score).toLocaleString("cs-CZ")}</strong>`;list.append(li);});showOnly(screens.records);}
+
+  function bindUI(){
+    $("playButton").addEventListener("click",startNew);$("continueButton").addEventListener("click",continueGame);$("briefButton").addEventListener("click",enterLevel);
+    $("digButton").addEventListener("click",digAttempt);$("realButton").addEventListener("click",()=>resolveSample(true));$("glassButton").addEventListener("click",()=>resolveSample(false));$("dialogButton").addEventListener("click",closeDialog);
+    $("juryButton").addEventListener("click",judge);$("againButton").addEventListener("click",()=>{state=freshState();world=null;mode="menu";showOnly(screens.title);refreshContinue();});
+    $("pauseButton").addEventListener("click",pause);$("resumeButton").addEventListener("click",resume);$("menuButton").addEventListener("click",toMenu);
+    $("soundButton").addEventListener("click",()=>{state.sound=audio.toggle();$("soundButton").textContent=state.sound?"♫":"×";save();});
+    $("howButton").addEventListener("click",()=>showOnly(screens.how));$("closeHowButton").addEventListener("click",()=>showOnly(screens.title));
+    $("recordsButton").addEventListener("click",showRecords);$("resultRecordsButton").addEventListener("click",showRecords);$("closeRecordsButton").addEventListener("click",()=>showOnly(mode==="result"?screens.result:screens.title));
   }
-  completeChapter();
-}
 
-function openFinalSelection() {
-  if (!runtime.organizer || !runtime.registered) {
-    toast("Nejdřív dokonči přivítání a registraci.", "bad");
-    return;
-  }
-  renderFinalSelection();
-  mode = "modal";
-  setPlaying(false);
-  screens.final.classList.add("visible");
-}
-
-function interactInfo(data) {
-  toast(data.label === "Přednáškový stůl"
-    ? "Program: vznik tektitů, lokality, určování a ochrana nalezišť."
-    : "Na burze se porovnávají sbírky, šperky a odborná literatura.", "good", 2600);
-}
-
-function performAction() {
-  if (mode !== "playing") return;
-  if (boss && boss.alive) {
-    attackBoss();
-    return;
-  }
-  const closeEnemy = enemies.find(e => e.alive && e.type === "digger" && e.obj.position.distanceTo(player.position) < 2);
-  if (closeEnemy) {
-    attackEnemy(closeEnemy);
-    return;
-  }
-  if (!nearest) {
-    swingTool();
-    return;
-  }
-  const data = nearest.userData.interactable;
-  if (!data || data.disabled) return;
-  if (data.type === "npc") interactNpc(data);
-  if (data.type === "gem") collectGem(nearest);
-  if (data.type === "sample") inspectSample(nearest);
-  if (data.type === "dig") dig(nearest);
-  if (data.type === "hole") fillHole(nearest);
-  if (data.type === "document") collectDocument(nearest);
-  if (data.type === "exit") interactExit(data);
-  if (data.type === "display") openFinalSelection();
-  if (data.type === "info") interactInfo(data);
-}
-
-function swingTool() {
-  playerTool.userData.swing = 1;
-}
-
-function attackEnemy(enemy) {
-  if (enemy.cooldown > 0) return;
-  enemy.hp--;
-  enemy.cooldown = .35;
-  swingTool();
-  audio.play("hit");
-  burst(enemy.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xff705c, 12);
-  if (enemy.hp <= 0) {
-    enemy.alive = false;
-    entityGroup.remove(enemy.obj);
-    runtime.enemiesDefeated++;
-    state.score += 550;
-    toast("Noční kopáč utekl.", "good");
-  }
-}
-
-function attackBoss() {
-  if (!boss || !boss.alive || boss.cooldown > 0) return;
-  swingTool();
-  boss.cooldown = .3;
-  const d = boss.obj.position.distanceTo(player.position);
-  if (d > 2.25) {
-    toast("Přibliž se k bossovi.");
-    return;
-  }
-  if (!boss.vulnerable) {
-    toast("Počkej, až se zarazí krumpáč.");
-    return;
-  }
-  boss.hp--;
-  state.score += 420;
-  audio.play("hit");
-  burst(boss.obj.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 0xff725d, 18);
-  if (boss.hp <= 0) defeatBoss();
-}
-
-function defeatBoss() {
-  boss.alive = false;
-  runtime.bossDefeated = true;
-  state.score += 2800;
-  state.money += 450;
-  adjustReputation(7);
-  burst(boss.obj.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 0xffd874, 42);
-  entityGroup.remove(boss.obj);
-  ui.bossHud.classList.add("hidden");
-  audio.play("win");
-  audio.playMusic(LEVELS[state.levelIndex].music);
-  toast(`${boss.name} poražen. Cesta je volná!`, "rare", 2800);
-  boss = null;
-}
-
-function adjustReputation(amount, message = "") {
-  const diff = DIFFICULTY[state.difficulty];
-  const effective = amount < 0 ? amount * diff.reputationLoss : amount;
-  state.reputation = Math.max(0, Math.min(100, state.reputation + effective));
-  if (message) toast(message, amount < 0 ? "bad" : "good");
-  if (state.reputation <= 0) failLevel("Ztratil jsi důvěru místních i sběratelské komunity.");
-}
-
-function damage(reason, reputationLoss = 3) {
-  if (performance.now() < invulnerableUntil || mode !== "playing") return;
-  invulnerableUntil = performance.now() + 1200;
-  const diff = DIFFICULTY[state.difficulty];
-  state.hp -= Math.max(1, Math.round(diff.enemyDamage));
-  adjustReputation(-reputationLoss);
-  playerBody.material.emissive = new THREE.Color(0x791313);
-  setTimeout(() => playerBody?.material?.emissive?.set(0x000000), 260);
-  audio.play("hit");
-  toast(reason, "bad");
-  if (state.hp <= 0) failLevel("Zranění ukončilo tuto část výpravy.");
-}
-
-function burst(position, color, count = 12) {
-  for (let i = 0; i < count; i++) {
-    const p = makeMesh(
-      new THREE.BoxGeometry(.08 + Math.random() * .07, .08 + Math.random() * .07, .08 + Math.random() * .07),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .9 }),
-      false,
-      false
-    );
-    p.position.copy(position);
-    effectGroup.add(p);
-    effects.push({
-      obj: p,
-      velocity: new THREE.Vector3((Math.random() - .5) * 3, 1 + Math.random() * 2.4, (Math.random() - .5) * 3),
-      life: .55 + Math.random() * .45
-    });
-  }
-}
-
-function showDialogue(dialogue, onDone) {
-  currentDialogue = dialogue;
-  dialogueIndex = 0;
-  dialogueDone = onDone;
-  mode = "dialogue";
-  setPlaying(false);
-  $("dialogueName").textContent = dialogue.name;
-  $("dialoguePortrait").textContent = dialogue.portrait;
-  screens.dialogue.classList.add("visible");
-  renderDialogueLine();
-}
-
-function renderDialogueLine() {
-  $("dialogueText").textContent = currentDialogue.lines[dialogueIndex];
-  $("dialogueNextBtn").textContent = dialogueIndex >= currentDialogue.lines.length - 1 ? "Rozumím" : "Pokračovat";
-}
-
-function nextDialogue() {
-  if (!currentDialogue) return;
-  if (dialogueIndex < currentDialogue.lines.length - 1) {
-    dialogueIndex++;
-    renderDialogueLine();
-    audio.play("menu", .55);
-    return;
-  }
-  screens.dialogue.classList.remove("visible");
-  const done = dialogueDone;
-  currentDialogue = null;
-  dialogueDone = null;
-  mode = "playing";
-  setPlaying(true);
-  done?.();
-  updateHUD(true);
-}
-
-function chapterReward() {
-  const id = LEVELS[state.levelIndex].id;
-  const base = [700, 900, 1200, 1600, 1800, 0][state.levelIndex] || 0;
-  const repBonus = Math.round(state.reputation * 5);
-  const ethical = id === "nesmen" && runtime.filled >= 4 ? 700 : 0;
-  return base + repBonus + ethical;
-}
-
-function completeChapter() {
-  if (runtime.loot?.length) state.inventory.push(...runtime.loot);
-  runtime.loot = [];
-  const reward = chapterReward();
-  state.money += reward;
-  state.score += reward;
-  state.hp = state.maxHp;
-  state.completed = [...new Set([...state.completed, LEVELS[state.levelIndex].id])];
-  const finishedLevel = LEVELS[state.levelIndex];
-  state.levelIndex++;
-  saveGame();
-
-  if (state.levelIndex >= LEVELS.length) return;
-  mode = "camp";
-  setPlaying(false);
-  $("campTitle").textContent = `${finishedLevel.location} dokončeno`;
-  $("campSummary").textContent = `Výprava získala ${reward.toLocaleString("cs-CZ")} Kč za zakázky, fotografie a drobné prodeje. Vyber výbavu pro další lokalitu.`;
-  renderCamp();
-  screens.camp.classList.add("visible");
-  audio.play("cash");
-}
-
-function renderCamp() {
-  $("campWeight").textContent = `${totalWeight(state.inventory).toFixed(1)} g`;
-  $("campReputation").textContent = Math.round(state.reputation);
-  $("campMoney").textContent = `${Math.round(state.money).toLocaleString("cs-CZ")} Kč`;
-  $("campScore").textContent = Math.round(state.score).toLocaleString("cs-CZ");
-  const list = $("upgradeList");
-  list.innerHTML = "";
-  for (const up of UPGRADES) {
-    const level = state.upgrades[up.id] || 0;
-    const card = document.createElement("article");
-    card.className = "upgrade";
-    const maxed = level >= up.max;
-    const price = maxed ? 0 : up.prices[level];
-    card.innerHTML = `
-      <h4>${up.name} · ${level}/${up.max}</h4>
-      <p>${up.descriptions[level]}</p>
-      <button type="button" ${maxed || state.money < price ? "disabled" : ""}>
-        ${maxed ? "Maximum" : `Vylepšit za ${price.toLocaleString("cs-CZ")} Kč`}
-      </button>`;
-    card.querySelector("button").addEventListener("click", () => buyUpgrade(up));
-    list.append(card);
-  }
-}
-
-function buyUpgrade(upgrade) {
-  const level = state.upgrades[upgrade.id] || 0;
-  if (level >= upgrade.max) return;
-  const price = upgrade.prices[level];
-  if (state.money < price) {
-    toast("Nemáš dost korun.", "bad");
-    return;
-  }
-  state.money -= price;
-  state.upgrades[upgrade.id]++;
-  state.score += 150;
-  audio.play("cash");
-  saveGame();
-  renderCamp();
-}
-
-function sellWeakCommon() {
-  if (state.inventory.length <= 8) {
-    toast("Sbírka je zatím příliš malá.", "bad");
-    return;
-  }
-  const candidates = state.inventory
-    .filter(s => !s.fake && s.rarity === "common")
-    .sort((a, b) => a.value - b.value)
-    .slice(0, Math.min(5, Math.max(0, state.inventory.length - 8)));
-  if (!candidates.length) {
-    toast("Nemáš slabé běžné kusy k prodeji.");
-    return;
-  }
-  const ids = new Set(candidates.map(s => s.id));
-  const value = candidates.reduce((sum, s) => sum + s.value, 0);
-  state.inventory = state.inventory.filter(s => !ids.has(s.id));
-  state.money += value;
-  state.score += Math.round(value * .15);
-  audio.play("cash");
-  toast(`Prodáno ${candidates.length} kusů za ${value.toLocaleString("cs-CZ")} Kč.`, "good");
-  saveGame();
-  renderCamp();
-}
-
-function startNextChapter() {
-  screens.camp.classList.remove("visible");
-  showChapter();
-}
-
-function showChapter() {
-  const level = LEVELS[state.levelIndex];
-  if (!level) return;
-  mode = "chapter";
-  setPlaying(false);
-  $("chapterKicker").textContent = `KAPITOLA ${state.levelIndex + 1} Z ${LEVELS.length}`;
-  $("chapterTitle").textContent = level.title;
-  $("chapterStory").textContent = level.story;
-  $("chapterObjective").textContent = level.objective;
-  $("chapterRare").textContent = level.rare;
-  $("chapterLore").textContent = `Zápisník lovce: ${level.lore}`;
-  screens.chapter.classList.add("visible");
-}
-
-function startChapter() {
-  screens.chapter.classList.remove("visible");
-  state.hp = state.maxHp;
-  buildLevel();
-  mode = "playing";
-  setPlaying(true);
-  saveGame();
-}
-
-function newGame() {
-  state = defaultState();
-  state.playerName = ($("playerNameInput").value.trim() || "Lovec").slice(0, 18);
-  state.difficulty = $("difficultySelect").value;
-  state.sound = true;
-  audio.setEnabled(true);
-  checkpoint = structuredClone(state);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  screens.title.classList.remove("visible");
-  audio.unlock();
-  audio.play("menu");
-  showChapter();
-}
-
-function continueGame() {
-  if (!loadGame()) {
-    toast("Uloženou hru se nepodařilo načíst.", "bad");
-    return;
-  }
-  screens.title.classList.remove("visible");
-  audio.unlock();
-  showChapter();
-}
-
-function failLevel(reason) {
-  if (mode === "ending") return;
-  mode = "ending";
-  endingIsFinal = false;
-  setPlaying(false);
-  audio.stopMusic();
-  $("endingKicker").textContent = "VÝPRAVA PŘERUŠENA";
-  $("endingTitle").textContent = "Tuto kapitolu musíš zopakovat";
-  $("endingScore").textContent = Math.round(state.score).toLocaleString("cs-CZ");
-  $("endingText").textContent = reason;
-  $("endingBreakdown").innerHTML = `
-    <div><span>Poslední bezpečný bod</span><strong>${LEVELS[state.levelIndex].title}</strong></div>
-    <div><span>Co zůstane</span><strong>Výbava a sbírka z předchozích kapitol</strong></div>`;
-  $("playAgainBtn").textContent = "Zopakovat kapitolu";
-  screens.ending.classList.add("visible");
-}
-
-function restartFailedChapter() {
-  state = structuredClone(checkpoint);
-  state.hp = state.maxHp;
-  screens.ending.classList.remove("visible");
-  showChapter();
-}
-
-function pauseGame() {
-  if (mode !== "playing") return;
-  mode = "paused";
-  setPlaying(false);
-  screens.pause.classList.add("visible");
-}
-
-function resumeGame() {
-  if (mode !== "paused") return;
-  screens.pause.classList.remove("visible");
-  mode = "playing";
-  setPlaying(true);
-  clock.getDelta();
-}
-
-function saveAndMenu() {
-  state = structuredClone(checkpoint);
-  saveGame();
-  screens.pause.classList.remove("visible");
-  mode = "menu";
-  setPlaying(false);
-  audio.stopMusic();
-  screens.title.classList.add("visible");
-}
-
-function restartGameConfirm() {
-  if (!confirm("Opravdu zahodit rozehranou výpravu a začít znovu?")) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state = defaultState();
-  screens.pause.classList.remove("visible");
-  mode = "menu";
-  setPlaying(false);
-  audio.stopMusic();
-  refreshContinueButton();
-  screens.title.classList.add("visible");
-}
-
-function renderInventory() {
-  const items = visibleInventory();
-  $("inventoryCount").textContent = items.length;
-  $("inventoryWeight").textContent = `${totalWeight(items).toFixed(1)} g`;
-  $("inventoryValue").textContent = `${totalValue(items).toLocaleString("cs-CZ")} Kč`;
-  $("inventoryDocumented").textContent = items.filter(s => s.documented).length;
-  const list = $("inventoryList");
-  list.innerHTML = "";
-  if (!items.length) {
-    list.innerHTML = `<div class="empty-list">Zatím jsi žádný kámen nenašel.</div>`;
-    return;
-  }
-  const sorted = [...items].sort((a, b) => b.value - a.value);
-  for (const item of sorted) {
-    const row = document.createElement("div");
-    row.className = `inventory-item ${item.fake ? "fake" : ""} ${["rare", "hedgehog"].includes(item.rarity) ? "rare" : ""}`;
-    row.innerHTML = `
-      <div class="stone-icon">◆</div>
-      <div>
-        <div class="item-title">${escapeHtml(item.name)}</div>
-        <div class="item-meta">${escapeHtml(item.locality)} · ${item.weight.toFixed(2)} g · třída ${item.grade} · ${item.documented ? "dokladovaný" : "bez dokumentace"}</div>
-      </div>
-      <div class="item-value">${item.value.toLocaleString("cs-CZ")} Kč</div>`;
-    list.append(row);
-  }
-}
-
-function openInventory() {
-  if (!["playing", "paused"].includes(mode)) return;
-  const wasPlaying = mode === "playing";
-  mode = wasPlaying ? "inventory" : mode;
-  setPlaying(false);
-  renderInventory();
-  screens.inventory.classList.add("visible");
-  screens.inventory.dataset.resume = wasPlaying ? "1" : "0";
-}
-
-function closeInventory() {
-  const resume = screens.inventory.dataset.resume === "1";
-  screens.inventory.classList.remove("visible");
-  if (resume) {
-    mode = "playing";
-    setPlaying(true);
-  }
-}
-
-function renderFinalSelection() {
-  selectedFinal.clear();
-  const list = $("finalSelectionList");
-  list.innerHTML = "";
-  const sorted = [...state.inventory].sort((a, b) => b.value - a.value);
-  for (const item of sorted) {
-    const row = document.createElement("label");
-    row.className = `selection-item ${item.fake ? "fake" : ""} ${["rare", "hedgehog"].includes(item.rarity) ? "rare" : ""}`;
-    row.innerHTML = `
-      <input type="checkbox" value="${item.id}">
-      <div class="stone-icon">◆</div>
-      <div>
-        <div class="item-title">${escapeHtml(item.name)}</div>
-        <div class="item-meta">${escapeHtml(item.locality)} · ${item.weight.toFixed(2)} g · třída ${item.grade} · ${item.documented ? "dokladovaný" : "bez dokumentace"}</div>
-      </div>
-      <div class="item-value">${item.value.toLocaleString("cs-CZ")} Kč</div>`;
-    const checkbox = row.querySelector("input");
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked && selectedFinal.size >= 5) {
-        checkbox.checked = false;
-        toast("Na výstavní stůl se vejde pět kamenů.", "bad");
-        return;
-      }
-      if (checkbox.checked) selectedFinal.add(item.id);
-      else selectedFinal.delete(item.id);
-      row.classList.toggle("selected", checkbox.checked);
-      $("selectionCount").textContent = `Vybráno ${selectedFinal.size} / 5`;
-      $("confirmSelectionBtn").disabled = selectedFinal.size !== 5;
-    });
-    list.append(row);
-  }
-  $("selectionCount").textContent = "Vybráno 0 / 5";
-  $("confirmSelectionBtn").disabled = true;
-}
-
-function confirmFinalSelection() {
-  if (selectedFinal.size !== 5) return;
-  const selected = state.inventory.filter(s => selectedFinal.has(s.id));
-  screens.final.classList.remove("visible");
-  finishGame(selected);
-}
-
-function scoreStone(item) {
-  if (item.fake) return -5200;
-  const rarityBonus = item.rarity === "hedgehog" ? 4200 : item.rarity === "rare" ? 1800 : item.rarity === "good" ? 650 : 180;
-  const gradeBonus = item.grade === "A" ? 1000 : item.grade === "B" ? 450 : 120;
-  const docBonus = item.documented ? 700 : 0;
-  return Math.round(item.weight * 120 + rarityBonus + gradeBonus + docBonus + item.value * .15);
-}
-
-function finishGame(selected) {
-  mode = "ending";
-  endingIsFinal = true;
-  setPlaying(false);
-  audio.playMusic("expo");
-  audio.play("win");
-
-  const stoneScore = selected.reduce((sum, item) => sum + scoreStone(item), 0);
-  const repScore = Math.round(state.reputation * 28);
-  const caseScore = state.upgrades.case * 1100;
-  const localities = new Set(selected.map(item => item.locality)).size;
-  const diversityScore = localities * 520;
-  const documentationScore = selected.filter(item => item.documented).length * 430;
-  const fakeCount = selected.filter(item => item.fake).length;
-  const authenticityBonus = fakeCount ? -3500 * fakeCount : 2500;
-  const finalScore = Math.max(0, Math.round(state.score + stoneScore + repScore + caseScore + diversityScore + documentationScore + authenticityBonus));
-
-  let ending = "účastník";
-  let title = "Sbírka byla přijata";
-  let text = "Výprava dorazila do Slávie a získala místo mezi vystavovateli.";
-  if (fakeCount) {
-    ending = "padělek";
-    title = "Porota odhalila padělek";
-    text = "Jeden ze zelených kusů byl skleněný odlitek. Výstava pokračuje, ale důvěra poroty utrpěla.";
-  } else if (finalScore >= 26000 && state.reputation >= 82) {
-    ending = "vítěz";
-    title = "Hlavní cena Zelené vlny";
-    text = "Dokumentovaná, pestrá a eticky získaná sbírka získala hlavní ocenění. Besednický ježek se stal středem výstavy.";
-  } else if (finalScore >= 19000) {
-    ending = "výstavní";
-    title = "Výstavní uznání poroty";
-    text = "Porota ocenila kvalitu kamenů i příběh výpravy. Tvá vitrína patří k nejnavštěvovanějším stolům.";
-  }
-
-  state.score = finalScore;
-  state.completed = [...new Set([...state.completed, "slavie"])];
-  localStorage.removeItem(STORAGE_KEY);
-  addRecord(finalScore, ending);
-  refreshContinueButton();
-
-  $("endingKicker").textContent = "NA ZELENÉ VLNĚ – FINÁLE";
-  $("endingTitle").textContent = title;
-  $("endingScore").textContent = finalScore.toLocaleString("cs-CZ");
-  $("endingText").textContent = text;
-  $("endingBreakdown").innerHTML = `
-    <div><span>Výběr kamenů</span><strong>${stoneScore.toLocaleString("cs-CZ")}</strong></div>
-    <div><span>Pověst</span><strong>${repScore.toLocaleString("cs-CZ")}</strong></div>
-    <div><span>Výstavní kufr</span><strong>${caseScore.toLocaleString("cs-CZ")}</strong></div>
-    <div><span>Rozmanitost lokalit</span><strong>${diversityScore.toLocaleString("cs-CZ")}</strong></div>
-    <div><span>Dokumentace</span><strong>${documentationScore.toLocaleString("cs-CZ")}</strong></div>
-    <div><span>Pravost sbírky</span><strong>${authenticityBonus.toLocaleString("cs-CZ")}</strong></div>`;
-  $("playAgainBtn").textContent = "Nová výprava";
-  screens.ending.classList.add("visible");
-}
-
-function renderRecords() {
-  const list = $("recordsList");
-  const rows = records();
-  list.innerHTML = "";
-  if (!rows.length) {
-    list.innerHTML = `<li><div class="meta">Zatím není uložený žádný výsledek.</div></li>`;
-    return;
-  }
-  rows.forEach((r, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span class="rank">${i + 1}.</span>
-      <div>
-        <div class="name">${escapeHtml(r.name)}</div>
-        <div class="meta">${Number(r.grams).toFixed(1)} g · pověst ${r.reputation} · ${new Date(r.date).toLocaleDateString("cs-CZ")}</div>
-      </div>
-      <div class="score">${Number(r.score).toLocaleString("cs-CZ")}</div>`;
-    list.append(li);
-  });
-}
-
-function openRecords() {
-  renderRecords();
-  screens.records.classList.add("visible");
-}
-
-function closeRecords() {
-  screens.records.classList.remove("visible");
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, ch => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-  })[ch]);
-}
-
-function updatePlayer(dt) {
-  const diff = DIFFICULTY[state.difficulty];
-  tmpVec2.copy(moveInput).add(joystickInput);
-  if (tmpVec2.lengthSq() > 1) tmpVec2.normalize();
-
-  const moving = tmpVec2.lengthSq() > .01;
-  const inMud = mudZones.some(zone => Math.hypot(player.position.x - zone.x, player.position.z - zone.z) < zone.r);
-  const bootLevel = state.upgrades.boots;
-  let speed = 4.5 * diff.playerSpeed * (1 + bootLevel * .075);
-  if (sprintHeld) speed *= 1.42 + bootLevel * .04;
-  if (inMud) speed *= .52 + bootLevel * .13;
-
-  if (moving) {
-    const dx = tmpVec2.x * speed * dt;
-    const dz = tmpVec2.y * speed * dt;
-    const nx = player.position.x + dx;
-    const nz = player.position.z + dz;
-    if (!blocked(nx, player.position.z)) player.position.x = nx;
-    if (!blocked(player.position.x, nz)) player.position.z = nz;
-    const targetRot = Math.atan2(tmpVec2.x, tmpVec2.y);
-    player.rotation.y = dampAngle(player.rotation.y, targetRot, 10, dt);
-    const walk = performance.now() * (sprintHeld ? .016 : .012);
-    playerLegs[0].rotation.x = Math.sin(walk) * .45;
-    playerLegs[1].rotation.x = -Math.sin(walk) * .45;
-    player.position.y = Math.abs(Math.sin(walk)) * .035;
-    if (performance.now() - lastFootstep > (sprintHeld ? 260 : 390)) {
-      lastFootstep = performance.now();
-      audio.play("step", .18, .9 + Math.random() * .15);
-    }
-  } else {
-    playerLegs.forEach(leg => leg.rotation.x = THREE.MathUtils.damp(leg.rotation.x, 0, 9, dt));
-    player.position.y = THREE.MathUtils.damp(player.position.y, 0, 9, dt);
-  }
-
-  if (playerTool.userData.swing > 0) {
-    playerTool.userData.swing -= dt * 4.4;
-    playerTool.rotation.x = -Math.sin((1 - playerTool.userData.swing) * Math.PI) * 1.35;
-  } else {
-    playerTool.rotation.x = THREE.MathUtils.damp(playerTool.rotation.x, 0, 12, dt);
-  }
-}
-
-function dampAngle(current, target, lambda, dt) {
-  let delta = ((target - current + Math.PI) % (Math.PI * 2)) - Math.PI;
-  return current + delta * (1 - Math.exp(-lambda * dt));
-}
-
-function updateCamera(dt) {
-  const offset = new THREE.Vector3(8.5, 10.5, 12);
-  const desired = player.position.clone().add(offset);
-  camera.position.lerp(desired, 1 - Math.exp(-4.2 * dt));
-  tmpVec3.copy(player.position).add(new THREE.Vector3(0, 1.1, -2.4));
-  camera.lookAt(tmpVec3);
-}
-
-function updateInteractables(dt) {
-  const t = performance.now() * .001;
-  for (const obj of interactables) {
-    const data = obj.userData.interactable;
-    if (!data || data.disabled || !obj.parent) continue;
-    if (["gem", "sample"].includes(data.type)) {
-      obj.rotation.y += dt * .9;
-      obj.position.y = .43 + Math.sin(t * 2.5 + obj.position.x) * .08;
-    }
-    const mark = obj.children.find(c => c.userData?.symbol);
-    if (mark) mark.rotation.y += dt * 1.3;
-  }
-}
-
-function updateEnemies(dt) {
-  for (const enemy of enemies) {
-    if (!enemy.alive || !enemy.obj.parent) continue;
-    enemy.cooldown = Math.max(0, enemy.cooldown - dt);
-    const d = enemy.obj.position.distanceTo(player.position);
-    const levelId = LEVELS[state.levelIndex].id;
-    let illegal = false;
-    if (enemy.type === "farmer") illegal = !runtime.permit;
-    if (enemy.type === "police") illegal = !runtime.permit || runtime.openHoles > 0 || (levelId === "malse" && boss && boss.alive);
-    if (enemy.type === "digger") illegal = true;
-    enemy.chase = illegal && d < (enemy.type === "police" ? 9 : 7);
-
-    const diff = DIFFICULTY[state.difficulty];
-    const speed = enemy.speed * diff.enemySpeed;
-    if (enemy.chase) {
-      const dir = player.position.clone().sub(enemy.obj.position);
-      dir.y = 0;
-      if (dir.lengthSq() > .01) dir.normalize();
-      enemy.obj.position.addScaledVector(dir, speed * dt);
-      enemy.obj.rotation.y = Math.atan2(dir.x, dir.z);
-    } else if (enemy.path?.length) {
-      const p = enemy.path[enemy.pathIndex];
-      const target = new THREE.Vector3(p[0], 0, p[1]);
-      const dir = target.sub(enemy.obj.position);
-      if (dir.length() < .55) enemy.pathIndex = (enemy.pathIndex + 1) % enemy.path.length;
-      else {
-        dir.normalize();
-        enemy.obj.position.addScaledVector(dir, speed * .55 * dt);
-        enemy.obj.rotation.y = Math.atan2(dir.x, dir.z);
-      }
-    }
-
-    if (d < 1.05 && enemy.cooldown <= 0) {
-      enemy.cooldown = 1.25;
-      if (enemy.type === "police") {
-        audio.play("police");
-        damage("Policejní kontrola zastavila výpravu.", 6);
-      } else if (enemy.type === "farmer") {
-        damage("Zemědělec tě vyhnal z nepovolené části pole.", 5);
-      } else {
-        damage("Noční kopáč tě zasáhl krumpáčem.", 3);
-      }
-    }
-  }
-  enemies = enemies.filter(e => e.alive && e.obj.parent);
-}
-
-function updateHazards(dt) {
-  for (const hazard of hazards) {
-    hazard.cooldown = Math.max(0, hazard.cooldown - dt);
-    if (hazard.path) {
-      const p = hazard.path[hazard.pathIndex];
-      const target = new THREE.Vector3(p[0], 0, p[1]);
-      const dir = target.sub(hazard.obj.position);
-      if (dir.length() < .6) hazard.pathIndex = (hazard.pathIndex + 1) % hazard.path.length;
-      else {
-        dir.normalize();
-        hazard.obj.position.addScaledVector(dir, hazard.speed * dt);
-        hazard.obj.rotation.y = Math.atan2(dir.x, dir.z);
-      }
-    } else {
-      const axis = hazard.axis;
-      hazard.obj.position[axis] += hazard.speed * hazard.dir * dt;
-      if (Math.abs(hazard.obj.position[axis] - hazard.origin) > hazard.range) hazard.dir *= -1;
-      hazard.obj.rotation.y = axis === "x" ? (hazard.dir > 0 ? Math.PI / 2 : -Math.PI / 2) : (hazard.dir > 0 ? 0 : Math.PI);
-    }
-    if (hazard.obj.position.distanceTo(player.position) < 1.25 && hazard.cooldown <= 0) {
-      hazard.cooldown = 1.4;
-      damage(hazard.type === "tractor" ? "Pozor na traktor!" : "Srážka v městském provozu!", 3);
-    }
-  }
-}
-
-function updateBoss(dt) {
-  if (!boss || !boss.alive) return;
-  boss.cooldown = Math.max(0, boss.cooldown - dt);
-  boss.attackTimer -= dt;
-  boss.stunTimer -= dt;
-
-  const toPlayer = player.position.clone().sub(boss.obj.position);
-  toPlayer.y = 0;
-  const distance = toPlayer.length();
-
-  if (boss.phase === "stalk") {
-    boss.vulnerable = false;
-    if (distance > 2.6) {
-      toPlayer.normalize();
-      boss.obj.position.addScaledVector(toPlayer, 2.0 * DIFFICULTY[state.difficulty].enemySpeed * dt);
-      boss.obj.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
-    }
-    if (boss.attackTimer <= 0) {
-      boss.phase = "windup";
-      boss.attackTimer = .75;
-      toast(`${boss.name} se napřahuje!`, "bad", 700);
-    }
-  } else if (boss.phase === "windup") {
-    boss.vulnerable = false;
-    boss.obj.rotation.z = Math.sin(performance.now() * .025) * .08;
-    if (boss.attackTimer <= 0) {
-      boss.phase = "charge";
-      boss.attackTimer = .55;
-      boss.chargeDir = player.position.clone().sub(boss.obj.position).setY(0).normalize();
-    }
-  } else if (boss.phase === "charge") {
-    boss.obj.position.addScaledVector(boss.chargeDir, 8 * dt);
-    if (boss.obj.position.distanceTo(player.position) < 1.25) {
-      damage(`${boss.name} tě zasáhl.`, 4);
-      boss.attackTimer = 0;
-    }
-    if (boss.attackTimer <= 0 || blocked(boss.obj.position.x + boss.chargeDir.x * .3, boss.obj.position.z + boss.chargeDir.z * .3, .7)) {
-      boss.phase = "stunned";
-      boss.stunTimer = 1.4;
-      boss.vulnerable = true;
-      boss.obj.rotation.z = .3;
-    }
-  } else if (boss.phase === "stunned") {
-    boss.vulnerable = true;
-    if (boss.stunTimer <= 0) {
-      boss.phase = "stalk";
-      boss.attackTimer = 1 + Math.random() * 1.2;
-      boss.vulnerable = false;
-      boss.obj.rotation.z = 0;
-    }
-  }
-
-  const pct = Math.max(0, boss.hp / boss.maxHp * 100);
-  ui.bossFill.style.width = `${pct}%`;
-  ui.bossHpText.textContent = `${Math.round(pct)} %`;
-}
-
-function updateRain(dt) {
-  if (!rain) return;
-  const arr = rain.geometry.attributes.position.array;
-  for (let i = 0; i < arr.length; i += 3) {
-    arr[i + 1] -= 15 * dt;
-    if (arr[i + 1] < 0) arr[i + 1] = 15 + Math.random() * 5;
-  }
-  rain.geometry.attributes.position.needsUpdate = true;
-}
-
-function updateEffects(dt) {
-  for (const e of effects) {
-    e.life -= dt;
-    e.velocity.y -= 4.8 * dt;
-    e.obj.position.addScaledVector(e.velocity, dt);
-    e.obj.material.opacity = Math.max(0, e.life);
-  }
-  for (const e of effects.filter(e => e.life <= 0)) effectGroup.remove(e.obj);
-  effects = effects.filter(e => e.life > 0);
-}
-
-function updateGame(dt) {
-  if (mode !== "playing") return;
-  actionRepeat -= dt;
-  if (actionHeld && actionRepeat <= 0) {
-    actionRepeat = .32;
-    performAction();
-  }
-  updatePlayer(dt);
-  updateCamera(dt);
-  updateInteractables(dt);
-  updateEnemies(dt);
-  updateHazards(dt);
-  updateBoss(dt);
-  updateRain(dt);
-  updateEffects(dt);
-  updateNearest();
-  updateHUD();
-}
-
-function animate() {
-  frameId = requestAnimationFrame(animate);
-  const dt = Math.min(.04, clock.getDelta());
-  updateGame(dt);
-  renderer.render(scene, camera);
-}
-
-function setupInput() {
-  addEventListener("keydown", event => {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) event.preventDefault();
-    keyboard.add(event.code);
-    if (event.code === "Space" && !event.repeat) performAction();
-    if (event.code === "ShiftLeft" || event.code === "ShiftRight") sprintHeld = true;
-    if (event.code === "Escape" || event.code === "KeyP") {
-      if (mode === "playing") pauseGame();
-      else if (mode === "paused") resumeGame();
-    }
-    updateKeyboardInput();
-  });
-  addEventListener("keyup", event => {
-    keyboard.delete(event.code);
-    if (event.code === "ShiftLeft" || event.code === "ShiftRight") sprintHeld = false;
-    updateKeyboardInput();
-  });
-
-  const joystick = $("joystick");
-  const knob = $("joystickKnob");
-  let pointerId = null;
-  function moveJoystick(event) {
-    const rect = joystick.getBoundingClientRect();
-    const dx = event.clientX - (rect.left + rect.width / 2);
-    const dy = event.clientY - (rect.top + rect.height / 2);
-    const max = rect.width * .32;
-    const len = Math.hypot(dx, dy) || 1;
-    const scale = Math.min(1, max / len);
-    const cx = dx * scale;
-    const cy = dy * scale;
-    joystickInput.set(cx / max, cy / max);
-    knob.style.transform = `translate(calc(-50% + ${cx}px), calc(-50% + ${cy}px))`;
-  }
-  joystick.addEventListener("pointerdown", event => {
-    pointerId = event.pointerId;
-    joystick.setPointerCapture(pointerId);
-    moveJoystick(event);
-  });
-  joystick.addEventListener("pointermove", event => {
-    if (event.pointerId === pointerId) moveJoystick(event);
-  });
-  const endJoystick = event => {
-    if (event.pointerId !== pointerId) return;
-    pointerId = null;
-    joystickInput.set(0, 0);
-    knob.style.transform = "translate(-50%,-50%)";
-  };
-  joystick.addEventListener("pointerup", endJoystick);
-  joystick.addEventListener("pointercancel", endJoystick);
-
-  const action = $("actionBtn");
-  action.addEventListener("pointerdown", event => {
-    event.preventDefault();
-    actionHeld = true;
-    action.classList.add("active");
-    actionRepeat = .34;
-    performAction();
-  });
-  const stopAction = () => {
-    actionHeld = false;
-    action.classList.remove("active");
-  };
-  action.addEventListener("pointerup", stopAction);
-  action.addEventListener("pointercancel", stopAction);
-
-  const sprint = $("sprintBtn");
-  sprint.addEventListener("pointerdown", event => {
-    event.preventDefault();
-    sprintHeld = true;
-    sprint.classList.add("active");
-  });
-  const stopSprint = () => {
-    sprintHeld = false;
-    sprint.classList.remove("active");
-  };
-  sprint.addEventListener("pointerup", stopSprint);
-  sprint.addEventListener("pointercancel", stopSprint);
-}
-
-function updateKeyboardInput() {
-  let x = 0, y = 0;
-  if (keyboard.has("KeyA") || keyboard.has("ArrowLeft")) x -= 1;
-  if (keyboard.has("KeyD") || keyboard.has("ArrowRight")) x += 1;
-  if (keyboard.has("KeyW") || keyboard.has("ArrowUp")) y -= 1;
-  if (keyboard.has("KeyS") || keyboard.has("ArrowDown")) y += 1;
-  moveInput.set(x, y);
-  if (moveInput.lengthSq() > 1) moveInput.normalize();
-}
-
-function resize() {
-  if (!renderer || !camera) return;
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.15));
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-}
-
-async function toggleFullscreen() {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (app.requestFullscreen) await app.requestFullscreen({ navigationUI: "hide" });
-    else toast("Na iPhonu použij Sdílet → Přidat na plochu.", "");
-  } catch {
-    toast("Safari povolí plnou obrazovku po přidání hry na plochu.", "");
-  }
-}
-
-function bindUI() {
-  $("newGameBtn").addEventListener("click", newGame);
-  $("continueGameBtn").addEventListener("click", continueGame);
-  $("startChapterBtn").addEventListener("click", startChapter);
-  $("dialogueNextBtn").addEventListener("click", nextDialogue);
-  $("markRealBtn").addEventListener("click", () => resolveSample(true));
-  $("markFakeBtn").addEventListener("click", () => resolveSample(false));
-  $("inventoryBtn").addEventListener("click", openInventory);
-  $("closeInventoryBtn").addEventListener("click", closeInventory);
-  $("sellCommonBtn").addEventListener("click", sellWeakCommon);
-  $("nextChapterBtn").addEventListener("click", startNextChapter);
-  $("confirmSelectionBtn").addEventListener("click", confirmFinalSelection);
-  $("pauseBtn").addEventListener("click", pauseGame);
-  $("resumeBtn").addEventListener("click", resumeGame);
-  $("saveAndMenuBtn").addEventListener("click", saveAndMenu);
-  $("restartBtn").addEventListener("click", restartGameConfirm);
-  $("fullscreenBtn").addEventListener("click", toggleFullscreen);
-  $("soundBtn").addEventListener("click", () => {
-    state.sound = !state.sound;
-    audio.setEnabled(state.sound);
-    $("soundBtn").textContent = state.sound ? "♫" : "×";
-    saveGame();
-  });
-  $("recordsBtn").addEventListener("click", openRecords);
-  $("endingRecordsBtn").addEventListener("click", openRecords);
-  $("closeRecordsBtn").addEventListener("click", closeRecords);
-  $("clearRecordsBtn").addEventListener("click", () => {
-    if (confirm("Smazat místní rekordy?")) {
-      localStorage.removeItem(RECORDS_KEY);
-      renderRecords();
-    }
-  });
-  $("playAgainBtn").addEventListener("click", () => {
-    screens.ending.classList.remove("visible");
-    if (endingIsFinal) {
-      state = defaultState();
-      mode = "menu";
-      audio.stopMusic();
-      screens.title.classList.add("visible");
-    } else restartFailedChapter();
-  });
-}
-
-function boot() {
-  refreshContinueButton();
-  initThree();
-  setupInput();
-  bindUI();
-  animate();
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
-  }
-}
-
-try {
-  boot();
-} catch (error) {
-  console.error(error);
-  mode = "menu";
-  setPlaying(false);
-  const panel = document.querySelector("#titleScreen .title-panel");
-  if (panel) {
-    const warning = document.createElement("p");
-    warning.className = "lead";
-    warning.style.color = "#ffb2af";
-    warning.textContent = "3D engine se nepodařilo spustit. Otevři hru přímo v Safari nebo Chrome a zkontroluj, zda je povolen WebGL.";
-    panel.append(warning);
-  }
-}
+  function boot(){resize();setupControls();bindUI();refreshContinue();addEventListener("resize",resize);document.addEventListener("visibilitychange",()=>{if(document.hidden&&mode==="playing")pause();});if("serviceWorker"in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));requestAnimationFrame(loop);}
+  try{boot();}catch(error){console.error(error);$("playButton").disabled=true;$("playButton").innerHTML="<span>CHYBA SPUŠTĚNÍ</span><small>obnov stránku</small>";}
+})();

@@ -1,61 +1,63 @@
-# Lovec vltavínů 3D – Cesta na Zelenou vlnu
+# Lovec vltavínů: Zelená vlna — Reborn Edition
 
-Kompletní low-poly 3D browserová hra zasazená do stylizovaného světa jihočeských vltavínů.
+Kompletně přepracovaná mobilní arkádová hra zasazená do stylizovaných jihočeských lokalit vltavínů.
 
-## Obsah hry
+## Nový herní princip
 
-Hra má šest samostatných průchozích kapitol:
+Každá lokalita trvá přibližně dvě až čtyři minuty. Hráč:
 
-1. **Chlum nad Malší** – povolení majitele, povrchový sběr po dešti a traktor.
-2. **Ločenice** – určování pravých vltavínů a skleněných napodobenin.
-3. **Nesměň** – čtyři dokumentované profily, policejní hlídka a zasypávání jam.
-4. **Besednice** – noční lokalita, indicie, ježkovitý vltavín a boss Krystalový Karel.
-5. **Nábřeží Malše** – hledání ztracené dokumentace, doprava, policie a boss Feták Franta.
-6. **Kulturní dům Slávie** – registrace na akci Na Zelené Vlně a výběr pěti kamenů pro porotu.
+1. prozkoumává mapu,
+2. jedním tlačítkem skenuje okolí,
+3. vyhledává stopy a nálezové body,
+4. kope pomocí krátké rytmické minihry,
+5. vyhýbá se hlídkám, provozu a rivalům,
+6. vytváří kombo rychlými správnými nálezy,
+7. po lokalitě vybírá jednu trvalou výhodu,
+8. ve finále sestaví vitrínu pro akci Na Zelené Vlně ve Slávii.
 
-## Herní systémy
+## Lokality
 
-- low-poly 3D grafika v Three.js
-- šest procedurálně sestavených map
-- dotykový joystick pro iPhone
-- klávesnice: WASD/šipky, mezerník, Shift a P
-- questy, NPC dialogy a různé podmínky dokončení
-- policie, zemědělci, noční kopáči, doprava a dva bossové
-- kopání profilů, zasypávání jam a systém pověsti
-- určovací minihra vltavín versus sklo
-- inventář jednotlivých kamenů s lokalitou, hmotností, kvalitou, hodnotou a dokumentací
-- tábor mezi lokacemi, prodej slabých kamenů a čtyři druhy vylepšení
-- ukládání průchodu do localStorage
-- místní Top 10 rekordů
-- finální volba pěti kamenů a několik možných konců
-- sedm skutečných 8bitových hudebních WAV stop
-- dvanáct samostatných 8bitových zvukových efektů
-- PWA režim, ikona na plochu, fullscreen a offline cache po prvním načtení
+- **Chlum po bouřce** — rozorané pole, kaluže, souhlas majitele a pohybující se traktor.
+- **Ločenice** — louka a erozní štěrková rýha s rychlým určováním vltavínů a skla.
+- **Nesměň** — lesní cesta, mělké profily, zasypávání jam a lesní dohled.
+- **Besednice** — noční borový les, staré jámy, hledání stop a honička o ježkovitý vltavín.
+- **Malše a Slávie** — řeka, nábřeží, lávka, doprava, dokumentace a finální vstup do kulturního domu.
 
-## Spuštění
+## Ovládání
 
-Hru je nutné otevřít přes HTTP nebo HTTPS, nikoli jako soubor v Rychlém náhledu iOS.
+### Mobil
 
-Lokální test:
+- levý joystick: pohyb,
+- vychýlení joysticku k okraji: automatický běh,
+- pravé tlačítko: podle situace sken, kopání, sběr, rozhovor, chycení rivala nebo odchod.
 
-```bash
-python3 -m http.server 8000
-```
+### Klávesnice
 
-Potom otevřít:
+- WASD nebo šipky: pohyb,
+- mezerník: akce,
+- Escape: pauza.
 
-```text
-http://localhost:8000
-```
+## Zvuk
 
-GitHub Pages:
+Hudba je generována za běhu pomocí Web Audio API. Je záměrně tichá, řídká a adaptivní podle lokality. Neobsahuje agresivní krátkou WAV smyčku. Tlačítkem `♫` lze veškerý zvuk okamžitě vypnout.
 
-```text
-https://rajekroman.github.io/lovec-vltavinu/
-```
+## Technické vlastnosti
 
-Na iPhonu otevřít adresu v Safari a zvolit **Sdílet → Přidat na plochu**.
+- čistý Canvas 2D bez WebGL a bez externích knihoven,
+- okamžité spuštění na iPhonu a Androidu,
+- portrét i režim naležato,
+- offline režim po prvním načtení,
+- ukládání rozehrané výpravy,
+- místní rekordy,
+- žádné externí síťové závislosti,
+- automatické nasazení přes GitHub Pages workflow.
 
-## Technické poznámky
+## Nasazení
 
-Grafické modely se skládají za běhu z jednoduchých 3D geometrií. Balíček proto nepotřebuje velké GLB modely ani textury. Hudba a efekty jsou skutečné lokální osmibitové WAV soubory. Three.js je uložený přímo ve složce `vendor`, takže hra po instalaci nevyžaduje externí CDN.
+Obsah ZIPu nahrajte přímo do kořene větve `main`. V GitHubu nastavte:
+
+`Settings → Pages → Source → GitHub Actions`
+
+Publikovaná adresa bude:
+
+`https://rajekroman.github.io/lovec-vltavinu/`

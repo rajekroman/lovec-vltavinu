@@ -1,4 +1,4 @@
-export const GAME_VERSION = "2.0.0";
+export const GAME_VERSION = "2.1.0";
 
 export const DIFFICULTY = {
   story: { enemySpeed: .78, enemyDamage: .7, playerSpeed: 1.08, reputationLoss: .72, label: "Příběh" },
