@@ -1,20 +1,13 @@
-# Lovec vltavínů: Zelená vlna — Reborn 4.2
+# Lovec vltavínů: Zelená vlna — Reborn 4.4
 
-Mobilní arkádová hra do prohlížeče.
+## Výrazně odlišná hudba lokalit
 
-## Hlavní novinky verze 4.2
+- **Chlum:** klidný venkovský motiv v 6/8, brnkané tóny a měkká flétna.
+- **Ločenice:** vzdušný valčík ve 3/4, zvonivý hlavní motiv.
+- **Nesměň:** pomalý lesní ambient v 5/4, dlouhé plochy, vítr a minimum rytmu.
+- **Besednice:** temná noční skladba v 7/8, hluboký dron a nepravidelný puls.
+- **Malše:** svižnější městské finále ve 4/4, synkopovaná basa a rytmické akordy.
 
-- klidnější hudební doprovod s melodickou linkou;
-- hezčí stylizované postavy;
-- detailnější lesní pasáž v Nesměni s písčitým podložím a novými dekoracemi.
+Hudbu lze kdykoliv vypnout tlačítkem s notou.
 
-## Nasazení
-
-Nahrajte rozbalený obsah této složky do kořene větve `main` v repozitáři GitHub Pages.
-
-## Ovládání
-
-- levý joystick: pohyb
-- pravé tlačítko: kontextová akce
-- tlačítko noty: zapnutí/vypnutí hudby
-- pauza: zastavení hry
+Audio formát: mono 16-bit PCM, 11 025 Hz, optimalizováno pro mobilní web.

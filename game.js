@@ -20,8 +20,8 @@
     actionIcon: $("actionIcon"), actionText: $("actionText")
   };
 
-  const SAVE_KEY = "lovecVltavinuRebornSaveV4_2";
-  const RECORD_KEY = "lovecVltavinuRebornRecordsV4_2";
+  const SAVE_KEY = "lovecVltavinuRebornSaveV4_3";
+  const RECORD_KEY = "lovecVltavinuRebornRecordsV4_3";
   const isTouch = navigator.maxTouchPoints > 0 || "ontouchstart" in window || matchMedia("(pointer: coarse)").matches;
   const storage = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -84,53 +84,81 @@
 
   class AudioEngine {
     constructor() {
-      this.ctx = null; this.master = null; this.musicGain = null; this.sfxGain = null;
-      this.enabled = true; this.timer = 0; this.step = 0; this.theme = "field";
-      this.nextNote = 0; this.ambienceTimer = 0;
-      this.themes = {
-        field: { scale:[146.8,164.8,196,220,246.9,293.7], melody:[0,2,3,2, 1,2,4,2, 0,2,3,4, 3,2,1,null], bass:[0,null,3,null, 4,null,2,null, 0,null,4,null, 3,null,1,null], tempo:.54, pad:[3,4,2,3] },
-        meadow:{ scale:[130.8,146.8,174.6,196,220,261.6], melody:[0,1,3,4, 3,1,2,3, 4,3,1,0, 1,2,3,null], bass:[0,null,2,null, 3,null,1,null, 4,null,3,null, 2,null,0,null], tempo:.5, pad:[2,3,4,2] },
-        forest:{ scale:[110,130.8,146.8,164.8,196,220], melody:[0,2,3,2, 0,1,2,4, 3,2,1,0, 2,3,4,null], bass:[0,null,2,null, 3,null,1,null, 4,null,2,null, 1,null,0,null], tempo:.58, pad:[2,3,1,2] },
-        night: { scale:[98,110,130.8,146.8,174.6,196], melody:[0,2,4,2, 3,2,1,2, 0,2,3,4, 2,1,0,null], bass:[0,null,3,null, 2,null,1,null, 4,null,2,null, 1,null,0,null], tempo:.62, pad:[3,2,4,1] },
-        city:  { scale:[130.8,146.8,174.6,196,220,261.6], melody:[0,2,4,3, 2,1,2,4, 3,2,1,0, 2,3,4,null], bass:[0,null,3,null, 4,null,2,null, 1,null,3,null, 4,null,0,null], tempo:.5, pad:[4,3,2,4] }
+      this.ctx = null;
+      this.master = null;
+      this.sfxGain = null;
+      this.enabled = true;
+      this.started = false;
+      this.theme = "field";
+      this.music = new Audio();
+      this.music.loop = true;
+      this.music.preload = "auto";
+      this.music.playsInline = true;
+      this.music.volume = .24;
+      this.musicTracks = {
+        field: "./assets/audio/music/field.wav",
+        meadow: "./assets/audio/music/meadow.wav",
+        forest: "./assets/audio/music/forest.wav",
+        night: "./assets/audio/music/night.wav",
+        city: "./assets/audio/music/city.wav"
       };
     }
     start() {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        this.ctx = new AC();
-        this.master = this.ctx.createGain();
-        this.musicGain = this.ctx.createGain();
-        this.sfxGain = this.ctx.createGain();
-        this.master.gain.value = .42;
-        this.musicGain.gain.value = .15;
-        this.sfxGain.gain.value = .6;
-        this.musicGain.connect(this.master); this.sfxGain.connect(this.master); this.master.connect(this.ctx.destination);
+        if (AC) {
+          this.ctx = new AC();
+          this.master = this.ctx.createGain();
+          this.sfxGain = this.ctx.createGain();
+          this.master.gain.value = .42;
+          this.sfxGain.gain.value = .6;
+          this.sfxGain.connect(this.master);
+          this.master.connect(this.ctx.destination);
+        }
       }
-      if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
-      this.nextNote = this.ctx.currentTime + .08;
+      if (this.ctx?.state === "suspended") this.ctx.resume().catch(() => {});
+      this.started = true;
+      this.playMusic();
     }
-    setTheme(theme) { this.theme = theme; this.step = 0; this.timer = 0; this.ambienceTimer = 0; }
-    toggle() { this.enabled = !this.enabled; if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.enabled ? .42 : 0, this.ctx.currentTime, .03); return this.enabled; }
+    setTheme(theme) {
+      const changed = this.theme !== theme;
+      this.theme = theme;
+      if (changed && this.started) this.playMusic(true);
+    }
+    playMusic(restart = false) {
+      const src = this.musicTracks[this.theme] || this.musicTracks.field;
+      const absolute = new URL(src, location.href).href;
+      if (this.music.src !== absolute) {
+        this.music.src = src;
+        restart = true;
+      }
+      if (restart) {
+        try { this.music.currentTime = 0; } catch {}
+      }
+      if (this.enabled) this.music.play().catch(() => {});
+    }
+    toggle() {
+      this.enabled = !this.enabled;
+      if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.enabled ? .42 : 0, this.ctx.currentTime, .03);
+      if (this.enabled) this.playMusic();
+      else this.music.pause();
+      return this.enabled;
+    }
     tone(freq, dur=.1, type="triangle", vol=.16, when=0, slide=0) {
-      if (!this.enabled || !this.ctx) return;
+      if (!this.enabled || !this.ctx || !this.sfxGain) return;
       const t = this.ctx.currentTime + when;
-      const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-      osc.type = type; osc.frequency.setValueAtTime(freq, t); if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t+dur);
-      gain.gain.setValueAtTime(.0001,t); gain.gain.linearRampToValueAtTime(vol,t+.008); gain.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t+dur);
+      gain.gain.setValueAtTime(.0001,t);
+      gain.gain.linearRampToValueAtTime(vol,t+.008);
+      gain.gain.exponentialRampToValueAtTime(.0001,t+dur);
       osc.connect(gain); gain.connect(this.sfxGain); osc.start(t); osc.stop(t+dur+.03);
     }
-    musicTone(freq, dur=.28, type="triangle", vol=.025, when=0) {
-      if (!this.enabled || !this.ctx) return;
-      const t = this.ctx.currentTime + when;
-      const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter();
-      osc.type = type; osc.frequency.setValueAtTime(freq, t); filter.type = "lowpass"; filter.frequency.value = type === "square" ? 1400 : 1900;
-      gain.gain.setValueAtTime(.0001, t); gain.gain.linearRampToValueAtTime(vol, t + .03); gain.gain.exponentialRampToValueAtTime(.0001, t + dur);
-      osc.connect(filter); filter.connect(gain); gain.connect(this.musicGain); osc.start(t); osc.stop(t + dur + .03);
-    }
     noise(dur=.08, vol=.08, cutoff=1200) {
-      if (!this.enabled || !this.ctx) return;
+      if (!this.enabled || !this.ctx || !this.sfxGain) return;
       const n=Math.floor(this.ctx.sampleRate*dur), b=this.ctx.createBuffer(1,n,this.ctx.sampleRate), d=b.getChannelData(0);
       for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
       const src=this.ctx.createBufferSource(), filter=this.ctx.createBiquadFilter(), g=this.ctx.createGain();
@@ -149,43 +177,16 @@
         win:()=>[392,494,587,784].forEach((x,i)=>this.tone(x,.36,"triangle",.1,i*.1)),
         click:()=>this.tone(360,.05,"square",.04),
         step:()=>this.noise(.025,.025,500)
-      }; f[name]?.();
+      };
+      f[name]?.();
     }
-    update(dt, active) {
-      if (!this.enabled || !this.ctx || !active) return;
-      this.timer -= dt; this.ambienceTimer -= dt;
-      const theme = this.themes[this.theme] || this.themes.field;
-      if (this.timer <= 0) {
-        const index = this.step % theme.melody.length;
-        const toneIndex = theme.melody[index];
-        const bassIndex = theme.bass[index];
-        const padIndex = theme.pad[Math.floor(index / 4) % theme.pad.length];
-        if (toneIndex !== null && toneIndex !== undefined) {
-          const freq = theme.scale[toneIndex];
-          this.musicTone(freq, .38, "triangle", .028);
-          if (index % 2 === 0) this.musicTone(freq * 2, .19, "sine", .009, .12);
-        }
-        if (bassIndex !== null && bassIndex !== undefined) this.musicTone(theme.scale[bassIndex] / 2, .34, "triangle", .018, .02);
-        if (index % 4 === 0 && padIndex !== null && padIndex !== undefined) {
-          const root = theme.scale[padIndex];
-          this.musicTone(root, .92, "triangle", .012, .01);
-          this.musicTone(root * 1.5, .84, "sine", .007, .03);
-        }
-        this.step = (this.step + 1) % theme.melody.length;
-        this.timer = theme.tempo;
-      }
-      if (this.ambienceTimer <= 0) {
-        if (this.theme === "night") this.noise(.14, .006, 1400);
-        else if (this.theme === "forest") this.noise(.1, .004, 1900);
-        this.ambienceTimer = 4.5 + Math.random() * 4;
-      }
-    }
+    update() {}
   }
   const audio = new AudioEngine();
 
   function freshState() {
     return {
-      version:"4.2.0", levelIndex:0, score:0, stones:[], heat:0, combo:1, comboTimer:0, caught:0,
+      version:"4.4.0", levelIndex:0, score:0, stones:[], heat:0, combo:1, comboTimer:0, caught:0,
       perks:{boots:0,scanner:0,shovel:0,quiet:0,case:0,eye:0}, stats:{digs:0,correct:0,misses:0,rare:0}, sound:true
     };
   }

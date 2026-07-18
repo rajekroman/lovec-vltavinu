@@ -1,11 +1,14 @@
-Lovec vltavínů Reborn 4.2
+LOVEC VLTAVÍNŮ REBORN 4.4 — DISTINCT SOUNDTRACK
 
-Kontroly:
-- JavaScript syntax: OK
-- build size: 103945 B
-- lokální soubory: OK
+TRACKS
+- city: 54.34 s, mono 16-bit PCM, 11025 Hz, 1198234 B
+- field: 46.15 s, mono 16-bit PCM, 11025 Hz, 1017738 B
+- forest: 62.07 s, mono 16-bit PCM, 11025 Hz, 1368666 B
+- meadow: 38.3 s, mono 16-bit PCM, 11025 Hz, 844514 B
+- night: 59.06 s, mono 16-bit PCM, 11025 Hz, 1302374 B
 
-Změny build verze 4.2:
-- melodická hudba
-- přepracované postavy
-- detailnější lesní lokalita s písčitým podložím
+VALIDATION
+- WAV headers: PASS
+- Track count: 5
+- JavaScript version: 4.4.0
+- Service worker cache: v4-4

@@ -1,10 +1,12 @@
-# Lovec vltavínů Reborn 4.2
+# Changelog
 
-## Změny v 4.2
+## 4.4.0 — Distinct Soundtrack Edition
 
-- nová klidnější a propracovanější procedurální melodie se samostatnou basovou linkou, hlavní linkou a jemným doprovodem;
-- jemně upravené hlasitosti hudby a efektů;
-- přepracované postavy a hráč: plnější siluety, obličejové detaily, výraznější oblečení a čitelnější role;
-- detailnější lokalita Nesměň s písčitým podložím;
-- nové lesní dekorace: kapradiny, trsy trávy, pařezy a kmeny;
-- jemně rozšířená barevnost lesa a lepší čitelnost cesty v pískovém podloží.
+- každá lokalita má jiný takt, tempo, instrumentaci a hudební náladu;
+- Chlum: pastorální 6/8 s brnkaným doprovodem;
+- Ločenice: lehký valčík ve 3/4 se zvonivou melodií;
+- Nesměň: pomalý lesní ambient v 5/4 bez pravidelného bubnování;
+- Besednice: temná nepravidelná skladba v 7/8;
+- Malše: rytmičtější městské finále ve 4/4;
+- nové stereo WAV stopy v kvalitě 22 050 Hz;
+- nová offline cache v4-4.
