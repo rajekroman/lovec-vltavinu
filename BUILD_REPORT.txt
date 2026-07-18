@@ -1,14 +1,24 @@
-LOVEC VLTAVÍNŮ REBORN 4.4 — DISTINCT SOUNDTRACK
+LOVEC VLTAVÍNŮ REBORN 4.5 — BUILD REPORT
 
-TRACKS
-- city: 54.34 s, mono 16-bit PCM, 11025 Hz, 1198234 B
-- field: 46.15 s, mono 16-bit PCM, 11025 Hz, 1017738 B
-- forest: 62.07 s, mono 16-bit PCM, 11025 Hz, 1368666 B
-- meadow: 38.3 s, mono 16-bit PCM, 11025 Hz, 844514 B
-- night: 59.06 s, mono 16-bit PCM, 11025 Hz, 1302374 B
+Opravy:
+- přesná detekce hráče uvnitř kuželu: PASS
+- detekce Karlovy svítilny: PASS
+- alarm VE SVĚTLE: PASS
+- růst ukazatele nebezpečí: PASS
+- výstražná barva kuželu: PASS
+- dopadení po 1,55 s v Karlově světle: PASS
+- ústup pozornosti mimo kužel: PASS
+- nulová vzdálenost a přechod úhlu ±π: ošetřeno
 
-VALIDATION
-- WAV headers: PASS
-- Track count: 5
-- JavaScript version: 4.4.0
-- Service worker cache: v4-4
+Mobilní runtime test 390 × 844:
+- po 0,45 s v kuželu: heat 18,46 %, alarm zobrazen
+- Karlova svítilna seesPlayer: true
+- po delším pobytu: caught 1, hráč vrácen na start
+- JavaScript runtime errors: 0
+
+Statické kontroly:
+- JavaScript syntax: PASS
+- HTML reference IDs: PASS
+- manifest JSON: PASS
+- hudební WAV soubory: 5
+- nová offline cache: v4-5

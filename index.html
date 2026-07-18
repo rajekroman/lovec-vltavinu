@@ -27,11 +27,12 @@
       </div>
       <div class="hud-right">
         <div class="bag-pill"><span>◆</span><b id="bagValue">0</b></div>
-        <div class="heat-pill" aria-label="Pozornost hlídky"><span>!</span><i><em id="heatFill"></em></i></div>
+        <div id="heatPill" class="heat-pill" aria-label="Pozornost hlídky"><span>!</span><i><em id="heatFill"></em></i></div>
         <button id="soundButton" class="icon-button" type="button" aria-label="Zvuk">♫</button>
         <button id="pauseButton" class="icon-button" type="button" aria-label="Pauza">Ⅱ</button>
       </div>
     </div>
+    <div id="dangerBanner" class="danger-banner hidden"><span>⚠</span><strong id="dangerText">VE SVĚTLE</strong></div>
     <div id="combo" class="combo hidden">KOMBO ×2</div>
     <div id="hint" class="hint hidden">Rozhlédni se po okolí</div>
     <div id="toast" class="toast"></div>
@@ -59,7 +60,7 @@
         <button id="howButton" class="text-button" type="button">Jak se hraje</button>
         <button id="recordsButton" class="text-button" type="button">Rekordy</button>
       </div>
-      <p class="version">v4.1 · Mobile Controls Update</p>
+      <p class="version">v4.5 · Danger Detection Fix</p>
     </div>
   </section>
 

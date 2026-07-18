@@ -1,13 +1,16 @@
-# Lovec vltavínů: Zelená vlna — Reborn 4.4
+# Lovec vltavínů: Zelená vlna — Reborn 4.5
 
-## Výrazně odlišná hudba lokalit
+## Oprava nebezpečí
 
-- **Chlum:** klidný venkovský motiv v 6/8, brnkané tóny a měkká flétna.
-- **Ločenice:** vzdušný valčík ve 3/4, zvonivý hlavní motiv.
-- **Nesměň:** pomalý lesní ambient v 5/4, dlouhé plochy, vítr a minimum rytmu.
-- **Besednice:** temná noční skladba v 7/8, hluboký dron a nepravidelný puls.
-- **Malše:** svižnější městské finále ve 4/4, synkopovaná basa a rytmické akordy.
+Vstup do viditelného kuželu hlídky nebo do světla Krystalového Karla nyní:
 
-Hudbu lze kdykoliv vypnout tlačítkem s notou.
+1. rozsvítí alarm **VE SVĚTLE**,
+2. změní barvu kuželu,
+3. začne zvyšovat ukazatel pozornosti,
+4. při delším pobytu způsobí dopadení.
 
-Audio formát: mono 16-bit PCM, 11 025 Hz, optimalizováno pro mobilní web.
+Mimo kužel pozornost postupně klesá.
+
+## Nasazení
+
+Nahrajte rozbalený obsah ZIPu do kořene větve `main`.

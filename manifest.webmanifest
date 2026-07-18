@@ -1,7 +1,7 @@
 {
   "name": "Lovec vltavínů: Zelená vlna",
   "short_name": "Lovec vltavínů",
-  "description": "Mobilní arkádová výprava s pěti delšími melodickými soundtracky pro jednotlivé lokality.",
+  "description": "Mobilní arkádová výprava s opravenou detekcí svítilen, hlídek a ukazatelem nebezpečí.",
   "lang": "cs",
   "start_url": "./",
   "scope": "./",

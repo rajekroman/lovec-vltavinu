@@ -8,3 +8,17 @@
 @media(max-width:760px){#titleScreen{display:none;grid-template-columns:1fr;background:linear-gradient(rgba(5,15,10,.28),rgba(5,15,10,.96)),linear-gradient(#142a35 0 37%,#314a37 37% 50%,#3a2b20 50%)}#titleScreen.visible{display:grid}.title-art{position:absolute;inset:0;opacity:.65}.title-copy{position:relative;z-index:2;padding:28px 22px;text-align:center}.title-copy h1{font-size:clamp(58px,18vw,86px)}.title-gem{left:50%;top:13%;transform:translateX(-50%) rotate(-12deg);width:88px;height:110px;opacity:.68}.moon{width:100px;height:100px;right:10%;top:8%}.mission-pill{max-width:58vw}.mission-pill strong{font-size:11px}.heat-pill i{width:32px}.bag-pill,.heat-pill{padding-left:7px;padding-right:7px}.icon-button{min-width:38px}.move-zone{width:116px;height:116px}.action-button{width:88px;height:88px}.controls{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}.brief-card,.dig-card,.identify-card,.dialog-card,.perk-card,.jury-card,.result-card,.small-card,.how-card,.records-card{padding:19px;border-radius:19px}.perk-list{grid-template-columns:1fr}.perk-option{display:grid;grid-template-columns:45px 1fr;column-gap:8px}.perk-option b{grid-row:1/3;margin:0}.jury-list{grid-template-columns:1fr}.how-grid{grid-template-columns:1fr}.result-stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-height:490px) and (orientation:landscape){.controls{padding-bottom:calc(8px + var(--safe-b))}.move-zone{width:98px;height:98px}.stick{width:48px;height:48px}.action-button{width:76px;height:76px}.hint{bottom:calc(89px + var(--safe-b))}.mission-pill{height:40px}.brief-card,.dig-card,.identify-card,.dialog-card,.perk-card,.jury-card,.result-card,.small-card,.how-card,.records-card{padding:15px;max-width:630px}.brief-card>p:not(.eyebrow){font-size:12px;margin:7px 0}.brief-goal{margin:8px 0}.perk-list{grid-template-columns:repeat(3,1fr)}.jury-list{max-height:37vh}.how-grid{grid-template-columns:1fr 1fr}.title-copy{padding:18px 28px}.title-copy h1{font-size:54px}.subtitle{margin:8px 0 13px}.version{display:none}}
 @media(hover:hover) and (pointer:fine){.controls{display:none!important}}
+
+/* Danger detection 4.5 */
+.heat-pill{position:relative;transition:border-color .12s,background .12s,transform .12s}
+.heat-pill.detected{border-color:rgba(255,120,103,.92);background:rgba(72,18,14,.9);animation:dangerPulse .58s ease-in-out infinite alternate}
+.heat-pill.warning{border-color:rgba(245,192,90,.75)}
+.heat-pill.critical{border-color:#ff625b;background:rgba(92,15,13,.94)}
+.heat-pill.detected>span,.heat-pill.critical>span{color:#fff}
+.heat-pill.detected em{background:linear-gradient(90deg,#ffd36b,#ff514b);box-shadow:0 0 12px rgba(255,82,72,.75)}
+.danger-banner{position:absolute;z-index:14;top:calc(66px + var(--safe-t));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,119,101,.82);background:rgba(78,17,14,.9);color:#fff;font-size:11px;letter-spacing:.08em;font-weight:1000;backdrop-filter:blur(8px);pointer-events:none;animation:dangerPulse .5s ease-in-out infinite alternate}
+.danger-banner span{color:#ffcf62;font-size:14px}
+@keyframes dangerPulse{from{transform:scale(1)}to{transform:scale(1.035)}}
+.danger-banner{transform:translateX(-50%) scale(1)}
+@keyframes dangerBannerPulse{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.04)}}
+.danger-banner:not(.hidden){animation:dangerBannerPulse .48s ease-in-out infinite alternate}

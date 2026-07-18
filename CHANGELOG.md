@@ -1,12 +1,12 @@
 # Changelog
 
-## 4.4.0 — Distinct Soundtrack Edition
+## 4.5.0 — Danger Detection Fix
 
-- každá lokalita má jiný takt, tempo, instrumentaci a hudební náladu;
-- Chlum: pastorální 6/8 s brnkaným doprovodem;
-- Ločenice: lehký valčík ve 3/4 se zvonivou melodií;
-- Nesměň: pomalý lesní ambient v 5/4 bez pravidelného bubnování;
-- Besednice: temná nepravidelná skladba v 7/8;
-- Malše: rytmičtější městské finále ve 4/4;
-- nové stereo WAV stopy v kvalitě 22 050 Hz;
-- nová offline cache v4-4.
+- opraven přesný výpočet hráče uvnitř kuželu svítilny;
+- Krystalový Karel má nyní vlastní funkční svítilnu;
+- pobyt ve světle zvyšuje ukazatel nebezpečí;
+- kužel při odhalení změní barvu a zvýrazní okraj;
+- nový alarm „VE SVĚTLE“;
+- po příliš dlouhém odhalení následuje skutečné dopadení;
+- ukazatel má stavy klid, varování, odhalení a kritické nebezpečí;
+- ošetřena nulová vzdálenost a přesný rozdíl úhlů přes hranici ±π.
