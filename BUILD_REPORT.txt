@@ -1,0 +1,24 @@
+LOVEC VLTAVÍNŮ 3D – BUILD REPORT
+Version: 2.0.0
+Files: 35
+Uncompressed size: 2,281,655 bytes
+Music tracks: 7
+Sound effects: 12
+Total WAV files: 19
+HTML element references missing: none
+Manifest name: Lovec vltavínů 3D – Cesta na Zelenou vlnu
+
+Validated:
+- JavaScript module syntax
+- HTML-to-JavaScript element references
+- manifest JSON
+- local Three.js module presence
+- all WAV headers (mono, unsigned 8-bit PCM, 11025 Hz)
+- all source and asset paths
+- GitHub Pages deployment workflow
+- ZIP integrity
+
+Runtime note:
+The container used to build the game cannot initialize a WebGL display, so a complete
+interactive GPU playthrough could not be automated here. The game includes a visible
+WebGL error message if a target browser cannot initialize the 3D engine.

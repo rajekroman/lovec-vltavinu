@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#07150f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Lovec vltavínů">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Plná 3D browserová hra z jihočeského světa vltavínů.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-180.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>Lovec vltavínů 3D – Cesta na Zelenou vlnu</title>
+</head>
+<body>
+  <main id="app">
+    <canvas id="gameCanvas" aria-label="3D herní plocha"></canvas>
+
+    <section id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-top">
+        <div class="location-badge">
+          <span class="gem-mark">◆</span>
+          <span>
+            <small id="chapterLabel">Kapitola</small>
+            <strong id="locationLabel">Chlum</strong>
+          </span>
+        </div>
+        <div class="hud-buttons">
+          <button id="inventoryBtn" class="icon-button" type="button" aria-label="Inventář">◇</button>
+          <button id="soundBtn" class="icon-button" type="button" aria-label="Zvuk">♫</button>
+          <button id="fullscreenBtn" class="icon-button" type="button" aria-label="Celá obrazovka">⛶</button>
+          <button id="pauseBtn" class="icon-button" type="button" aria-label="Pauza">Ⅱ</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div><span>Zdraví</span><strong id="healthValue">♥♥♥♥♥</strong></div>
+        <div><span>Pověst</span><strong id="reputationValue">80</strong></div>
+        <div><span>Sbírka</span><strong><span id="gramsValue">0.0</span> g</strong></div>
+        <div><span>Koruny</span><strong id="moneyValue">300</strong></div>
+        <div><span>Skóre</span><strong id="scoreValue">0</strong></div>
+      </div>
+
+      <div class="quest-box">
+        <div class="quest-head">
+          <span id="questTitle">Aktuální úkol</span>
+          <span id="questProgress"></span>
+        </div>
+        <p id="questText">Promluv s majitelem pole.</p>
+        <div class="quest-track"><div id="questFill"></div></div>
+      </div>
+
+      <div id="interactionHint" class="interaction-hint hidden">
+        <span id="interactionIcon">!</span>
+        <span id="interactionText">Promluvit</span>
+      </div>
+
+      <div id="bossHud" class="boss-hud hidden">
+        <div><strong id="bossName">Boss</strong><span id="bossHpText">100 %</span></div>
+        <div class="boss-track"><div id="bossFill"></div></div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </section>
+
+    <section id="touchControls" class="touch-controls hidden" aria-label="Dotykové ovládání">
+      <div id="joystick" class="joystick">
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+      <div class="touch-actions">
+        <button id="sprintBtn" class="round-button sprint" type="button">
+          <span>»</span><small>BĚH</small>
+        </button>
+        <button id="actionBtn" class="round-button action" type="button">
+          <span id="actionIcon">✋</span><small id="actionLabel">AKCE</small>
+        </button>
+      </div>
+    </section>
+
+    <section id="titleScreen" class="overlay visible">
+      <div class="panel title-panel">
+        <div class="hero-gem">◆</div>
+        <p class="eyebrow">JIHOČESKÉ DOBRODRUŽSTVÍ</p>
+        <h1>Lovec vltavínů</h1>
+        <p class="subtitle">Cesta na Zelenou vlnu</p>
+        <p class="lead">
+          Začni na poli po dešti, projdi lesními profily a doprav doloženou sbírku
+          na vltavínovou akci <strong>Na Zelené Vlně</strong> v kulturním domě Slávie
+          v Českých Budějovicích.
+        </p>
+
+        <div class="form-grid">
+          <label>
+            <span>Jméno lovce</span>
+            <input id="playerNameInput" maxlength="18" value="Lovec">
+          </label>
+          <label>
+            <span>Obtížnost</span>
+            <select id="difficultySelect">
+              <option value="story">Příběh</option>
+              <option value="normal" selected>Sběratel</option>
+              <option value="hard">Černá noc</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="route">
+          <div><b>1</b><span>Chlum</span></div><i>›</i>
+          <div><b>2</b><span>Ločenice</span></div><i>›</i>
+          <div><b>3</b><span>Nesměň</span></div><i>›</i>
+          <div><b>4</b><span>Besednice</span></div><i>›</i>
+          <div><b>5</b><span>Malše</span></div><i>›</i>
+          <div><b>6</b><span>Slávie</span></div>
+        </div>
+
+        <button id="newGameBtn" class="primary-button" type="button">Nová výprava</button>
+        <button id="continueGameBtn" class="secondary-button hidden" type="button">Pokračovat v uložené hře</button>
+        <button id="recordsBtn" class="secondary-button" type="button">Síň rekordů</button>
+
+        <p class="controls-copy">
+          Klávesnice: WASD / šipky, mezerník, Shift. iPhone: joystick, AKCE a BĚH.
+        </p>
+      </div>
+    </section>
+
+    <section id="chapterScreen" class="overlay">
+      <div class="panel story-panel">
+        <p id="chapterKicker" class="eyebrow">KAPITOLA 1</p>
+        <h2 id="chapterTitle">Chlum: pole po dešti</h2>
+        <p id="chapterStory"></p>
+        <div class="story-grid">
+          <div><h3>Hlavní úkol</h3><p id="chapterObjective"></p></div>
+          <div><h3>Vzácný nález</h3><p id="chapterRare"></p></div>
+        </div>
+        <div id="chapterLore" class="lore-box"></div>
+        <button id="startChapterBtn" class="primary-button" type="button">Vstoupit do lokality</button>
+      </div>
+    </section>
+
+    <section id="dialogueScreen" class="overlay dialogue-overlay">
+      <div class="dialogue-card">
+        <div id="dialoguePortrait" class="portrait">V</div>
+        <div class="dialogue-copy">
+          <p id="dialogueName" class="eyebrow">Sedlák Václav</p>
+          <p id="dialogueText"></p>
+          <div id="dialogueChoices" class="dialogue-choices"></div>
+          <button id="dialogueNextBtn" class="primary-button" type="button">Pokračovat</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="identifyScreen" class="overlay">
+      <div class="panel identify-panel">
+        <p class="eyebrow">URČOVÁNÍ NÁLEZU</p>
+        <h2>Vltavín, nebo sklo?</h2>
+        <div class="sample-view">
+          <div id="sampleGem" class="sample-gem">◆</div>
+          <div>
+            <p id="sampleDescription"></p>
+            <dl id="sampleFacts"></dl>
+          </div>
+        </div>
+        <div class="identify-actions">
+          <button id="markRealBtn" class="primary-button" type="button">Pravý vltavín</button>
+          <button id="markFakeBtn" class="secondary-button" type="button">Skleněná napodobenina</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="inventoryScreen" class="overlay">
+      <div class="panel inventory-panel">
+        <div class="panel-header">
+          <div><p class="eyebrow">SBÍRKA</p><h2>Inventář kamenů</h2></div>
+          <button id="closeInventoryBtn" class="icon-button" type="button">×</button>
+        </div>
+        <div class="inventory-summary">
+          <div><span>Počet</span><strong id="inventoryCount">0</strong></div>
+          <div><span>Hmotnost</span><strong id="inventoryWeight">0 g</strong></div>
+          <div><span>Hodnota</span><strong id="inventoryValue">0 Kč</strong></div>
+          <div><span>Dokladované</span><strong id="inventoryDocumented">0</strong></div>
+        </div>
+        <div id="inventoryList" class="inventory-list"></div>
+      </div>
+    </section>
+
+    <section id="campScreen" class="overlay">
+      <div class="panel camp-panel">
+        <p class="eyebrow">TÁBOR MEZI LOKALITAMI</p>
+        <h2 id="campTitle">Výprava pokračuje</h2>
+        <p id="campSummary"></p>
+        <div class="camp-stats">
+          <div><span>Sbírka</span><strong id="campWeight">0 g</strong></div>
+          <div><span>Pověst</span><strong id="campReputation">80</strong></div>
+          <div><span>Koruny</span><strong id="campMoney">300 Kč</strong></div>
+          <div><span>Skóre</span><strong id="campScore">0</strong></div>
+        </div>
+
+        <h3>Výbava</h3>
+        <div id="upgradeList" class="upgrade-list"></div>
+
+        <div class="camp-actions">
+          <button id="sellCommonBtn" class="secondary-button" type="button">Prodat slabé běžné kusy</button>
+          <button id="nextChapterBtn" class="primary-button" type="button">Pokračovat</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="finalSelectionScreen" class="overlay">
+      <div class="panel final-panel">
+        <p class="eyebrow">SLÁVIE – VÝSTAVNÍ STŮL</p>
+        <h2>Vyber pět kamenů pro porotu</h2>
+        <p>Nejvíce bodů získají vzácné, nepoškozené a doložené kusy. Padělek může zničit celou prezentaci.</p>
+        <div id="finalSelectionList" class="selection-list"></div>
+        <div class="selection-footer">
+          <span id="selectionCount">Vybráno 0 / 5</span>
+          <button id="confirmSelectionBtn" class="primary-button" type="button" disabled>Odevzdat porotě</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pauseScreen" class="overlay">
+      <div class="panel compact-panel">
+        <p class="eyebrow">PAUZA</p>
+        <h2>Výprava odpočívá</h2>
+        <button id="resumeBtn" class="primary-button" type="button">Pokračovat</button>
+        <button id="saveAndMenuBtn" class="secondary-button" type="button">Uložit a vrátit do menu</button>
+        <button id="restartBtn" class="secondary-button danger" type="button">Začít novou hru</button>
+      </div>
+    </section>
+
+    <section id="recordsScreen" class="overlay">
+      <div class="panel records-panel">
+        <div class="panel-header">
+          <div><p class="eyebrow">LOKÁLNÍ TOP 10</p><h2>Síň rekordů</h2></div>
+          <button id="closeRecordsBtn" class="icon-button" type="button">×</button>
+        </div>
+        <ol id="recordsList" class="records-list"></ol>
+        <button id="clearRecordsBtn" class="secondary-button danger" type="button">Smazat rekordy</button>
+      </div>
+    </section>
+
+    <section id="endingScreen" class="overlay">
+      <div class="panel ending-panel">
+        <p id="endingKicker" class="eyebrow">NA ZELENÉ VLNĚ</p>
+        <h2 id="endingTitle">Výstavní stůl je připravený</h2>
+        <div class="ending-score"><span>Výsledné skóre</span><strong id="endingScore">0</strong></div>
+        <p id="endingText"></p>
+        <div id="endingBreakdown" class="ending-breakdown"></div>
+        <button id="playAgainBtn" class="primary-button" type="button">Nová výprava</button>
+        <button id="endingRecordsBtn" class="secondary-button" type="button">Síň rekordů</button>
+      </div>
+    </section>
+
+    <section id="rotateNotice" class="rotate-notice">
+      <div>↻</div>
+      <strong>Otoč iPhone naležato</strong>
+      <span>Hra je navržena pro režim na šířku.</span>
+    </section>
+
+    <noscript><div class="noscript">Hra potřebuje zapnutý JavaScript.</div></noscript>
+  </main>
+
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
