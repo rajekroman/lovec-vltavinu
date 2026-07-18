@@ -1,48 +1,11 @@
-LOVEC VLTAVÍNŮ: ZELENÁ VLNA — REBORN EDITION
-Version: 4.0.0
+Lovec vltavínů Reborn 4.2
 
-ARCHITECTURE
-- Canvas 2D
-- Vanilla JavaScript
-- No WebGL
-- No Three.js
-- No external runtime dependencies
-- Procedural Web Audio music and sound effects
+Kontroly:
+- JavaScript syntax: OK
+- build size: 103945 B
+- lokální soubory: OK
 
-MOBILE RUNTIME TEST
-Viewport: 390 × 844
-- Title screen and one-tap start: PASS
-- Chapter briefing: PASS
-- Touch controls visible: PASS
-- NPC interaction and permission: PASS
-- Scan reveals hotspot: PASS
-- Dig timing minigame: PASS
-- Three successful hits: PASS
-- Stone added to bag: PASS
-- JavaScript runtime errors: NONE
-
-LANDSCAPE STARTUP TEST
-Viewport: 844 × 390
-- Chlum: PASS
-- Ločenice: PASS
-- Nesměň: PASS
-- Besednice: PASS
-- Malše: PASS
-- Touch controls visible in every level: PASS
-- JavaScript runtime errors: NONE
-
-FINAL JURY TEST
-- Five test stones loaded: PASS
-- Three-stone selection: PASS
-- Jury button validation: PASS
-- Result calculation: PASS
-- Main prize ending reachable: PASS
-- JavaScript runtime errors: NONE
-
-STATIC VALIDATION
-- JavaScript syntax: PASS
-- HTML element references: PASS
-- Manifest JSON: PASS
-- HTML local asset references: PASS
-- Service worker local asset references: PASS
-- GitHub Pages workflow: PASS
+Změny build verze 4.2:
+- melodická hudba
+- přepracované postavy
+- detailnější lesní lokalita s písčitým podložím
