@@ -5,9 +5,9 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  timeout: 20_000,
+  timeout: 15_000,
   expect: {
-    timeout: 5_000
+    timeout: 4_000
   },
   reporter: [
     ["line"],
@@ -15,6 +15,9 @@ export default defineConfig({
   ],
   use: {
     baseURL: "http://127.0.0.1:4173",
+    serviceWorkers: "block",
+    actionTimeout: 5_000,
+    navigationTimeout: 8_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure"
