@@ -88,10 +88,10 @@ const definitions = [
 
 export const LEVEL_DEFINITIONS = deepFreeze(definitions);
 export const LEVEL_ORDER = Object.freeze(LEVEL_DEFINITIONS.map(level => level.id));
-export const LEVEL_BY_ID = new Map(LEVEL_DEFINITIONS.map(level => [level.id, level]));
+const levelById = new Map(LEVEL_DEFINITIONS.map(level => [level.id, level]));
 
 export function getLevelDefinition(id) {
-  return LEVEL_BY_ID.get(id) ?? null;
+  return levelById.get(id) ?? null;
 }
 
 export function getNextLevelId(id) {
