@@ -9,8 +9,8 @@ export const SAMPLE_DEFINITIONS = Object.freeze([
   { id: "bottle-glass", real: false, title: "Lahvové sklo", text: "Ploché stěny, pravidelná tloušťka a hladké průmyslové plochy." }
 ].map(freezeSample));
 
-export const SAMPLE_BY_ID = new Map(SAMPLE_DEFINITIONS.map(sample => [sample.id, sample]));
+const sampleById = new Map(SAMPLE_DEFINITIONS.map(sample => [sample.id, sample]));
 
 export function getSampleDefinition(id) {
-  return SAMPLE_BY_ID.get(id) ?? null;
+  return sampleById.get(id) ?? null;
 }
