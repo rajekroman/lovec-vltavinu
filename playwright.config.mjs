@@ -4,10 +4,10 @@ export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
-  timeout: 15_000,
+  retries: 0,
+  timeout: 10_000,
   expect: {
-    timeout: 4_000
+    timeout: 3_000
   },
   reporter: [
     ["line"],
@@ -16,8 +16,8 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     serviceWorkers: "block",
-    actionTimeout: 5_000,
-    navigationTimeout: 8_000,
+    actionTimeout: 4_000,
+    navigationTimeout: 6_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure"
