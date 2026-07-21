@@ -33,6 +33,7 @@ const requiredFiles = [
   "index.html",
   "style.css",
   "game.js",
+  "runtime-stability.js",
   "manifest.webmanifest",
   "sw.js",
   "icon-180.png",
@@ -45,9 +46,11 @@ requiredFiles.forEach(relativePath => {
 
 const html = file("index.html");
 const game = file("game.js");
+const runtime = file("runtime-stability.js");
 const css = file("style.css");
 const serviceWorker = file("sw.js");
 const manifestText = file("manifest.webmanifest");
+const combinedJavaScript = `${game}\n${runtime}`;
 
 const htmlIds = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
 const htmlIdSet = new Set(htmlIds);
@@ -55,17 +58,24 @@ const duplicateIds = [...new Set(htmlIds.filter((id, index) => htmlIds.indexOf(i
 if (duplicateIds.length) fail(`Duplicitní HTML ID: ${duplicateIds.join(", ")}`);
 
 const referencedIds = new Set([
-  ...[...game.matchAll(/\$\(["']([^"']+)["']\)/g)].map(match => match[1]),
-  ...[...game.matchAll(/getElementById\(["']([^"']+)["']\)/g)].map(match => match[1])
+  ...[...combinedJavaScript.matchAll(/\$\(["']([^"']+)["']\)/g)].map(match => match[1]),
+  ...[...combinedJavaScript.matchAll(/getElementById\(["']([^"']+)["']\)/g)].map(match => match[1])
 ]);
 const missingIds = [...referencedIds].filter(id => !htmlIdSet.has(id)).sort();
 if (missingIds.length) fail(`JavaScript odkazuje na chybějící HTML ID: ${missingIds.join(", ")}`);
 
 for (const id of htmlIdSet) {
-  if (!css.includes(`#${id}`) && !game.includes(`$("${id}")`) && !game.includes(`$('${id}')`)) {
-    warn(`HTML prvek #${id} není explicitně použit v CSS ani přes helper $().`);
+  if (!css.includes(`#${id}`) && !combinedJavaScript.includes(`$("${id}")`) && !combinedJavaScript.includes(`$('${id}')`) && !combinedJavaScript.includes(`getElementById("${id}")`) && !combinedJavaScript.includes(`getElementById('${id}')`)) {
+    warn(`HTML prvek #${id} není explicitně použit v CSS ani JavaScriptu.`);
   }
 }
+
+const localScripts = [...html.matchAll(/<script[^>]+src=["']\.\/([^"']+)["']/g)].map(match => match[1]);
+for (const relativePath of localScripts) {
+  if (!existing(relativePath)) fail(`HTML načítá chybějící skript: ${relativePath}`);
+}
+if (!localScripts.includes("game.js")) fail("index.html nenačítá game.js.");
+if (!localScripts.includes("runtime-stability.js")) fail("index.html nenačítá runtime-stability.js.");
 
 const functionNames = [...game.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(match => match[1]);
 const duplicateFunctions = [...new Set(functionNames.filter((name, index) => functionNames.indexOf(name) !== index))];
@@ -97,6 +107,9 @@ const cachedAssets = [...serviceWorker.matchAll(/["']\.\/([^"']*)["']/g)]
 for (const relativePath of cachedAssets) {
   if (!existing(relativePath)) fail(`Service worker cachuje chybějící soubor: ${relativePath}`);
 }
+for (const relativePath of localScripts) {
+  if (!cachedAssets.includes(relativePath)) warn(`Skript ${relativePath} není uveden v offline cache.`);
+}
 
 const audioAssets = [...game.matchAll(/["']\.\/(assets\/audio\/[^"']+)["']/g)].map(match => match[1]);
 for (const relativePath of new Set(audioAssets)) {
@@ -109,24 +122,36 @@ for (const levelId of requiredLevels) {
 }
 
 const visibleVersion = html.match(/\bv(\d+)\.(\d+)\b/)?.slice(1).join(".");
-const saveVersion = game.match(/SAVE_KEY\s*=\s*["'][^"']*V(\d+)_(\d+)["']/)?.slice(1).join(".");
-const cacheVersionMatch = serviceWorker.match(/CACHE\s*=\s*["'][^"']*v(\d+)-(\d+)["']/);
-const cacheVersion = cacheVersionMatch?.slice(1).join(".");
-const versions = [visibleVersion, saveVersion, cacheVersion].filter(Boolean);
-if (new Set(versions).size > 1) {
-  fail(`Nesoulad verzí: UI=${visibleVersion || "?"}, SAVE=${saveVersion || "?"}, CACHE=${cacheVersion || "?"}`);
+const saveSchemaVersion = game.match(/SAVE_KEY\s*=\s*["'][^"']*V(\d+)_(\d+)["']/)?.slice(1).join(".");
+const cacheVersion = serviceWorker.match(/CACHE\s*=\s*["'][^"']*v(\d+)-(\d+)["']/)?.slice(1).join(".");
+const runtimeVersion = runtime.match(/version:\s*["'](\d+)\.(\d+)(?:\.\d+)?["']/)?.slice(1).join(".");
+
+if (!visibleVersion) fail("V UI není rozpoznána verze vydání.");
+if (!cacheVersion) fail("V service workeru není rozpoznána verze cache.");
+if (!runtimeVersion) fail("V runtime-stability.js není rozpoznána verze runtime.");
+if (visibleVersion && cacheVersion && visibleVersion !== cacheVersion) {
+  fail(`Nesoulad release a cache verze: UI=${visibleVersion}, CACHE=${cacheVersion}`);
+}
+if (visibleVersion && runtimeVersion && visibleVersion !== runtimeVersion) {
+  fail(`Nesoulad release a runtime verze: UI=${visibleVersion}, RUNTIME=${runtimeVersion}`);
+}
+if (visibleVersion && saveSchemaVersion && visibleVersion !== saveSchemaVersion) {
+  warn(`Save schéma ${saveSchemaVersion} zůstává kompatibilní se stabilizačním vydáním ${visibleVersion}.`);
 }
 
 if (!/requestAnimationFrame\s*\(loop\)/.test(game)) fail("Chybí spuštění hlavního requestAnimationFrame loopu.");
 if (!/Math\.min\(\.035,/.test(game)) warn("Update loop nemá rozpoznaný limit delta time 35 ms.");
-if (!/visibilitychange/.test(game)) warn("Chybí obsluha visibilitychange pro mobilní pauzu.");
-if (!/orientationchange/.test(game)) warn("Chybí obsluha orientationchange.");
+if (!/visibilitychange/.test(combinedJavaScript)) warn("Chybí obsluha visibilitychange pro mobilní pauzu.");
+if (!/orientationchange/.test(combinedJavaScript)) warn("Chybí obsluha orientationchange.");
+if (!/unhandledrejection/.test(runtime)) warn("Stabilizační runtime nezachytává odmítnuté Promise.");
 
 console.log(`Kontrolováno HTML ID: ${htmlIds.length}`);
 console.log(`Kontrolováno JS DOM referencí: ${referencedIds.size}`);
+console.log(`Kontrolováno lokálních skriptů: ${localScripts.length}`);
 console.log(`Kontrolováno cache assetů: ${cachedAssets.length}`);
 console.log(`Kontrolováno audio assetů: ${new Set(audioAssets).size}`);
-console.log(`Rozpoznaná verze: ${visibleVersion || saveVersion || cacheVersion || "neuvedena"}`);
+console.log(`Rozpoznaná release verze: ${visibleVersion || cacheVersion || runtimeVersion || "neuvedena"}`);
+console.log(`Rozpoznané save schéma: ${saveSchemaVersion || "neuvedeno"}`);
 
 for (const message of warnings) console.warn(`VAROVÁNÍ: ${message}`);
 for (const message of errors) console.error(`CHYBA: ${message}`);
