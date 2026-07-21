@@ -15,3 +15,12 @@ export {
 } from "./systems/CollisionSystem.js";
 export { AnimationSystem, createAnimation } from "./systems/AnimationSystem.js";
 export { HybridRenderer } from "./render/HybridRenderer.js";
+export {
+  LEVEL_DEFINITIONS,
+  LEVEL_ORDER,
+  getLevelDefinition,
+  getNextLevelId
+} from "./data/levels.js";
+export { PERK_DEFINITIONS, getPerkDefinition } from "./data/perks.js";
+export { SAMPLE_DEFINITIONS, getSampleDefinition } from "./data/samples.js";
+export { validateGameData, assertValidGameData } from "./data/validateGameData.js";
