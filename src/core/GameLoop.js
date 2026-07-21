@@ -1,3 +1,4 @@
+const TIME_EPSILON = 1e-9;
 const defaultNow = () => globalThis.performance?.now?.() ?? Date.now();
 const defaultRequestFrame = callback => {
   if (typeof globalThis.requestAnimationFrame === "function") return globalThis.requestAnimationFrame(callback);
@@ -95,21 +96,22 @@ export class GameLoop {
     this.accumulator += frameDelta;
 
     let steps = 0;
-    while (this.accumulator >= this.fixedStep && steps < this.maxSubSteps) {
+    while (this.accumulator + TIME_EPSILON >= this.fixedStep && steps < this.maxSubSteps) {
       for (const system of this.systems) system.update(this.fixedStep, this.simulationTime);
       this.simulationTime += this.fixedStep;
-      this.accumulator -= this.fixedStep;
+      this.accumulator = Math.max(0, this.accumulator - this.fixedStep);
       steps++;
     }
 
-    if (this.accumulator >= this.fixedStep) {
-      const retained = this.accumulator % this.fixedStep;
-      this.droppedTime += this.accumulator - retained;
-      this.accumulator = retained;
-      this.events?.emit("loop:drop", this.metrics({ frameDelta, steps }));
+    const remainingWholeSteps = Math.floor((this.accumulator + TIME_EPSILON) / this.fixedStep);
+    if (remainingWholeSteps > 0) {
+      const dropped = remainingWholeSteps * this.fixedStep;
+      this.droppedTime += dropped;
+      this.accumulator = Math.max(0, this.accumulator - dropped);
+      this.events?.emit("loop:drop", this.metrics({ frameDelta, steps, dropped }));
     }
 
-    const alpha = this.accumulator / this.fixedStep;
+    const alpha = Math.min(1, this.accumulator / this.fixedStep);
     this.totalFrames++;
     this.render(alpha, frameDelta, steps);
     return this.metrics({ alpha, frameDelta, steps });
