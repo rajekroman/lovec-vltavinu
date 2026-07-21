@@ -9,6 +9,26 @@ async function openDebugGame(page) {
   return pageErrors;
 }
 
+async function pressAction(page) {
+  const action = page.locator("#actionButton");
+  await action.dispatchEvent("pointerdown", {
+    pointerId: 1,
+    pointerType: "touch",
+    isPrimary: true,
+    bubbles: true,
+    cancelable: true
+  });
+  await action.dispatchEvent("pointerup", {
+    pointerId: 1,
+    pointerType: "touch",
+    isPrimary: true,
+    bubbles: true,
+    cancelable: true
+  });
+}
+
+const compactTransform = value => String(value).replace(/\s+/g, "");
+
 test("titulní obrazovka spustí mobilní level bez konfliktu UI", async ({ page }) => {
   const pageErrors = await openDebugGame(page);
 
@@ -47,7 +67,7 @@ test("dialog se vždy vrátí do ovladatelného herního stavu", async ({ page }
     window.__lovecDebug.startLevel(0);
     window.__lovecDebug.setPlayer(280, 990);
   });
-  await page.locator("#actionButton").click();
+  await pressAction(page);
 
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await expect(page.locator("#controls")).toHaveClass(/hidden/);
@@ -77,11 +97,11 @@ test("reset runtime uvolní zadržený joystick a klávesy", async ({ page }) =>
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.5, { steps: 3 });
 
-  await expect.poll(() => stick.evaluate(element => element.style.transform)).not.toBe("translate(-50%,-50%)");
+  await expect.poll(async () => compactTransform(await stick.evaluate(element => element.style.transform))).not.toBe("translate(-50%,-50%)");
   await page.evaluate(() => window.__lovecRuntime.resetInput("playwright-smoke"));
   await page.mouse.up();
 
-  await expect.poll(() => stick.evaluate(element => element.style.transform)).toBe("translate(-50%,-50%)");
+  await expect.poll(async () => compactTransform(await stick.evaluate(element => element.style.transform))).toBe("translate(-50%,-50%)");
   const snapshot = await page.evaluate(() => window.__lovecRuntime.snapshot());
   expect(snapshot.activeMovePointer).toBeNull();
   expect(snapshot.resetLog.at(-1)?.reason).toBe("playwright-smoke");
