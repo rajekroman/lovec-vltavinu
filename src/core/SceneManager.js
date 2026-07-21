@@ -37,14 +37,21 @@ export class SceneManager {
     const version = ++this.transitionVersion;
     const previousId = this.activeId;
     const previousScene = this.activeScene;
+    let previousExited = false;
+    let nextEntered = false;
+
     this.transitioning = true;
     this.events?.emit("scene:transition:start", { from: previousId, to: id, context });
 
     try {
-      await previousScene?.exit?.({ from: previousId, to: id, context });
+      if (previousScene) {
+        await previousScene.exit?.({ from: previousId, to: id, context });
+        previousExited = true;
+      }
       if (version !== this.transitionVersion) return null;
 
       await nextScene.enter?.({ from: previousId, to: id, context });
+      nextEntered = true;
       if (version !== this.transitionVersion) {
         await nextScene.exit?.({ from: id, to: null, context: { cancelled: true } });
         return null;
@@ -56,11 +63,29 @@ export class SceneManager {
       return nextScene;
     } catch (error) {
       this.events?.emit("scene:transition:error", { from: previousId, to: id, context, error });
-      if (previousScene && this.activeScene !== previousScene) {
-        try { await previousScene.enter?.({ from: id, to: previousId, context: { rollback: true } }); } catch {}
-        this.activeId = previousId;
-        this.activeScene = previousScene;
+
+      if (nextScene !== previousScene) {
+        try {
+          await nextScene.exit?.({
+            from: id,
+            to: previousId,
+            context: { failed: true, entered: nextEntered, error }
+          });
+        } catch {}
       }
+
+      if (previousScene && previousExited) {
+        try {
+          await previousScene.enter?.({
+            from: id,
+            to: previousId,
+            context: { rollback: true, error }
+          });
+        } catch {}
+      }
+
+      this.activeId = previousId;
+      this.activeScene = previousScene;
       throw error;
     } finally {
       if (version === this.transitionVersion) this.transitioning = false;
