@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 async function openDebugGame(page) {
   const pageErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
-  await page.goto("/?debug", { waitUntil: "networkidle" });
+  await page.goto("/?debug", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
   await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime && window.__lovecDebug))).toBe(true);
   return pageErrors;
@@ -68,6 +68,7 @@ test("reset runtime uvolní zadržený joystick a klávesy", async ({ page }) =>
   await page.evaluate(() => window.__lovecDebug.startLevel(0));
 
   const zone = page.locator("#moveZone");
+  const stick = zone.locator("#stick");
   const box = await zone.boundingBox();
   expect(box).not.toBeNull();
   if (!box) return;
@@ -76,11 +77,11 @@ test("reset runtime uvolní zadržený joystick a klávesy", async ({ page }) =>
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.5, { steps: 3 });
 
-  await expect.poll(() => zone.locator("#stick").evaluate(element => element.style.transform)).not.toBe("translate(-50%,-50%)");
+  await expect.poll(() => stick.evaluate(element => element.style.transform)).not.toBe("translate(-50%,-50%)");
   await page.evaluate(() => window.__lovecRuntime.resetInput("playwright-smoke"));
   await page.mouse.up();
 
-  await expect(zone.locator("#stick")).toHaveCSS("transform", "matrix(1, 0, 0, 1, -29, -29)");
+  await expect.poll(() => stick.evaluate(element => element.style.transform)).toBe("translate(-50%,-50%)");
   const snapshot = await page.evaluate(() => window.__lovecRuntime.snapshot());
   expect(snapshot.activeMovePointer).toBeNull();
   expect(snapshot.resetLog.at(-1)?.reason).toBe("playwright-smoke");
