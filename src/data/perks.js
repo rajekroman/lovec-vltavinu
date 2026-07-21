@@ -9,8 +9,8 @@ export const PERK_DEFINITIONS = Object.freeze([
   { id: "eye", icon: "◉", name: "Zkušené oko", text: "vyšší kvalita správně určených kusů", max: 3 }
 ].map(freezePerk));
 
-export const PERK_BY_ID = new Map(PERK_DEFINITIONS.map(perk => [perk.id, perk]));
+const perkById = new Map(PERK_DEFINITIONS.map(perk => [perk.id, perk]));
 
 export function getPerkDefinition(id) {
-  return PERK_BY_ID.get(id) ?? null;
+  return perkById.get(id) ?? null;
 }
