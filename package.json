@@ -1,0 +1,13 @@
+{
+  "name": "lovec-vltavinu",
+  "version": "5.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node --check game.js && node --check runtime-stability.js && node tools/validate.mjs",
+    "test:smoke": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

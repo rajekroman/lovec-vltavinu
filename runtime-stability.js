@@ -44,6 +44,12 @@
     }
   }
 
+  function setClassState(element, className, enabled) {
+    if (element.classList.contains(className) !== enabled) {
+      element.classList.toggle(className, enabled);
+    }
+  }
+
   function resetInput(reason = "manual") {
     if (activeMovePointer !== null) {
       try { moveZone.dispatchEvent(pointerCancel(activeMovePointer)); } catch {}
@@ -52,8 +58,10 @@
       } catch {}
     }
     activeMovePointer = null;
-    stick.style.transform = "translate(-50%,-50%)";
-    actionButton.classList.remove("active");
+    if (stick.style.transform !== "translate(-50%,-50%)") {
+      stick.style.transform = "translate(-50%,-50%)";
+    }
+    setClassState(actionButton, "active", false);
     releaseKeyboard();
     resetLog.push({ reason, at: new Date().toISOString() });
     if (resetLog.length > 20) resetLog.shift();
@@ -73,23 +81,30 @@
           ? trigger
           : (lastVisibleScreen?.classList?.contains("visible") ? lastVisibleScreen : visible[visible.length - 1]);
         for (const screen of visible) {
-          if (screen !== preferred) screen.classList.remove("visible");
+          if (screen !== preferred && screen.classList.contains("visible")) screen.classList.remove("visible");
         }
         visible = preferred ? [preferred] : [];
       }
 
       if (visible.length === 1) {
-        lastVisibleScreen = visible[0];
-        resetInput(`overlay:${visible[0].id}`);
+        const visibleScreen = visible[0];
+        if (lastVisibleScreen !== visibleScreen) {
+          lastVisibleScreen = visibleScreen;
+          resetInput(`overlay:${visibleScreen.id}`);
+        }
+      } else {
+        lastVisibleScreen = null;
       }
 
       const playing = app.classList.contains("playing") && visible.length === 0;
-      hud.classList.toggle("hidden", !playing);
-      controls.classList.toggle("hidden", !playing || !coarsePointer);
-      if (!playing) actionButton.classList.remove("active");
+      setClassState(hud, "hidden", !playing);
+      setClassState(controls, "hidden", !playing || !coarsePointer);
+      if (!playing) setClassState(actionButton, "active", false);
 
-      app.dataset.runtimeScreen = visible[0]?.id || (playing ? "playing" : "none");
-      app.dataset.runtimeStable = visible.length <= 1 ? "true" : "false";
+      const runtimeScreen = visible[0]?.id || (playing ? "playing" : "none");
+      const runtimeStable = visible.length <= 1 ? "true" : "false";
+      if (app.dataset.runtimeScreen !== runtimeScreen) app.dataset.runtimeScreen = runtimeScreen;
+      if (app.dataset.runtimeStable !== runtimeStable) app.dataset.runtimeStable = runtimeStable;
     } finally {
       correctingInvariant = false;
     }
@@ -140,11 +155,21 @@
   }, true);
 
   const observer = new MutationObserver(records => {
+    let relevant = false;
     let trigger = null;
     for (const record of records) {
-      if (record.type === "attributes" && record.target.classList?.contains("screen")) trigger = record.target;
+      if (record.type !== "attributes") continue;
+      const target = record.target;
+      if (target === app) {
+        relevant = true;
+        continue;
+      }
+      if (target.classList?.contains("screen")) {
+        relevant = true;
+        if (target.classList.contains("visible")) trigger = target;
+      }
     }
-    queueInvariantCheck(trigger);
+    if (relevant) queueInvariantCheck(trigger);
   });
 
   observer.observe(app, {
