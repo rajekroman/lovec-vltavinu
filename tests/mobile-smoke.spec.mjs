@@ -32,9 +32,9 @@ const compactTransform = value => String(value).replace(/\s+/g, "");
 test("titulní obrazovka spustí mobilní level bez konfliktu UI", async ({ page }) => {
   const pageErrors = await openDebugGame(page);
 
-  await page.locator("#playButton").click();
+  await page.locator("#playButton").tap();
   await expect(page.locator("#briefScreen")).toHaveClass(/visible/);
-  await page.locator("#briefButton").click();
+  await page.locator("#briefButton").tap();
 
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await expect(page.locator("#hud")).not.toHaveClass(/hidden/);
@@ -71,7 +71,7 @@ test("dialog se vždy vrátí do ovladatelného herního stavu", async ({ page }
 
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await expect(page.locator("#controls")).toHaveClass(/hidden/);
-  await page.locator("#dialogButton").click();
+  await page.locator("#dialogButton").tap();
 
   await expect(page.locator(".screen.visible")).toHaveCount(0);
   await expect(page.locator("#app")).toHaveClass(/playing/);
