@@ -24,8 +24,8 @@ export const CHLUM_ENTITY_DEFINITIONS = deepFreeze(entities);
 const entityById = new Map(CHLUM_ENTITY_DEFINITIONS.map(entity => [entity.id, entity]));
 export const CHLUM_FINDING_VARIANTS = deepFreeze([
   { id: "chlum-small", rarity: "C", weight: 0.8, score: 50, assetId: "finding-vltavin-common" },
-  { id: "chlum-standard", rarity: "B", weight: 1.2, score: 90, assetId: "finding-vltavin-rare" },
-  { id: "chlum-rare", rarity: "A", weight: 1.7, score: 150, assetId: "finding-vltavin-besednice" }
+  { id: "chlum-standard", rarity: "B", weight: 1.2, score: 90, assetId: "finding-vltavin-standard" },
+  { id: "chlum-rare", rarity: "A", weight: 1.7, score: 150, assetId: "finding-vltavin-rare" }
 ]);
 const findingById = new Map(CHLUM_FINDING_VARIANTS.map(variant => [variant.id, variant]));
 export function getChlumEntityDefinition(id) { return entityById.get(id) ?? null; }

@@ -53,9 +53,9 @@
     "sha256": "ef69a1e26e8aca8af0d9f710de5e6909c3aa3eaf9266e806a63050998e6b727c"
   },
   {
-    "id": "finding-vltavin-besednice",
+    "id": "finding-vltavin-standard",
     "type": "texture",
-    "url": "./assets/sprites/findings/vltavin-besednice.png",
+    "url": "./assets/sprites/findings/vltavin-standard.png",
     "preload": "level:chlum",
     "dimensions": { "width": 256, "height": 256 },
     "transparent": true,
