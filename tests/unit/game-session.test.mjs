@@ -46,6 +46,8 @@ test("the session rejects duplicate or malformed findings", () => {
   assert.throws(() => session.recordFinding(finding), /already recorded/);
   assert.throws(() => session.recordFinding({ ...finding, findingId: "bad", locality: "unknown" }), /Unknown finding locality/);
   assert.throws(() => session.recordFinding({ ...finding, findingId: "bad", rarity: "legendary" }), /Unknown finding rarity/);
+  assert.throws(() => session.recordFinding({ ...finding, findingId: "bad-weight", weight: null }), /weight must be/);
+  assert.throws(() => session.recordFinding({ ...finding, findingId: "bad-score", score: "40" }), /score must be/);
 });
 
 test("level transitions keep the session collection but reset level-local state", () => {
