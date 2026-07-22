@@ -50,6 +50,20 @@ async function strikeDigInsideSweetZone(page, expectedHit) {
     return window.__lovecRuntime.snapshot().chlum?.runtime?.digHits === hit;
   }, expectedHit), { timeout: 8_000 }).toBe(true);
 }
+async function driveUntilDanger(page) {
+  await moveTo(page, 120, 590, 16);
+  await page.keyboard.down("ArrowRight");
+  try {
+    for (let step = 0; step < 140; step++) {
+      await page.waitForTimeout(75);
+      const state = await snapshot(page);
+      if (state.session.danger > 0) return state;
+    }
+  } finally {
+    await page.keyboard.up("ArrowRight");
+  }
+  throw new Error("Tractor did not trigger danger while the player crossed its patrol lane.");
+}
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -123,14 +137,7 @@ test("tractor collision raises danger, returns player to spawn and does not free
   test.setTimeout(45_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-  await moveTo(page, 180, 590);
-  await page.keyboard.down("ArrowRight");
-  try {
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger > 0), { timeout: 12_000 }).toBe(true);
-  } finally {
-    await page.keyboard.up("ArrowRight");
-  }
-  const state = await snapshot(page);
+  const state = await driveUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
   expect(state.chlum.runtime.player.x).toBeLessThan(190);
   expect(state.chlum.runtime.player.y).toBeLessThan(450);
