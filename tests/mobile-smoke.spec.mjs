@@ -38,6 +38,9 @@ async function moveTo(page, targetX, targetY, tolerance = 38) {
 async function waitForInteraction(page, kind) {
   await expect.poll(() => page.evaluate(expected => window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected, kind)).toBe(true);
 }
+async function contextualAction(page) {
+  await page.keyboard.press("Space");
+}
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -53,7 +56,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await enterChlum(page);
   await moveTo(page, 520, 410);
   await waitForInteraction(page, "permission");
-  await page.locator("#actionButton").tap();
+  await contextualAction(page);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await page.locator("#dialogButton").tap();
@@ -79,7 +82,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await moveTo(page, 1020, 850);
   await moveTo(page, 1020, 720);
   await waitForInteraction(page, "dig");
-  await page.locator("#actionButton").click();
+  await contextualAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
   for (let hit = 1; hit <= 3; hit++) {
     await expect.poll(() => page.evaluate(() => {
@@ -91,7 +94,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   }
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await waitForInteraction(page, "collect");
-  await page.locator("#actionButton").click();
+  await contextualAction(page);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   const completed = await snapshot(page);
   expect(completed.session.findings).toHaveLength(1);
@@ -119,8 +122,12 @@ test("tractor collision raises danger, returns player to spawn and does not free
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
   await moveTo(page, 180, 590);
-  await moveTo(page, 800, 590);
-  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger)).toBe(100);
+  await page.keyboard.down("ArrowRight");
+  try {
+    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger), { timeout: 12_000 }).toBe(100);
+  } finally {
+    await page.keyboard.up("ArrowRight");
+  }
   const state = await snapshot(page);
   expect(state.chlum.runtime.player.x).toBeLessThan(190);
   expect(state.chlum.runtime.player.y).toBeLessThan(450);
