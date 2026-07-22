@@ -145,6 +145,8 @@ export class ScreenController {
   }
 
   play() {
+    const activeElement = this.document.activeElement;
+    if (activeElement?.closest?.(".screen")) activeElement.blur?.();
     return this.show(null, { playing: true });
   }
 
