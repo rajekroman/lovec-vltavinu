@@ -29,7 +29,7 @@ async function holdKeyUntil(page, key, predicate, argument, timeout = 15_000) {
   try {
     await expect.poll(() => page.evaluate(predicate, argument), {
       timeout,
-      intervals: [100, 200, 400]
+      intervals: [30, 60, 100]
     }).toBe(true);
   } finally {
     await page.keyboard.up(key);
