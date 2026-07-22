@@ -1,10 +1,12 @@
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
+const fingerprint = (revision, model) => `${revision}:${JSON.stringify(model ?? {})}`;
 
 export class HudController {
   constructor(options) {
     this.document = options.document;
     this.events = options.events;
     this.revision = -1;
+    this.lastFingerprint = "";
     this.elements = {
       app: this.require("app"),
       hud: this.require("hud"),
@@ -22,6 +24,7 @@ export class HudController {
       actionIcon: this.require("actionIcon"),
       actionText: this.require("actionText")
     };
+    this.installAccessibilityContracts();
     this.unsubscribe = this.events.on("hud:model:changed", payload => this.render(payload));
   }
 
@@ -31,8 +34,19 @@ export class HudController {
     return element;
   }
 
+  installAccessibilityContracts() {
+    const elements = this.elements;
+    elements.dangerMeter.setAttribute("role", "progressbar");
+    elements.dangerBanner.setAttribute("role", "status");
+    elements.dangerBanner.setAttribute("aria-live", "polite");
+    elements.action.removeAttribute?.("aria-pressed");
+  }
+
   render({ revision, model }) {
-    if (!Number.isFinite(revision) || revision <= this.revision) return;
+    if (!Number.isFinite(revision) || !model || typeof model !== "object") return;
+    const nextFingerprint = fingerprint(revision, model);
+    if (nextFingerprint === this.lastFingerprint) return;
+    this.lastFingerprint = nextFingerprint;
     this.revision = revision;
 
     const elements = this.elements;
@@ -59,6 +73,7 @@ export class HudController {
     const dangerMessage = String(model.dangerMessage ?? (detected ? "TRAKTOR JE BLÍZKO" : ""));
     elements.dangerText.textContent = dangerMessage;
     elements.dangerBanner.classList.toggle("hidden", !dangerMessage);
+    elements.dangerBanner.setAttribute("aria-hidden", dangerMessage ? "false" : "true");
     elements.app.classList.toggle("danger-state", detected);
     elements.hud.classList.toggle("danger-shake", critical);
 
@@ -70,7 +85,8 @@ export class HudController {
     const actionReady = Boolean(model.actionReady);
     elements.action.classList.toggle("ready", actionReady);
     elements.action.setAttribute("aria-label", actionLabel);
-    elements.action.setAttribute("aria-pressed", "false");
+    elements.action.setAttribute("aria-disabled", actionReady ? "false" : "true");
+    elements.action.setAttribute("data-action-ready", actionReady ? "true" : "false");
     elements.actionIcon.textContent = String(model.actionIcon ?? "◉");
     elements.actionText.textContent = actionLabel;
   }
@@ -78,6 +94,7 @@ export class HudController {
   dispose() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.lastFingerprint = "";
     this.elements.app.classList.remove("danger-state");
     this.elements.hud.classList.remove("danger-shake");
   }

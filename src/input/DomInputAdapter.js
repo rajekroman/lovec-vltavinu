@@ -4,6 +4,25 @@ const MOVE_KEYS = Object.freeze({
   ArrowUp: [0, 1], KeyW: [0, 1],
   ArrowDown: [0, -1], KeyS: [0, -1]
 });
+const ACTION_KEYS = new Set(["Space", "Enter", "KeyE"]);
+const PAUSE_KEYS = new Set(["Escape", "KeyP"]);
+const SAFE_AREA_VARIABLES = Object.freeze({
+  "--safe-t": "safe-area-inset-top",
+  "--safe-r": "safe-area-inset-right",
+  "--safe-b": "safe-area-inset-bottom",
+  "--safe-l": "safe-area-inset-left"
+});
+const INTERACTIVE_SELECTOR = "button,a,input,textarea,select,[contenteditable='true'],[role='button']";
+
+const clampGap = value => Math.max(0, Math.round((Number(value) || 0) * 100) / 100);
+const px = value => `${clampGap(value)}px`;
+const isPrimaryPointer = event => event?.isPrimary !== false && (event?.button === undefined || event.button === 0);
+const isInteractiveTarget = target => {
+  if (!target) return false;
+  if (typeof target.closest === "function") return Boolean(target.closest(INTERACTIVE_SELECTOR));
+  const tagName = String(target.tagName ?? "").toUpperCase();
+  return ["BUTTON", "A", "INPUT", "TEXTAREA", "SELECT"].includes(tagName) || target.isContentEditable === true;
+};
 
 export class DomInputAdapter {
   constructor(options) {
@@ -14,29 +33,45 @@ export class DomInputAdapter {
     this.keys = new Set();
     this.movePointer = null;
     this.actionPointer = null;
+    this.resizeTimer = null;
     this.controller = new AbortController();
+    this.root = this.document.documentElement ?? null;
+    this.visualViewport = this.window.visualViewport ?? null;
+    this.elements = {
+      moveZone: this.require("moveZone"),
+      stick: this.require("stick"),
+      action: this.require("actionButton"),
+      pause: this.require("pauseButton")
+    };
     this.bind();
+    this.syncSafeArea();
+  }
+
+  require(id) {
+    const element = this.document.getElementById(id);
+    if (!element) throw new Error(`Missing input element: #${id}`);
+    return element;
   }
 
   listen(target, type, handler, options = {}) {
+    if (!target?.addEventListener) return;
     target.addEventListener(type, handler, { ...options, signal: this.controller.signal });
   }
 
   bind() {
-    const moveZone = this.document.getElementById("moveZone");
-    const action = this.document.getElementById("actionButton");
-    const pause = this.document.getElementById("pauseButton");
+    const { moveZone, action, pause } = this.elements;
 
     this.listen(this.window, "keydown", event => {
+      if (isInteractiveTarget(event.target)) return;
       if (MOVE_KEYS[event.code]) {
-        event.preventDefault();
+        event.preventDefault?.();
         this.keys.add(event.code);
         this.updateKeyboardAxis();
-      } else if (["Space", "Enter", "KeyE"].includes(event.code) && !event.repeat) {
-        event.preventDefault();
+      } else if (ACTION_KEYS.has(event.code) && !event.repeat) {
+        event.preventDefault?.();
         this.input.press("action");
-      } else if (["Escape", "KeyP"].includes(event.code) && !event.repeat) {
-        event.preventDefault();
+      } else if (PAUSE_KEYS.has(event.code) && !event.repeat) {
+        event.preventDefault?.();
         this.pulse("pause");
       }
     });
@@ -44,53 +79,55 @@ export class DomInputAdapter {
       if (MOVE_KEYS[event.code]) {
         this.keys.delete(event.code);
         this.updateKeyboardAxis();
-      } else if (["Space", "Enter", "KeyE"].includes(event.code)) {
+      } else if (ACTION_KEYS.has(event.code)) {
         this.input.release("action");
       }
     });
 
     this.listen(moveZone, "pointerdown", event => {
-      if (this.movePointer !== null) return;
-      event.preventDefault();
+      if (!isPrimaryPointer(event) || this.movePointer !== null) return;
+      event.preventDefault?.();
       this.movePointer = event.pointerId;
       try { moveZone.setPointerCapture?.(event.pointerId); } catch {}
       this.updatePointerAxis(event, moveZone);
     });
     this.listen(moveZone, "pointermove", event => {
       if (event.pointerId !== this.movePointer) return;
-      event.preventDefault();
+      event.preventDefault?.();
       this.updatePointerAxis(event, moveZone);
     });
-    const releaseMove = event => {
-      if (event.pointerId !== this.movePointer) return;
-      this.movePointer = null;
-      this.input.setAxis("move", 0, 0);
-      this.resetStick();
-    };
-    this.listen(moveZone, "pointerup", releaseMove);
-    this.listen(moveZone, "pointercancel", releaseMove);
-    this.listen(moveZone, "lostpointercapture", releaseMove);
+    this.listen(moveZone, "pointerup", event => this.releaseMove(event));
+    this.listen(moveZone, "pointercancel", event => this.releaseMove(event));
+    this.listen(moveZone, "lostpointercapture", event => this.releaseMove(event));
 
     this.listen(action, "pointerdown", event => {
-      event.preventDefault();
-      if (this.actionPointer !== null) return;
+      if (!isPrimaryPointer(event) || this.actionPointer !== null) return;
+      event.preventDefault?.();
       this.actionPointer = event.pointerId;
       try { action.setPointerCapture?.(event.pointerId); } catch {}
       action.classList.add("active");
       this.input.press("action");
     });
-    const releaseAction = event => {
-      if (event.pointerId !== this.actionPointer) return;
-      event.preventDefault();
-      this.actionPointer = null;
-      action.classList.remove("active");
-      this.input.release("action");
-    };
-    this.listen(action, "pointerup", releaseAction);
-    this.listen(action, "pointercancel", releaseAction);
-    this.listen(action, "lostpointercapture", releaseAction);
+    this.listen(action, "pointerup", event => this.releaseAction(event));
+    this.listen(action, "pointercancel", event => this.releaseAction(event));
+    this.listen(action, "lostpointercapture", event => this.releaseAction(event));
+    this.listen(action, "click", event => {
+      if (event.detail !== 0) return;
+      event.preventDefault?.();
+      this.pulse("action");
+    });
+
+    this.listen(this.window, "pointerup", event => {
+      this.releaseMove(event);
+      this.releaseAction(event);
+    });
+    this.listen(this.window, "pointercancel", event => {
+      this.releaseMove(event);
+      this.releaseAction(event);
+    });
+
     this.listen(pause, "click", event => {
-      event.preventDefault();
+      event.preventDefault?.();
       this.pulse("pause");
     });
 
@@ -101,14 +138,41 @@ export class DomInputAdapter {
     this.listen(this.window, "pagehide", () => this.clearDomState());
     this.listen(this.window, "orientationchange", () => {
       this.reset("orientation-change");
-      this.window.setTimeout(this.onResize, 80);
+      this.scheduleViewportSync(80);
     });
-    this.listen(this.window, "resize", this.onResize, { passive: true });
+    this.listen(this.window, "resize", () => this.scheduleViewportSync(0), { passive: true });
+    this.listen(this.visualViewport, "resize", () => {
+      this.reset("visual-viewport-resize");
+      this.scheduleViewportSync(0);
+    }, { passive: true });
+    this.listen(this.visualViewport, "scroll", () => this.scheduleViewportSync(0), { passive: true });
   }
 
   pulse(name) {
     this.input.press(name);
     this.input.release(name);
+  }
+
+  releaseMove(event) {
+    if (this.movePointer === null || event?.pointerId !== this.movePointer) return false;
+    event.preventDefault?.();
+    const pointerId = this.movePointer;
+    this.movePointer = null;
+    try { this.elements.moveZone.releasePointerCapture?.(pointerId); } catch {}
+    this.input.setAxis("move", 0, 0);
+    this.resetStick();
+    return true;
+  }
+
+  releaseAction(event) {
+    if (this.actionPointer === null || event?.pointerId !== this.actionPointer) return false;
+    event.preventDefault?.();
+    const pointerId = this.actionPointer;
+    this.actionPointer = null;
+    try { this.elements.action.releasePointerCapture?.(pointerId); } catch {}
+    this.elements.action.classList.remove("active");
+    this.input.release("action");
+    return true;
   }
 
   updateKeyboardAxis() {
@@ -127,19 +191,58 @@ export class DomInputAdapter {
     const x = (event.clientX - (bounds.left + bounds.width / 2)) / radius;
     const y = -((event.clientY - (bounds.top + bounds.height / 2)) / radius);
     const vector = this.input.setAxis("move", x, y);
-    const stick = this.document.getElementById("stick");
-    stick.style.transform = `translate(calc(-50% + ${vector.x * radius * 0.45}px), calc(-50% + ${-vector.y * radius * 0.45}px))`;
+    this.elements.stick.style.transform = `translate(calc(-50% + ${vector.x * radius * 0.45}px), calc(-50% + ${-vector.y * radius * 0.45}px))`;
   }
 
   resetStick() {
-    this.document.getElementById("stick").style.transform = "translate(-50%, -50%)";
+    this.elements.stick.style.transform = "translate(-50%, -50%)";
+  }
+
+  syncSafeArea() {
+    const viewport = this.visualViewport;
+    const layoutWidth = Math.max(0, Number(this.window.innerWidth) || Number(this.root?.clientWidth) || Number(viewport?.width) || 0);
+    const layoutHeight = Math.max(0, Number(this.window.innerHeight) || Number(this.root?.clientHeight) || Number(viewport?.height) || 0);
+    const width = Math.max(0, Number(viewport?.width) || layoutWidth);
+    const height = Math.max(0, Number(viewport?.height) || layoutHeight);
+    const left = clampGap(viewport?.offsetLeft);
+    const top = clampGap(viewport?.offsetTop);
+    const right = clampGap(layoutWidth - left - width);
+    const bottom = clampGap(layoutHeight - top - height);
+    const gaps = { top, right, bottom, left };
+
+    if (this.root?.style?.setProperty) {
+      const values = { "--safe-t": top, "--safe-r": right, "--safe-b": bottom, "--safe-l": left };
+      for (const [variable, envName] of Object.entries(SAFE_AREA_VARIABLES)) {
+        this.root.style.setProperty(variable, `max(env(${envName}, 0px), ${px(values[variable])})`);
+      }
+      this.root.style.setProperty("--visual-viewport-width", px(width));
+      this.root.style.setProperty("--visual-viewport-height", px(height));
+    }
+    return Object.freeze({ width, height, ...gaps });
+  }
+
+  scheduleViewportSync(delay) {
+    if (this.resizeTimer !== null) this.window.clearTimeout?.(this.resizeTimer);
+    this.resizeTimer = this.window.setTimeout(() => {
+      this.resizeTimer = null;
+      this.syncSafeArea();
+      this.onResize();
+    }, delay);
   }
 
   clearDomState() {
     this.keys.clear();
+    const movePointer = this.movePointer;
+    const actionPointer = this.actionPointer;
     this.movePointer = null;
     this.actionPointer = null;
-    this.document.getElementById("actionButton")?.classList.remove("active");
+    if (movePointer !== null) {
+      try { this.elements.moveZone.releasePointerCapture?.(movePointer); } catch {}
+    }
+    if (actionPointer !== null) {
+      try { this.elements.action.releasePointerCapture?.(actionPointer); } catch {}
+    }
+    this.elements.action.classList.remove("active");
     this.resetStick();
   }
 
@@ -150,6 +253,13 @@ export class DomInputAdapter {
 
   dispose() {
     this.controller.abort();
+    if (this.resizeTimer !== null) this.window.clearTimeout?.(this.resizeTimer);
+    this.resizeTimer = null;
     this.reset("dom-dispose");
+    if (this.root?.style?.removeProperty) {
+      for (const variable of Object.keys(SAFE_AREA_VARIABLES)) this.root.style.removeProperty(variable);
+      this.root.style.removeProperty("--visual-viewport-width");
+      this.root.style.removeProperty("--visual-viewport-height");
+    }
   }
 }
