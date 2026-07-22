@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">Lovec vltavínů</title>
+  <desc id="desc">Stylizovaný zelený vltavín v kruhu</desc>
+  <rect width="192" height="192" rx="42" fill="#172018"/>
+  <circle cx="96" cy="96" r="68" fill="#26392b" stroke="#c5a54a" stroke-width="6"/>
+  <path d="m69 45 38 9 22 33-13 47-39 13-31-29 2-43z" fill="#77a77a" stroke="#d9be66" stroke-width="5" stroke-linejoin="round"/>
+  <path d="m69 45 21 50 17-41m-17 41-35 21m35-21 39 13m-39-13 9 47" fill="none" stroke="#d8ebc1" stroke-opacity=".72" stroke-width="4"/>
+  <circle cx="96" cy="96" r="8" fill="#f0d889"/>
+</svg>

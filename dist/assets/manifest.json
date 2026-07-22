@@ -1,0 +1,143 @@
+{
+  "assets": {
+    "sprite.player.walk": {
+      "type": "texture",
+      "url": "assets/sprites/player-walk-atlas.png"
+    },
+    "atlas.player.walk": {
+      "type": "json",
+      "url": "assets/atlases/player-walk.atlas.json"
+    },
+    "sprite.player.dig": {
+      "type": "texture",
+      "url": "assets/sprites/player-dig-atlas.png"
+    },
+    "atlas.player.dig": {
+      "type": "json",
+      "url": "assets/atlases/player-dig.atlas.json"
+    },
+    "sprite.npc.farmer.walk": {
+      "type": "texture",
+      "url": "assets/sprites/farmer-walk-atlas.png"
+    },
+    "atlas.npc.farmer.walk": {
+      "type": "json",
+      "url": "assets/atlases/farmer-walk.atlas.json"
+    },
+    "sprite.npc.forester.static": {
+      "type": "texture",
+      "url": "assets/sprites/forester-static-atlas.png"
+    },
+    "atlas.npc.forester.static": {
+      "type": "json",
+      "url": "assets/atlases/forester-static.atlas.json"
+    },
+    "sprite.hazard.tractor": {
+      "type": "texture",
+      "url": "assets/sprites/tractor-chlum.png"
+    },
+    "model.hazard.tractor": {
+      "type": "gltf",
+      "url": "assets/models/tractor-chlum.glb"
+    },
+    "model.environment.excavator": {
+      "type": "gltf",
+      "url": "assets/models/excavator-besednice.glb"
+    },
+    "model.environment.slavia": {
+      "type": "gltf",
+      "url": "assets/models/kd-slavia.glb"
+    },
+    "sprite.npc.guard.quarry": {
+      "type": "texture",
+      "url": "assets/sprites/guard-quarry-atlas.png"
+    },
+    "atlas.npc.guard.quarry": {
+      "type": "json",
+      "url": "assets/atlases/guard-quarry.atlas.json"
+    },
+    "sprite.npc.rival.walk": {
+      "type": "texture",
+      "url": "assets/sprites/rival-walk-atlas.png"
+    },
+    "atlas.npc.rival.walk": {
+      "type": "json",
+      "url": "assets/atlases/rival-walk.atlas.json"
+    },
+    "sprite.npc.thief.walk": {
+      "type": "texture",
+      "url": "assets/sprites/thief-walk-atlas.png"
+    },
+    "atlas.npc.thief.walk": {
+      "type": "json",
+      "url": "assets/atlases/thief-walk.atlas.json"
+    },
+    "sprite.npc.expert.walk": {
+      "type": "texture",
+      "url": "assets/sprites/expert-walk-atlas.png"
+    },
+    "atlas.npc.expert.walk": {
+      "type": "json",
+      "url": "assets/atlases/expert-walk.atlas.json"
+    },
+    "sprite.collectible.moldavite.a": {
+      "type": "texture",
+      "url": "assets/sprites/moldavite-quality-a.png"
+    },
+    "sprite.collectible.moldavite.b": {
+      "type": "texture",
+      "url": "assets/sprites/moldavite-quality-b.png"
+    },
+    "sprite.collectible.moldavite.c": {
+      "type": "texture",
+      "url": "assets/sprites/moldavite-quality-c.png"
+    }
+  },
+  "bundles": {
+    "common": [
+      "sprite.player.walk",
+      "atlas.player.walk",
+      "sprite.player.dig",
+      "atlas.player.dig"
+    ],
+    "level.chlum": [
+      "sprite.npc.farmer.walk",
+      "atlas.npc.farmer.walk",
+      "sprite.npc.forester.static",
+      "atlas.npc.forester.static",
+      "sprite.hazard.tractor",
+      "model.hazard.tractor",
+      "sprite.collectible.moldavite.a",
+      "sprite.collectible.moldavite.b",
+      "sprite.collectible.moldavite.c"
+    ],
+    "level.nesmen": [
+      "sprite.npc.farmer.walk",
+      "atlas.npc.farmer.walk",
+      "sprite.npc.forester.static",
+      "atlas.npc.forester.static",
+      "sprite.collectible.moldavite.a",
+      "sprite.collectible.moldavite.b",
+      "sprite.collectible.moldavite.c"
+    ],
+    "level.besednice": [
+      "sprite.npc.farmer.walk",
+      "atlas.npc.farmer.walk",
+      "sprite.npc.guard.quarry",
+      "atlas.npc.guard.quarry",
+      "sprite.npc.rival.walk",
+      "atlas.npc.rival.walk",
+      "model.environment.excavator",
+      "sprite.collectible.moldavite.a",
+      "sprite.collectible.moldavite.b",
+      "sprite.collectible.moldavite.c"
+    ],
+    "level.slavia": [
+      "sprite.npc.expert.walk",
+      "atlas.npc.expert.walk",
+      "sprite.npc.thief.walk",
+      "atlas.npc.thief.walk",
+      "model.environment.slavia"
+    ]
+  }
+}

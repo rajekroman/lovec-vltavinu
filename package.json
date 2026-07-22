@@ -1,16 +1,26 @@
 {
-  "name": "lovec-vltavinu",
-  "version": "5.2.0",
+  "name": "lovec-vltavinu-webgame",
   "private": true,
+  "version": "0.15.0",
   "type": "module",
   "scripts": {
-    "validate": "node --check game.js && node --check runtime-stability.js && node tools/validate.mjs",
-    "validate:modules": "find src -type f -name '*.js' -print0 | xargs -0 -n1 node --check",
-    "test:unit": "node --test tests/unit/*.test.mjs",
-    "test:smoke": "playwright test",
-    "test": "npm run validate && npm run validate:modules && npm run test:unit"
+    "dev": "vite --host 127.0.0.1",
+    "dev:network": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "preview:network": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "assets:models": "node scripts/generate-glb-assets.mjs",
+    "release:verify": "npm test && npm run build && node scripts/verify-release.mjs",
+    "release:archive": "npm run release:verify && node scripts/create-release-archive.mjs"
+  },
+  "dependencies": {
+    "three": "0.185.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.61.1"
+    "@types/three": "0.185.1",
+    "typescript": "7.0.2",
+    "vite": "8.1.5",
+    "vitest": "^4.1.10"
   }
 }

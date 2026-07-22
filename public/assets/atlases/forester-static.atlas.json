@@ -1,0 +1,16 @@
+{
+  "texture": "sprite.npc.forester.static",
+  "columns": 4,
+  "rows": 4,
+  "frameRate": 1,
+  "directions": {
+    "south": 0,
+    "west": 1,
+    "east": 2,
+    "north": 3
+  },
+  "clips": {
+    "idle": [0],
+    "walk": [0]
+  }
+}
