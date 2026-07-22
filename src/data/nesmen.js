@@ -22,7 +22,21 @@ const entities = [
     id: "player",
     components: {
       transform: { ...level.spawn, rotation: 0, scale: 1 },
-      sprite: { assetId: "player-hunter-walk", layer: "actors", frame: 0 },
+      sprite: { assetId: "player-hunter-walk", layer: "actors", frame: 0, columns: 4, rows: 4, flipX: false },
+      animation: {
+        clip: "walk",
+        frames: [0, 1, 2, 3],
+        fps: 8,
+        loop: true,
+        playing: false,
+        index: 0,
+        elapsed: 0,
+        completed: false,
+        frame: 0,
+        motionDriven: true,
+        motionThreshold: 0.001,
+        resetOnIdle: true
+      },
       collider: { shape: "circle", radius: 18, layer: "player", mask: [] },
       player: { speed: 220 }
     }
