@@ -1,45 +1,46 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po integračním review PR #24. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po sloučení produkčního bootstrap PR #24. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- `main` obsahuje veřejně hratelný Canvas 2D build 5.2, paralelní neaktivní modulární základ 6.0, gameplay/datovou sanaci z PR #23 (`2e678506`) a řídicí aktualizace z PR #25 a #26 (`17affd4`, `880a1f7`).
-- Do `main` byly začleněny validační workflow (#9), mobilní stabilizace (#10), Playwright smoke testy (#11), modulární jádro (#12), datové registry (#13), legacy datový adaptér (#15), doménový stav se save migrací (#17), řídicí kontrakty (#22) a čtyřlevelový session-only gameplay kontrakt (#23).
-- Nové moduly v `src/` zatím nejsou produkčním bootstrapem načítány z `index.html`; veřejná hra tedy stále běží přes monolitický `game.js`.
-- PR #17 řeší save systém, který aktuální hlavní zadání výslovně vylučuje. Kód může dočasně zůstat kvůli historii, ale je zmrazený a nesmí být závislostí cílové hry.
-- Kanonické levely jsou nyní v datech přesně `chlum`, `nesmen`, `besednice`, `slavia`. Ločenice není samostatný cílový level.
-- Session-only `GameSession` používá nálezy ve tvaru `{ findingId, locality, rarity, weight, score }`. `findingId` je koordinačně potvrzený kanonický identifikátor. Ukázka `findings[].id` v aktuálním `main` se opraví v bootstrap PR #24.
-- PR #24 byl čistě rekonstruován nad `main@880a1f7`: odstranil paralelní Chlum gameplay autoritu, používá jediný ortografický renderer a prošel workflow #183. Po integračním review byl vrácen do draftu kvůli třem izolovaným kontraktním opravám: blokování fixed update během async přechodu scény, reset nové session při PLAY a přesná validace tří dig zásahů.
-- Draft PR #20 zůstává pouze donor jednotlivých částí. Nesmí být sloučen jako celek.
-- PR #21 je oddělený kandidátní asset pack pro Chlum. Runtime zapojení patří až do samostatného Chlum vertical slice po integraci bootstrapu.
+- Závazný integrační základ je `main@777f6513aca45272935bf6f03c607c4453ff8b2e`, squash merge PR #24.
+- Produkční `index.html` nyní spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer` a ortografickou kamerou.
+- PR #24 sloučil transition-safe fixed update, čistý session start při PLAY, striktní literal `3` u dig eventů, kanonický katalog eventů a mobilní regresní testy.
+- Gameplay/datová sanace z PR #23 zůstává závazná: levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
+- `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód mohou v repozitáři dočasně zůstat pouze jako zmrazené historické soubory. Produkční bootstrap je nesmí importovat.
+- PR #20 zůstává pouze donor jednotlivých částí a nesmí být sloučen jako celek.
+- PR #21 je starý nemergeable donor Chlum assetů nad `main@1837c7b`. Vybrané assety se mohou přenést nebo znovu vytvořit pouze v novém Chlum balíku nad aktuálním `main`; PR #21 se neslučuje samostatně.
+- Jediným aktivním implementačním balíkem integrační etapy 4 je issue #29: samostatný Chlum Three.js vertical slice na větvi `agent/chlum-vertical-slice` nad `main@777f6513`.
 
 ## Rozhodnutí, která se znovu neotevírají
 
 | Oblast | Závazné rozhodnutí |
 |---|---|
-| Rendering | Three.js/WebGL, jeden renderer, ortografická kamera |
+| Rendering | Three.js/WebGL, právě jeden renderer, ortografická kamera |
+| Produkční vstup | jediný `src/bootstrap.js`; žádný druhý gameplay runtime |
 | Vizuální skladba | 2D transparentní sprity + low-poly GLB |
 | UI | HTML/CSS overlay, žádné herní DOM elementy uvnitř ECS komponent |
 | Architektura | ES moduly, scene manager, asset loader, input manager, ECS-lite, kolize, animace |
 | Simulace | fixed timestep 60 Hz, max delta 100 ms, max 5 substepů, interpolovaný render |
-| Ovládání | směrový vstup + jedno kontextové akční tlačítko |
-| Kopání | tři zásahy do rytmu; dig eventy musí literal `3` striktně validovat |
+| Ovládání | směrový vstup + jedno kontextové tlačítko `AKCE` |
+| Kopání | přesně tři zásahy do rytmu; dig eventy literal `3` striktně validují |
 | Nálezy | session skóre/kolekce bez inventářového UI; ID pole je `findingId` |
 | Persistence | žádný nový save systém ani migrace; PLAY zahajuje čistou session |
-| Nasazení | relativní cesty a GitHub Pages; `main` zůstává hratelný |
+| Nasazení | relativní cesty a GitHub Pages; `main` musí zůstat spustitelný |
 
 ## Stav pracovních proudů
 
 | Proud / issue | Stav | Další přijímaný výstup | Integrační brána |
 |---|---|---|---|
-| P0 mobilní stabilita #1 | Implementováno automaticky, chybí fyzický Safari důkaz | Záznam kompletního průchodu na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
-| CI a validace #2 | Základ sloučen | Rozšířit s novým bootstrapem | Zelený workflow na PR |
-| Architektura #3 | PR #24 má čistý bootstrap kandidát; po review opět draft | Opravit async transition guard, nový session reset a exact-three dig event kontrakty | Nový head, nové unit testy, zelený unit/validátor/mobile smoke, mergeable proti aktuálnímu `main` |
-| Gameplay #4 | Dokončeno v PR #23, issue uzavřena | Pouze integrační podpora pro navazující scény | Zachovat čtyři kanonické levely, session-only stav a unit testy |
-| Grafika #5 | PR #21 dodává izolovaný Chlum asset pack | Grafický audit manifestu a assetů | Rozpočty, pivoty, průhlednost, načtení bez 404; runtime až v Chlum slice |
-| Audio/výkon #6 | Legacy audio funguje | Oddělený AudioEngine a mobilní výkonový profil | Audio po gestu, bezpečný resume, stabilní FPS |
-| QA/release #7 | Smoke základ sloučen | Bootstrap smoke a později end-to-end průchod čtyř levelů | Desktop + iPhone portrait/landscape |
+| P0 mobilní stabilita #1 | Automatické regrese sloučeny, chybí fyzický Safari důkaz | Záznam kompletního průchodu na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
+| CI a validace #2 | Základ a bootstrap smoke sloučeny | Rozšířit o celý Chlum tok a asset kontrolu | Zelený workflow na PR #29 |
+| Architektura #3 | Produkční bootstrap dokončen v PR #24 | Pouze integrační podpora při doloženém defectu | `src/core`, `src/render` a `src/bootstrap.js` se v Chlum PR běžně nemění |
+| Gameplay #4 | Čtyřlevelová data a session-only stav dokončeny | Chlum gameplay systémy a objective tok v issue #29 | Žádná paralelní session nebo levelová data |
+| Grafika #5 | PR #21 je donor Chlum assetů | Vybrané assety integrovat přímo v issue #29 nad aktuálním `main` | Manifest, rozpočty, pivoty, dispose, bez 404 |
+| Audio/výkon #6 | Samostatný nový AudioEngine dosud není aktivní etapa | Bez rozšíření Chlum balíku, kromě minimálních již existujících hooků | Žádný nový audio redesign v PR #29 |
+| QA/release #7 | Bootstrap smoke sloučen | Unit a mobilní end-to-end smoke celého Chlumu | iPhone viewport, portrait/landscape, pauza a background návrat |
+| Chlum vertical slice #29 | **Aktuální integrační etapa** | Jeden samostatný draft PR z `agent/chlum-vertical-slice` | Kompletní Chlum, zelené testy, vizuální důkaz, žádný další level |
 | Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
 
 ## Integrační fronta
@@ -50,9 +51,9 @@
 
 ### 1a. Karanténa snapshotu 0.15.0 — platí
 
-- PR #20 a issue #19 slouží pouze jako dohledatelný zdroj kandidátních částí.
-- Snapshot není splněná integrační etapa ani náhrada aktuálního `main`.
-- Nepřenášet jeho alternativní modulový strom, perspektivní kameru, eventový katalog ani ECS komponenty s Three.js objekty.
+- PR #20 a issue #19 slouží pouze jako dohledatelný zdroj jednotlivých kandidátních částí.
+- Snapshot není integrační etapa ani náhrada aktuálního `main`.
+- Nepřenášet jeho alternativní strom, perspektivní kameru, eventový katalog ani ECS komponenty s Three.js objekty.
 
 ### 2. Sanace datového rozsahu — dokončeno
 
@@ -64,47 +65,77 @@ PR #23 byl sloučen jako `2e678506` a issue #4 byla uzavřena.
 - žádná inventářová správa, persistence, migrace ani nový renderer;
 - objective data používají jediné kontextové tlačítko a dig cíle vyžadují přesně tři zásahy.
 
-### 3. Produkční bootstrap — aktuální etapa
+### 3. Produkční bootstrap — dokončeno
 
-PR #24 již splnil původní rozsahovou bránu:
+PR #24 byl sloučen jako `777f6513`.
 
-- větev je rekonstruována nad `main@880a1f7`;
 - produkční HTML spouští jediný `src/bootstrap.js`;
 - existuje jeden lokálně připnutý Three.js `WebGLRenderer` s ortografickou kamerou;
 - fixed-step parametry jsou 60 Hz, max delta 100 ms a max 5 substepů;
-- `ChlumScene` je pouze integrační kostra nad `LEVEL_DEFINITIONS`, `GameSession` a objective evaluátorem;
-- nejsou přítomné vlastní `DigSystem`, `InteractionSystem`, `ObjectiveSystem` ani `TractorSystem`;
-- workflow #183 prošel.
+- fixed scene updates neběží během async transition;
+- PLAY resetuje session před vstupem do Chlumu;
+- dig eventy přijímají u požadovaných polí výhradně literal `3`;
+- `ChlumScene` je zatím pouze integrační kostra;
+- workflow #202 a odpovídající unit/mobile regrese prošly.
 
-Před sloučením musí architektonická větev dokončit tři opravy:
+### 4. Chlum vertical slice — aktuální etapa
 
-1. `GameApp.updateFixed()` nesmí volat žádné scene update fáze, když `SceneManager.transitioning === true`; doplnit test s odloženým async přechodem;
-2. PLAY z titulní obrazovky musí před vstupem do Chlumu zahájit čistou session přes `session.reset()` nebo ekvivalent; doplnit regresní test návrat do menu → nový PLAY;
-3. eventový kontrakt musí pro `dig:start.requiredHits`, `dig:hit.requiredHits` a `dig:complete.hits` přijímat výhradně hodnotu `3`; doplnit pozitivní i negativní unit testy;
-4. po opravách spustit celý unit suite, statický validátor a mobilní browser smoke;
-5. aktualizovat HANDOFF a vrátit PR z draftu až nad novým zeleným headem.
+Kanonický balík je issue #29.
 
-### 4. Chlum vertical slice — až po bootstrapu
+- **Základ:** `main@777f6513aca45272935bf6f03c607c4453ff8b2e`.
+- **Větev:** `agent/chlum-vertical-slice`.
+- **Výstup:** jeden samostatný draft PR do `main`.
+- **Tok:** briefing → povolení zemědělce Václava → hledání vhodného místa → tři rytmické zásahy → jeden zapsaný nález → vyhnutí traktoru → dokončení Chlumu.
+- **Session výsledek:** `level:complete` používá `levelId: "chlum"`, `nextLevelId: "nesmen"` a aktuální score, ale PR nesmí implementovat ani spouštět Nesměň.
 
-Samostatný navazující PR nad sloučeným bootstrapem. Kompletní tok:
-briefing → povolení zemědělce → hledání/kopání → tři rytmické zásahy → nález → vyhnutí traktoru → dokončení.
+Povolené změny:
 
-Musí používat kanonická data a `GameSession`; nesmí vracet hard-coded druhou gameplay autoritu do scény.
+1. čisté gameplay systémy v `src/gameplay` pro interakci, kopání, danger a objective vazbu;
+2. Chlum data/entity/dialog definice v `src/data` bez změny čtyřlevelového pořadí;
+3. `src/scenes/ChlumScene.js` jako orchestrace lifecycle a systémů, nikoli druhá session autorita;
+4. vybrané Chlum PNG/GLB/textury a manifestová data převzatá nebo znovu vytvořená z PR #21;
+5. minimální obecné doplnění existujících HUD/screen adaptérů;
+6. unit, statické a mobilní browser testy potřebné k prokázání celého toku.
 
-### 5. Zbývající levely a finále
+Zakázané změny:
 
-Každý level se převádí samostatným PR a musí mít vlastní briefing, riziko, dokončitelný cíl a mobilní smoke scénář.
+- bez doloženého integračního defectu neměnit `src/core`, `src/ecs`, `src/render` ani `src/bootstrap.js`;
+- nevytvářet druhý renderer, kameru, loop, eventový katalog nebo `GameSession`;
+- nepřidávat save/import/export, localStorage, continue ani inventář;
+- neimplementovat Nesměň, Besednici ani Slávii;
+- neslučovat celý PR #20 nebo PR #21 a nepoužívat jejich starý base jako základ.
+
+Akceptační brána:
+
+1. Chlum je dokončitelný od PLAY bez konzole nebo ruční URL;
+2. Václavovo povolení vznikne přiblížením a jedním stiskem `AKCE`;
+3. kopání dokončí pouze přesně tři úspěšné zásahy a používá kanonické dig eventy;
+4. nález se přes `findingId` zapíše právě jednou do `GameSession` a zvýší score;
+5. traktor je čitelný hazard a nezpůsobí freeze, dvojí akci ani zablokovaný vstup;
+6. objective se dokončí pouze po povolení, třech zásazích a jednom nálezu;
+7. všechny runtime assety mají stabilní ID, relativní URL, rozpočet, pivot/rozměry a dispose vlastníka;
+8. syntaxe, celý unit suite, validátor a mobilní browser smoke jsou zelené;
+9. PR obsahuje portrait/landscape vizuální důkaz a HANDOFF podle `AGENTS.md`;
+10. existuje stále právě jeden renderer a nevznikl save systém ani inventář.
+
+Teprve po merge issue #29 lze otevřít samostatný Nesměň vertical slice.
+
+### 5. Zbývající levely a finále — blokováno Chlumem
+
+Nesměň, Besednice a Slavia se převádějí po jednom, každý v samostatném PR nad sloučeným předchozím stupněm. Každý musí mít vlastní briefing, riziko, dokončitelný cíl a mobilní smoke scénář.
 
 ## Přidělení práce dalším chatům
 
-Každému chatu zadat pouze jeden z následujících balíků:
+Aktuálně je povolen pouze implementační chat pro issue #29. Musí pracovat z `main@777f6513` na větvi `agent/chlum-vertical-slice` a nesmí současně otevírat další level nebo alternativní architekturu.
 
-1. **Architektura:** bootstrap, scény a eventové kontrakty. Bez změn assetů a questů.
-2. **Gameplay/data:** čtyři levely, session state, objective testy. Bez rendereru a save.
-3. **Grafika:** asset manifest, sprity, GLB, textury a rozpočty. Bez gameplay logiky.
-4. **UI/mobil:** HUD adapter, safe-area a vstupní vazby. Bez levelových dat.
-5. **Audio/výkon:** AudioEngine, komprese, DPR/LOD a měření. Bez vizuálního redesignu.
-6. **QA:** unit/browser testy, Pages kontrola a release report. Bez nové funkce.
+Ostatní proudy smějí dodat pouze review nebo úzce vyžádanou integrační podporu:
+
+1. **Gameplay/data:** čisté systémy, Chlum data a objective testy; bez rendereru a save.
+2. **Grafika:** pouze Chlum manifest, sprity, GLB, textury a rozpočty; bez gameplay pravidel.
+3. **UI/mobil:** pouze obecné HUD/screen/input vazby nutné pro Chlum; bez levelových dat.
+4. **QA:** unit/browser testy, asset dostupnost a vizuální důkaz; bez nové funkce.
+5. **Architektura:** pouze review; produkční bootstrap a core se považují za zmrazené.
+6. **Audio/výkon:** samostatný vývoj je do merge Chlumu pozastaven.
 
 ## Formát hlášení chatu
 
@@ -115,8 +146,9 @@ Změněné soubory: ...
 Změněné kontrakty: žádné / přesný seznam
 Testy: příkaz + výsledek
 Mobilní ověření: zařízení, orientace, výsledek
+Výkon/assety: rozpočty, manifest, dispose
 Známé limity: ...
 PR: <odkaz>
 ```
 
-Výstup bez větve a PR se nepovažuje za integrovatelný.
+Výstup bez větve, issue, PR a ověřitelných testů se nepovažuje za integrovatelný.
