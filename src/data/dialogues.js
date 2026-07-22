@@ -15,6 +15,16 @@ const definitions = [
     ],
     actionLabel: "MÁM POVOLENÍ",
     grantsFlag: "chlumPermission"
+  },
+  {
+    id: "nesmen-permission",
+    speaker: { entityId: "forester", name: "Jan", role: "forester" },
+    lines: [
+      "Pracuj jen na třech vyznačených profilech.",
+      "Každý profil po prohlédnutí hned zasyp a nenechávej v lese otevřenou díru."
+    ],
+    actionLabel: "ROZUMÍM",
+    grantsFlag: "nesmenPermission"
   }
 ];
 
