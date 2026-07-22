@@ -57,20 +57,58 @@ async function moveAxisTo(page, axis, target, tolerance = 30, timeout = 20_000) 
   const key = delta > 0 ? positiveKey : negativeKey;
   const direction = Math.sign(delta);
 
+  await page.evaluate(({ axisName, targetValue, targetTolerance, moveDirection, code, timeoutMs }) => {
+    const state = { done: false, error: null, current: null };
+    window.__lovecQaMovement = state;
+    const startedAt = performance.now();
+    const release = () => window.dispatchEvent(new KeyboardEvent("keyup", {
+      code,
+      key: code,
+      bubbles: true,
+      cancelable: true
+    }));
+    const monitor = () => {
+      const current = window.__lovecRuntime?.snapshot?.().chlum?.runtime?.player?.[axisName];
+      state.current = current;
+      const reached = typeof current === "number" && (
+        moveDirection > 0 ? current >= targetValue - targetTolerance : current <= targetValue + targetTolerance
+      );
+      if (reached) {
+        release();
+        state.done = true;
+        return;
+      }
+      if (performance.now() - startedAt >= timeoutMs) {
+        release();
+        state.error = `Timed out at ${axisName}=${current}; target ${targetValue}.`;
+        state.done = true;
+        return;
+      }
+      requestAnimationFrame(monitor);
+    };
+    requestAnimationFrame(monitor);
+  }, {
+    axisName: axis,
+    targetValue: target,
+    targetTolerance: tolerance,
+    moveDirection: direction,
+    code: key,
+    timeoutMs: timeout
+  });
+
   await page.keyboard.down(key);
   try {
-    await expect.poll(async () => {
-      const current = (await snapshot(page)).chlum?.runtime?.player?.[axis];
-      if (typeof current !== "number") return false;
-      return direction > 0 ? current >= target - tolerance : current <= target + tolerance;
-    }, { timeout, intervals: [80, 120, 180, 250] }).toBe(true);
+    await page.waitForFunction(() => window.__lovecQaMovement?.done === true, null, { timeout: timeout + 2_000 });
+    const movement = await page.evaluate(() => ({ ...window.__lovecQaMovement }));
+    if (movement.error) throw new Error(movement.error);
   } finally {
     await page.keyboard.up(key);
+    await page.evaluate(() => { delete window.__lovecQaMovement; });
   }
 
   const final = await snapshot(page);
   const current = final.chlum?.runtime?.player?.[axis];
-  if (typeof current !== "number" || Math.abs(target - current) > 55) {
+  if (typeof current !== "number" || Math.abs(target - current) > 45) {
     throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
   }
   return final;
