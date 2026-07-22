@@ -109,10 +109,12 @@ test("Chlum vyžaduje povolení, tři zásahy i nález", () => {
   assert.equal(isObjectiveComplete("chlum", { permit: true, digHits: 3, findings: 1 }), true);
 });
 
-test("Nesměň vyžaduje povolení, kopání i zahrabání", () => {
+test("Nesměň vyžaduje povolení, kopání, zahrabání i nález", () => {
   assert.equal(evaluateObjective("nesmen", { permit: false }).text, "Získej souhlas lesníka");
-  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 2 }), false);
-  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3 }), true);
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 2, findings: 1 }), false);
+  assert.equal(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 }).text, "Vyzvedni nalezený vltavín");
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 }), false);
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 }), true);
 });
 
 test("Besednice používá texty všech fází", () => {
@@ -140,7 +142,7 @@ test("Slavia vyžaduje dokumenty, znalkyni, Frantu, certifikát i vstup", () => 
 test("progress objektivů zůstává v rozsahu 0 až 1", () => {
   const cases = [
     ["chlum", { permit: true, digHits: 999, findings: 999 }],
-    ["nesmen", { permit: true, dug: 999, filled: 999 }],
+    ["nesmen", { permit: true, dug: 999, filled: 999, findings: 999 }],
     ["besednice", { clues: 999, hedgehog: true, bossStarted: true, bossDefeated: true }],
     ["slavia", { papers: 999, expertConsulted: true, bossStarted: true, bossDefeated: true, certified: true, entered: true }]
   ];
