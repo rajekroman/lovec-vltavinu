@@ -41,6 +41,32 @@ test("strict EventBus rejects unknown events and invalid payload fields", () => 
   }));
 });
 
+test("dig event contracts require the literal three", () => {
+  const valid = [
+    ["dig:start", { spot: "spot-1", requiredHits: 3 }],
+    ["dig:hit", { spot: "spot-1", hit: 1, requiredHits: 3, quality: 0.8 }],
+    ["dig:complete", { spot: "spot-1", hits: 3 }]
+  ];
+  for (const [type, payload] of valid) {
+    assert.doesNotThrow(() => validateEventPayload(type, payload));
+  }
+
+  for (const value of [2, 4]) {
+    assert.throws(
+      () => validateEventPayload("dig:start", { spot: "spot-1", requiredHits: value }),
+      /Invalid payload field for dig:start: requiredHits/
+    );
+    assert.throws(
+      () => validateEventPayload("dig:hit", { spot: "spot-1", hit: 1, requiredHits: value, quality: 0.8 }),
+      /Invalid payload field for dig:hit: requiredHits/
+    );
+    assert.throws(
+      () => validateEventPayload("dig:complete", { spot: "spot-1", hits: value }),
+      /Invalid payload field for dig:complete: hits/
+    );
+  }
+});
+
 test("bootstrap integration uses canonical GameSession and objective evaluator", () => {
   const session = createGameSession();
   session.enterLevel("chlum");
@@ -56,6 +82,36 @@ test("bootstrap integration uses canonical GameSession and objective evaluator",
   assert.equal(session.state.score, 120);
   const objective = evaluateObjective("chlum", { permit: true, digHits: 3, findings: 1 });
   assert.equal(objective.complete, true);
+});
+
+test("GameSession reset restores a fresh Chlum run", () => {
+  const session = createGameSession();
+  session.recordFinding({
+    findingId: "finding-1",
+    locality: "chlum",
+    rarity: "A",
+    weight: 3.2,
+    score: 240
+  });
+  session.setFlag("chlumPermission", true);
+  session.setDanger(75);
+  session.setPhase("complete");
+
+  session.reset();
+
+  assert.equal(session.state.levelId, "chlum");
+  assert.equal(session.state.phase, "briefing");
+  assert.deepEqual(session.state.findings, []);
+  assert.equal(session.state.score, 0);
+  assert.equal(session.state.health, 3);
+  assert.equal(session.state.danger, 0);
+  assert.deepEqual(session.state.flags, {});
+  assert.deepEqual(session.state.objective, {
+    id: "chlum-permission-and-find",
+    current: 0,
+    required: 1,
+    complete: false
+  });
 });
 
 test("GameApp invokes fixed-step scene phases in contract order", async () => {
@@ -86,5 +142,36 @@ test("GameApp invokes fixed-step scene phases in contract order", async () => {
     "updateLifetime",
     "updateHud"
   ]);
+  await app.dispose();
+});
+
+test("GameApp suppresses fixed scene updates during async transition", async () => {
+  const updates = [];
+  let releaseEnter;
+  const enterGate = new Promise(resolve => {
+    releaseEnter = resolve;
+  });
+  const app = new GameApp();
+  app.scenes.register("first", {
+    update: () => updates.push("first")
+  });
+  app.scenes.register("second", {
+    enter: async () => enterGate,
+    update: () => updates.push("second")
+  });
+
+  await app.boot("first");
+  app.loop.advance(1 / 60);
+  const transition = app.changeScene("second");
+  assert.equal(app.scenes.transitioning, true);
+
+  app.loop.advance(1 / 60);
+  assert.deepEqual(updates, ["first"]);
+
+  releaseEnter();
+  await transition;
+  assert.equal(app.scenes.transitioning, false);
+  app.loop.advance(1 / 60);
+  assert.deepEqual(updates, ["first", "second"]);
   await app.dispose();
 });
