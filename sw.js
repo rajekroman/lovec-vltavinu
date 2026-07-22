@@ -8,6 +8,7 @@ const CORE = [
   "./icon-192.png",
   "./icon-512.png",
   "./vendor/three.module.min.js",
+  "./vendor/three.core.min.js",
   "./src/bootstrap.js",
   "./src/core/EventBus.js",
   "./src/core/GameEvents.js",
