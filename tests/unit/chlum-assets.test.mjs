@@ -3,8 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as THREE from "../../vendor/three.module.min.js";
-import { parseGlbModel } from "../../src/render/GlbModelLoader.js";
+import { GltfAssetLoader, GLTF_LOADER_REVISION } from "../../src/render/GltfAssetLoader.js";
 import { ModelFactory } from "../../src/render/ModelFactory.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -23,6 +22,10 @@ const EXPECTED_IDS = [
   "model-chlum-field-fence-segment"
 ];
 const fileFor = entry => path.join(root, entry.url.slice(2));
+const arrayBufferFor = entry => {
+  const buffer = fs.readFileSync(fileFor(entry));
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+};
 
 function triangleCount(model) {
   let triangles = 0;
@@ -82,19 +85,20 @@ test("Chlum PNG and GLB files match declared technical constraints", () => {
   }
 });
 
-test("general GLB loader parses every Chlum model and preserves triangle counts", () => {
+test("standard Three.js GLTFLoader r185 parses every Chlum model and preserves triangle counts", async () => {
+  const loader = new GltfAssetLoader();
   for (const entry of manifest.filter(asset => asset.type === "gltf")) {
-    const model = parseGlbModel(THREE, fs.readFileSync(fileFor(entry)));
-    assert.equal(model.isGroup, true, entry.id);
+    const model = await loader.parse(arrayBufferFor(entry), "");
+    assert.equal(model.isGroup || model.isScene, true, entry.id);
     assert.ok(firstMesh(model), entry.id);
     assert.equal(triangleCount(model), entry.metrics.triangles, entry.id);
-    assert.equal(model.userData.glbAsset.version, "2.0", entry.id);
+    assert.equal(model.userData.gltfLoaderRevision, GLTF_LOADER_REVISION, entry.id);
   }
 });
 
-test("ModelFactory clones resources and binds a GLB through the shared renderer", () => {
+test("ModelFactory clones resources and binds a standard GLTF source through the shared renderer", async () => {
   const entry = manifest.find(asset => asset.id === "model-chlum-tractor-no-driver");
-  const source = parseGlbModel(THREE, fs.readFileSync(fileFor(entry)));
+  const source = await new GltfAssetLoader().parse(arrayBufferFor(entry), "");
   const bindings = [];
   const renderer = {
     bindEntity(entity, object, layer) {
@@ -122,4 +126,11 @@ test("ModelFactory clones resources and binds a GLB through the shared renderer"
   const boundMesh = firstMesh(bound);
   assert.notEqual(boundMesh.geometry, sourceMesh.geometry);
   assert.notEqual(boundMesh.material, sourceMesh.material);
+});
+
+test("ChlumScene používá manifest preload bez ručních seznamů a type override", () => {
+  const source = fs.readFileSync(path.join(root, "src/scenes/ChlumScene.js"), "utf8");
+  assert.doesNotMatch(source, /TEXTURE_IDS|MODEL_IDS/);
+  assert.doesNotMatch(source, /\.load\(\{\s*\.\.\.entry,\s*type:/);
+  assert.match(source, /selectPreload\(this\.level\.assetGroups\)/);
 });
