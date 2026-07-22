@@ -117,15 +117,16 @@ test("World vrací pouze entity se všemi požadovanými komponentami", () => {
   assert.equal(world.count(), 1);
 });
 
-test("CollisionSystem hlásí enter, stay a exit", () => {
+test("CollisionSystem hlásí enter, stay a exit s kanonickým payloadem", () => {
   const events = new EventBus();
   const phases = [];
-  events.on("collision:enter", collision => phases.push(collision.phase));
-  events.on("collision:stay", collision => phases.push(collision.phase));
-  events.on("collision:exit", collision => phases.push(collision.phase));
+  const payloads = [];
+  events.on("collision:enter", payload => { phases.push("enter"); payloads.push(payload); });
+  events.on("collision:stay", payload => { phases.push("stay"); payloads.push(payload); });
+  events.on("collision:exit", payload => { phases.push("exit"); payloads.push(payload); });
 
   const world = new World();
-  world.createEntity({ transform: { x: 0, y: 0 }, collider: { shape: "circle", radius: 10 } });
+  const first = world.createEntity({ transform: { x: 0, y: 0 }, collider: { shape: "circle", radius: 10 } });
   const second = world.createEntity({ transform: { x: 15, y: 0 }, collider: { shape: "circle", radius: 10 } });
   const collisions = new CollisionSystem({ events, cellSize: 32 });
 
@@ -134,6 +135,8 @@ test("CollisionSystem hlásí enter, stay a exit", () => {
   world.patch(second, "transform", { x: 100 });
   assert.equal(collisions.update(world).length, 0);
   assert.deepEqual(phases, ["enter", "stay", "exit"]);
+  assert.deepEqual(payloads[0], { a: first, b: second, normal: { x: 1, y: 0 }, depth: 5 });
+  assert.deepEqual(payloads[2], { a: first, b: second });
 });
 
 test("AnimationSystem posouvá framy a dokončí non-loop animaci", () => {

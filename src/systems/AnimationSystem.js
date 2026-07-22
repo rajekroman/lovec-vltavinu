@@ -4,6 +4,7 @@ export function createAnimation(options = {}) {
   const fps = options.fps ?? 8;
   if (!(fps > 0)) throw new RangeError("Animation fps must be greater than zero.");
   return {
+    clip: options.clip ?? "default",
     frames,
     fps,
     loop: options.loop !== false,
@@ -49,19 +50,22 @@ export class AnimationSystem {
         animation.index++;
       } else if (animation.loop) {
         animation.index = 0;
-        this.events?.emit("animation:loop", { entity, animation });
       } else {
         animation.index = animation.frames.length - 1;
         animation.completed = true;
         animation.playing = false;
         animation.elapsed = 0;
-        this.events?.emit("animation:complete", { entity, animation });
+        this.events?.emit("animation:complete", { entity, clip: animation.clip });
       }
       animation.frame = animation.frames[animation.index];
       changed = true;
     }
 
-    if (changed) this.events?.emit("animation:frame", { entity, animation, frame: animation.frame });
+    if (changed) this.events?.emit("animation:frame", {
+      entity,
+      clip: animation.clip,
+      frame: animation.frame
+    });
     return changed;
   }
 

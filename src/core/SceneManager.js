@@ -41,7 +41,7 @@ export class SceneManager {
     let nextEntered = false;
 
     this.transitioning = true;
-    this.events?.emit("scene:transition:start", { from: previousId, to: id, context });
+    this.events?.emit("scene:transition:start", { from: previousId, to: id });
 
     try {
       if (previousScene) {
@@ -59,10 +59,14 @@ export class SceneManager {
 
       this.activeId = id;
       this.activeScene = nextScene;
-      this.events?.emit("scene:transition:complete", { from: previousId, to: id, context });
+      this.events?.emit("scene:transition:complete", { from: previousId, to: id });
       return nextScene;
     } catch (error) {
-      this.events?.emit("scene:transition:error", { from: previousId, to: id, context, error });
+      this.events?.emit("scene:transition:error", {
+        from: previousId,
+        to: id,
+        message: error instanceof Error ? error.message : String(error)
+      });
 
       if (nextScene !== previousScene) {
         try {
@@ -112,6 +116,5 @@ export class SceneManager {
     await active?.exit?.({ from: activeId, to: null, context: { dispose: true } });
     for (const scene of this.scenes.values()) await scene.dispose?.();
     this.scenes.clear();
-    this.events?.emit("scene:dispose", { from: activeId });
   }
 }

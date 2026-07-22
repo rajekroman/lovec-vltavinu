@@ -147,7 +147,7 @@ Komponenty jsou serializovatelná data a neobsahují DOM uzly, `THREE.Object3D`,
 {
   levelId: "chlum",
   phase: "briefing",
-  findings: [{ id: "finding-1", locality: "chlum", rarity: "B", weight: 2.4, score: 120 }],
+  findings: [{ findingId: "finding-1", locality: "chlum", rarity: "B", weight: 2.4, score: 120 }],
   score: 120,
   health: 3,
   danger: 0,

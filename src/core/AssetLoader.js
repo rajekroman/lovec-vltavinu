@@ -25,16 +25,20 @@ export class AssetLoader {
     const loader = this.loaders.get(entry.type);
     if (!loader) return Promise.reject(new Error(`No loader registered for asset type: ${entry.type}`));
 
-    this.events?.emit("asset:load:start", { entry, key });
+    this.events?.emit("asset:load:start", { id: entry.id, type: entry.type });
     const promise = Promise.resolve()
       .then(() => loader(entry))
       .then(asset => {
-        this.events?.emit("asset:load:complete", { entry, key, asset });
+        this.events?.emit("asset:load:complete", { id: entry.id, type: entry.type });
         return asset;
       })
       .catch(error => {
         this.cache.delete(key);
-        this.events?.emit("asset:load:error", { entry, key, error });
+        this.events?.emit("asset:load:error", {
+          id: entry.id,
+          type: entry.type,
+          message: error instanceof Error ? error.message : String(error)
+        });
         throw error;
       });
 
@@ -74,7 +78,6 @@ export class AssetLoader {
     if (typeof disposer === "function") {
       Promise.resolve(assetPromise).then(asset => disposer(asset)).catch(() => {});
     }
-    this.events?.emit("asset:unload", { id, type, key });
     return true;
   }
 
@@ -84,6 +87,5 @@ export class AssetLoader {
     if (typeof disposer === "function") {
       for (const [, promise] of entries) Promise.resolve(promise).then(asset => disposer(asset)).catch(() => {});
     }
-    this.events?.emit("asset:clear", { count: entries.length });
   }
 }

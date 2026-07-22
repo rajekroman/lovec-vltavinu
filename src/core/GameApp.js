@@ -10,7 +10,7 @@ import { AnimationSystem } from "../systems/AnimationSystem.js";
 export class GameApp {
   constructor(options = {}) {
     this.events = options.events ?? new EventBus();
-    this.world = options.world ?? new World({ events: this.events });
+    this.world = options.world ?? new World();
     this.input = options.input ?? new InputManager({ events: this.events });
     this.assets = options.assets ?? new AssetLoader({ events: this.events });
     this.scenes = options.scenes ?? new SceneManager({ events: this.events });
@@ -20,19 +20,12 @@ export class GameApp {
     this.disposed = false;
 
     this.loop = options.loop ?? new GameLoop({
-      events: this.events,
       fixedStep: options.fixedStep ?? 1 / 60,
       maxFrameDelta: options.maxFrameDelta ?? 0.1,
       maxSubSteps: options.maxSubSteps ?? 5
     });
 
-    this.removeCoreSystems = [
-      this.loop.addSystem((dt, time) => this.scenes.update(dt, time), 0),
-      this.loop.addSystem(dt => this.animations.update(this.world, dt), 100),
-      this.loop.addSystem(() => this.collisions.update(this.world), 200),
-      this.loop.addSystem(() => this.input.endFrame(), 1000)
-    ];
-
+    this.removeCoreSystems = [this.loop.addSystem((dt, time) => this.updateFixed(dt, time), 0)];
     this.removeCoreRenderer = this.loop.addRenderer((alpha, metrics) => {
       this.scenes.render(alpha, metrics);
       this.renderer?.render?.(alpha, metrics);
@@ -41,9 +34,9 @@ export class GameApp {
 
   async boot(initialScene, context = {}) {
     if (this.disposed) throw new Error("Cannot boot a disposed GameApp.");
-    this.events.emit("app:boot:start", { initialScene, context });
+    this.events.emit("app:boot:start", { initialScene });
     if (initialScene) await this.scenes.transitionTo(initialScene, context);
-    this.events.emit("app:boot:complete", { initialScene, context });
+    this.events.emit("app:boot:complete", { initialScene });
     return this;
   }
 
@@ -61,6 +54,39 @@ export class GameApp {
     if (this.disposed) throw new Error("Cannot change scene on a disposed GameApp.");
     this.input.reset("scene-transition");
     return this.scenes.transitionTo(id, context);
+  }
+
+  updateFixed(dt, time) {
+    if (this.scenes.transitioning) {
+      this.input.endFrame();
+      return;
+    }
+
+    const scene = this.scenes.activeScene;
+    const input = this.input.snapshot();
+    if (!scene) {
+      this.input.endFrame();
+      return;
+    }
+
+    const phases = [
+      "beginFixed",
+      "updateControl",
+      "updateMovement",
+      "updateCollisions",
+      "updateGameplay",
+      "updateObjectives",
+      "updateAnimations",
+      "updateLifetime",
+      "updateHud"
+    ];
+    const hasPipeline = phases.some(name => typeof scene[name] === "function");
+    if (hasPipeline) {
+      for (const name of phases) scene[name]?.(dt, time, input);
+    } else {
+      scene.update?.(dt, time, input);
+    }
+    this.input.endFrame();
   }
 
   async dispose() {
