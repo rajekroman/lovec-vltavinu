@@ -6,7 +6,7 @@ const CORE = [
   "./src/ecs/World.js", "./src/systems/CollisionSystem.js", "./src/systems/AnimationSystem.js",
   "./src/data/levels.js", "./src/data/chlum.js", "./src/data/dialogues.js",
   "./src/gameplay/GameSession.js", "./src/gameplay/Objectives.js", "./src/gameplay/InteractionSystem.js", "./src/gameplay/DigSystem.js", "./src/gameplay/DangerSystem.js", "./src/gameplay/ObjectiveSystem.js",
-  "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GlbModelLoader.js",
+  "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GlbModelLoader.js", "./src/render/ModelFactory.js",
   "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav.png",
   "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-besednice.png",
