@@ -8,7 +8,7 @@ const CORE = [
   "./src/gameplay/GameSession.js", "./src/gameplay/Objectives.js", "./src/gameplay/InteractionSystem.js", "./src/gameplay/DigSystem.js", "./src/gameplay/DangerSystem.js", "./src/gameplay/ObjectiveSystem.js",
   "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GltfAssetLoader.js", "./src/render/AssetDisposal.js", "./src/render/ModelFactory.js",
   "./vendor/three/addons/loaders/GLTFLoader.js", "./vendor/three/addons/utils/BufferGeometryUtils.js", "./vendor/three/addons/utils/SkeletonUtils.js",
-  "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js", "./src/scenes/NesmenScene.js",
+  "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js", "./src/scenes/ChlumNesmenBridgeScene.js", "./src/scenes/NesmenScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav.png", "./assets/sprites/npcs/forester-jan.png",
   "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png", "./assets/sprites/findings/vltavin-nesmen.png",
   "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/nesmen-forest-floor.png", "./assets/textures/terrain/nesmen-sand-profile.png",
