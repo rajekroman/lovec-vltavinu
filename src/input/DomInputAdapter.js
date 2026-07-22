@@ -114,8 +114,8 @@ export class DomInputAdapter {
     let x = 0;
     let y = 0;
     for (const code of this.keys) {
-      x += MOVE_KEYS[event.code]?.[0] ?? 0;
-      y += MOVE_KEYS[event.code]?.[1] ?? 0;
+      x += MOVE_KEYS[code]?.[0] ?? 0;
+      y += MOVE_KEYS[code]?.[1] ?? 0;
     }
     this.input.setAxis("move", x, y);
   }
