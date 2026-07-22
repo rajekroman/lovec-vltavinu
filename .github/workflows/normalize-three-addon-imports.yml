@@ -1,0 +1,34 @@
+name: Normalize local Three addon imports
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: ${{ github.head_ref == 'agent/asset-runtime-hardening' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/asset-runtime-hardening
+      - name: Normalize local core import
+        run: |
+          for file in vendor/three/addons/loaders/GLTFLoader.js vendor/three/addons/utils/BufferGeometryUtils.js vendor/three/addons/utils/SkeletonUtils.js; do
+            sed -Ei "s#from '[.][.]/([.][.]/)*three[.]module[.]min[.]js';#from '../../../three.module.min.js';#" "$file"
+            sed -i "/@three_import/d" "$file"
+          done
+          grep -q "from '../../../three.module.min.js';" vendor/three/addons/loaders/GLTFLoader.js
+          ! grep -R "from 'three" vendor/three/addons
+      - name: Commit normalized imports
+        run: |
+          if git diff --quiet -- vendor/three/addons; then exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add vendor/three/addons
+          git commit -m "Normalize local imports in Three r185 addons [imports-normalized]"
+          git push origin HEAD:agent/asset-runtime-hardening
