@@ -1,0 +1,61 @@
+import { getLevelDefinition } from "../data/levels.js";
+import { evaluateObjective } from "./Objectives.js";
+
+const roundProgress = value => Math.round(value * 10000) / 10000;
+
+export class ObjectiveSystem {
+  constructor(options = {}) {
+    this.events = options.events ?? null;
+    this.session = options.session;
+    this.levelId = options.levelId ?? "chlum";
+    this.level = getLevelDefinition(this.levelId);
+    if (!this.session?.state || !this.session?.setFlag || !this.session?.recordFinding) throw new TypeError("ObjectiveSystem requires a GameSession.");
+    if (!this.level) throw new Error(`Unknown level: ${this.levelId}`);
+    this.lastProgress = null;
+    this.completed = this.session.state.objective.complete === true;
+  }
+
+  grantPermission() {
+    if (this.session.state.flags.chlumPermission === true) return false;
+    this.session.setFlag("chlumPermission", true);
+    return true;
+  }
+
+  recordFinding(input) {
+    this.session.recordFinding(input);
+    const findingId = String(input?.findingId ?? "").trim();
+    const finding = this.session.state.findings.find(entry => entry.findingId === findingId);
+    this.events?.emit("finding:collected", { ...finding });
+    return finding;
+  }
+
+  snapshot(runtime = {}) {
+    return evaluateObjective(this.levelId, {
+      permit: this.session.state.flags.chlumPermission === true,
+      digHits: runtime.digHits ?? 0,
+      findings: this.session.state.findings.filter(entry => entry.locality === this.levelId).length
+    });
+  }
+
+  update(runtime = {}) {
+    const snapshot = this.snapshot(runtime);
+    const current = roundProgress(snapshot.progress);
+    if (current !== this.lastProgress) {
+      this.lastProgress = current;
+      this.events?.emit("objective:progress", { id: this.level.objective.id, current, required: 1 });
+    }
+
+    if (snapshot.complete && !this.completed) {
+      this.completed = true;
+      this.session.setObjectiveProgress(this.level.objective.required, true);
+      this.events?.emit("objective:complete", { id: this.level.objective.id, levelId: this.levelId });
+      this.events?.emit("level:complete", { levelId: this.levelId, nextLevelId: this.level.next ?? null, score: this.session.state.score });
+    }
+    return snapshot;
+  }
+
+  reset() {
+    this.lastProgress = null;
+    this.completed = false;
+  }
+}
