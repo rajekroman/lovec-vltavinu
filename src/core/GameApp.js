@@ -57,6 +57,11 @@ export class GameApp {
   }
 
   updateFixed(dt, time) {
+    if (this.scenes.transitioning) {
+      this.input.endFrame();
+      return;
+    }
+
     const scene = this.scenes.activeScene;
     const input = this.input.snapshot();
     if (!scene) {
