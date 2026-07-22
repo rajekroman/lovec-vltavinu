@@ -13,6 +13,7 @@ export class DomInputAdapter {
     this.onResize = options.onResize ?? (() => {});
     this.keys = new Set();
     this.movePointer = null;
+    this.actionPointer = null;
     this.controller = new AbortController();
     this.bind();
   }
@@ -72,12 +73,16 @@ export class DomInputAdapter {
 
     this.listen(action, "pointerdown", event => {
       event.preventDefault();
+      if (this.actionPointer !== null) return;
+      this.actionPointer = event.pointerId;
       try { action.setPointerCapture?.(event.pointerId); } catch {}
       action.classList.add("active");
       this.input.press("action");
     });
     const releaseAction = event => {
+      if (event.pointerId !== this.actionPointer) return;
       event.preventDefault();
+      this.actionPointer = null;
       action.classList.remove("active");
       this.input.release("action");
     };
@@ -109,8 +114,8 @@ export class DomInputAdapter {
     let x = 0;
     let y = 0;
     for (const code of this.keys) {
-      x += MOVE_KEYS[code]?.[0] ?? 0;
-      y += MOVE_KEYS[code]?.[1] ?? 0;
+      x += MOVE_KEYS[event.code]?.[0] ?? 0;
+      y += MOVE_KEYS[event.code]?.[1] ?? 0;
     }
     this.input.setAxis("move", x, y);
   }
@@ -132,6 +137,8 @@ export class DomInputAdapter {
   reset(reason = "dom-reset") {
     this.keys.clear();
     this.movePointer = null;
+    this.actionPointer = null;
+    this.document.getElementById("actionButton")?.classList.remove("active");
     this.resetStick();
     this.input.reset(reason);
   }
