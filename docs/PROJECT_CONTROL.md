@@ -1,18 +1,18 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po sloučení produkčního bootstrap PR #24 a řídicího PR #31. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po sloučení produkčního bootstrap PR #24 a navazujících řídicích aktualizací. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
 - Runtime baseline je `777f6513aca45272935bf6f03c607c4453ff8b2e`, squash merge produkčního bootstrap PR #24.
-- Aktuální `main` a povinný branch point pro další práci je `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`; oproti runtime baseline přidává pouze řídicí aktualizaci z PR #31.
+- Minimální governance baseline je `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`, merge řídicího PR #31. Skutečný branch point další práce je vždy aktuální `main` v okamžiku založení větve; musí obsahovat tuto baseline i všechny pozdější governance-only aktualizace.
 - Produkční `index.html` nyní spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer` a ortografickou kamerou.
 - PR #24 sloučil transition-safe fixed update, čistý session start při PLAY, striktní literal `3` u dig eventů, kanonický katalog eventů a mobilní regresní testy.
 - Gameplay/datová sanace z PR #23 zůstává závazná: levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
 - `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód mohou v repozitáři dočasně zůstat pouze jako zmrazené historické soubory. Produkční bootstrap je nesmí importovat.
 - PR #20 zůstává pouze donor jednotlivých částí a nesmí být sloučen jako celek.
 - PR #21 je starý uzavřený donor Chlum assetů nad `main@1837c7b`. Vybrané assety se mohou přenést nebo znovu vytvořit pouze v novém Chlum balíku nad aktuálním `main`; PR #21 se neslučuje samostatně.
-- Jediným aktivním implementačním balíkem integrační etapy 4 je issue #29: samostatný Chlum Three.js vertical slice na větvi `agent/chlum-vertical-slice` založené z aktuálního `main@65ce1380`.
+- Jediným aktivním implementačním balíkem integrační etapy 4 je issue #29: samostatný Chlum Three.js vertical slice na větvi `agent/chlum-vertical-slice` založené z aktuálního `main`.
 
 ## Rozhodnutí, která se znovu neotevírají
 
@@ -84,7 +84,8 @@ PR #24 byl sloučen jako `777f6513`.
 Kanonický balík je issue #29.
 
 - **Runtime baseline:** `777f6513aca45272935bf6f03c607c4453ff8b2e`.
-- **Branch point:** aktuální `main@65ce1380aa84f1446d05b437fe4ebb50a3660d6c`.
+- **Minimální governance baseline:** `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`.
+- **Branch point:** aktuální `main` v okamžiku založení implementační větve; nesmí vynechat pozdější governance-only aktualizace.
 - **Větev:** `agent/chlum-vertical-slice`.
 - **Výstup:** jeden samostatný draft PR do `main`.
 - **Tok:** briefing → povolení zemědělce Václava → hledání vhodného místa → tři rytmické zásahy → jeden zapsaný nález → vyhnutí traktoru → dokončení Chlumu.
@@ -128,7 +129,7 @@ Nesměň, Besednice a Slavia se převádějí po jednom, každý v samostatném 
 
 ## Přidělení práce dalším chatům
 
-Aktuálně je povolen pouze implementační chat pro issue #29. Musí založit `agent/chlum-vertical-slice` z aktuálního `main@65ce1380` a nesmí současně otevírat další level nebo alternativní architekturu. Runtime API a implementační rozsah jsou dány baseline `777f6513`.
+Aktuálně je povolen pouze implementační chat pro issue #29. Musí založit `agent/chlum-vertical-slice` z aktuálního `main` v okamžiku zahájení práce; tento `main` musí obsahovat minimálně governance baseline `65ce1380`. Runtime API a implementační rozsah jsou dány baseline `777f6513`. Chat nesmí současně otevírat další level nebo alternativní architekturu.
 
 Ostatní proudy smějí dodat pouze review nebo úzce vyžádanou integrační podporu:
 
