@@ -10,7 +10,7 @@ import { ScreenController } from "./ui/ScreenController.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
-import { ChlumScene } from "./scenes/ChlumScene.js";
+import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
 import { NesmenScene } from "./scenes/NesmenScene.js";
 
 const documentRef = globalThis.document;
@@ -69,7 +69,7 @@ app.assets.register("texture", loadTexture, disposeTexture);
 app.assets.register("spritesheet", loadTexture, disposeTexture);
 app.assets.register("gltf", entry => gltfLoader.load(entry), disposeObject3D);
 
-const chlum = new ChlumScene({
+const chlum = new ChlumNesmenBridgeScene({
   app,
   events,
   renderer,
