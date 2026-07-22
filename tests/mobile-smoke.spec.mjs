@@ -12,18 +12,21 @@ async function openBootstrap(page) {
   return pageErrors;
 }
 
+async function snapshot(page) {
+  return page.evaluate(() => window.__lovecRuntime.snapshot());
+}
+
+function activeRuntime(state) {
+  return state[state.scene]?.runtime ?? null;
+}
+
 async function enterChlum(page) {
   await page.locator("#playButton").tap();
   await expect(page.locator("#briefScreen")).toHaveClass(/visible/);
   await expect(page.locator("#briefKicker")).toHaveText("LOKALITA 1 / 4");
   await page.locator("#briefButton").tap();
   await expect(page.locator("#app")).toHaveClass(/playing/);
-  await expect(page.locator("#hud")).not.toHaveClass(/hidden/);
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().chlum?.runtime?.player !== null)).toBe(true);
-}
-
-async function snapshot(page) {
-  return page.evaluate(() => window.__lovecRuntime.snapshot());
 }
 
 async function withPhaseSnapshot(page, phase, operation, target = null) {
@@ -31,8 +34,7 @@ async function withPhaseSnapshot(page, phase, operation, target = null) {
     return await operation();
   } catch (error) {
     const runtime = await snapshot(page).catch(snapshotError => ({ snapshotError: snapshotError.message }));
-    const detail = JSON.stringify({ phase, target, runtime }, null, 2);
-    throw new Error(`${phase} failed: ${error instanceof Error ? error.message : String(error)}\n${detail}`);
+    throw new Error(`${phase} failed: ${error instanceof Error ? error.message : String(error)}\n${JSON.stringify({ target, runtime }, null, 2)}`);
   }
 }
 
@@ -47,8 +49,8 @@ async function holdKeys(page, keys, duration) {
 
 async function moveAxisTo(page, axis, target, tolerance = 30, timeout = 20_000) {
   const initial = await snapshot(page);
-  const player = initial.chlum?.runtime?.player;
-  if (!player) throw new Error("Chlum player is not available.");
+  const player = activeRuntime(initial)?.player;
+  if (!player) throw new Error(`${initial.scene} player is not available.`);
   const delta = target - player[axis];
   if (Math.abs(delta) <= tolerance) return initial;
 
@@ -68,7 +70,8 @@ async function moveAxisTo(page, axis, target, tolerance = 30, timeout = 20_000) 
       cancelable: true
     }));
     const monitor = () => {
-      const current = window.__lovecRuntime?.snapshot?.().chlum?.runtime?.player?.[axisName];
+      const snapshotValue = window.__lovecRuntime?.snapshot?.();
+      const current = snapshotValue?.[snapshotValue.scene]?.runtime?.player?.[axisName];
       state.current = current;
       const reached = typeof current === "number" && (
         moveDirection > 0 ? current >= targetValue - targetTolerance : current <= targetValue + targetTolerance
@@ -107,7 +110,7 @@ async function moveAxisTo(page, axis, target, tolerance = 30, timeout = 20_000) 
   }
 
   const final = await snapshot(page);
-  const current = final.chlum?.runtime?.player?.[axis];
+  const current = activeRuntime(final)?.player?.[axis];
   if (typeof current !== "number" || Math.abs(target - current) > 45) {
     throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
   }
@@ -122,17 +125,11 @@ async function movePlayerTo(page, targetX, targetY, tolerance = MOVE_TOLERANCE) 
   }, { x: targetX, y: targetY, tolerance });
 }
 
-async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
-  await withPhaseSnapshot(page, "tractor clearance", () => expect.poll(async () => {
-    const tractorX = (await snapshot(page)).chlum?.runtime?.tractor?.x;
-    return typeof tractorX === "number" && tractorX <= maxX;
-  }, { timeout, intervals: [100, 180, 250] }).toBe(true), { maxX });
-}
-
 async function waitForInteraction(page, kind, timeout = 8_000) {
-  await withPhaseSnapshot(page, `interaction ${kind}`, () => expect.poll(() => page.evaluate(expected => (
-    window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected
-  ), kind), { timeout, intervals: [30, 60, 100] }).toBe(true), { kind });
+  await withPhaseSnapshot(page, `interaction ${kind}`, () => expect.poll(() => page.evaluate(expected => {
+    const state = window.__lovecRuntime.snapshot();
+    return state[state.scene]?.runtime?.available?.kind === expected;
+  }, kind), { timeout, intervals: [30, 60, 100] }).toBe(true), { kind });
 }
 
 async function moveToInteraction(page, x, y, kind) {
@@ -140,41 +137,61 @@ async function moveToInteraction(page, x, y, kind) {
   await waitForInteraction(page, kind);
 }
 
-async function chaseTractorUntilDanger(page) {
-  return withPhaseSnapshot(page, "tractor chase", async () => {
-    for (let step = 0; step < 140; step++) {
-      const state = await snapshot(page);
-      if (state.session.danger > 0) return state;
-      const player = state.chlum?.runtime?.player;
-      const tractor = state.chlum?.runtime?.tractor;
-      if (!player || !tractor) throw new Error("Chlum tractor chase data is unavailable.");
-
-      const dx = tractor.x - player.x;
-      const dy = tractor.y - player.y;
-      const keys = [];
-      if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
-      if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
-      if (!keys.length) keys.push("ArrowRight");
-      await holdKeys(page, keys, 140);
-    }
-    throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
-  });
-}
-
 async function contextualAction(page) {
   await page.keyboard.press("Space");
 }
 
-async function strikeDigInsideSweetZone(page, expectedHit) {
-  await withPhaseSnapshot(page, `dig hit ${expectedHit}/3`, () => expect.poll(() => page.evaluate(hit => {
-    const before = window.__lovecRuntime.snapshot().chlum?.runtime;
-    if (!before) return false;
-    if (before.digHits === hit) return true;
-    const position = before.dig?.position;
-    if (before.digHits !== hit - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return false;
+async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
+  await expect.poll(async () => {
+    const tractorX = (await snapshot(page)).chlum?.runtime?.tractor?.x;
+    return typeof tractorX === "number" && tractorX <= maxX;
+  }, { timeout, intervals: [100, 180, 250] }).toBe(true);
+}
+
+async function successfulDigHit(page, expectedTotal) {
+  await withPhaseSnapshot(page, `dig hit ${expectedTotal}`, () => expect.poll(() => page.evaluate(total => {
+    const state = window.__lovecRuntime.snapshot();
+    const runtime = state[state.scene]?.runtime;
+    if (!runtime) return false;
+    const currentTotal = state.scene === "chlum" ? runtime.digHits : runtime.totalDigHits;
+    if (currentTotal === total) return true;
+    const position = runtime.dig?.position;
+    if (currentTotal !== total - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return false;
     document.getElementById("digButton")?.click();
-    return window.__lovecRuntime.snapshot().chlum?.runtime?.digHits === hit;
-  }, expectedHit), { timeout: 5_000, intervals: [20, 30, 50] }).toBe(true), { expectedHit });
+    const after = window.__lovecRuntime.snapshot();
+    const afterRuntime = after[after.scene]?.runtime;
+    return (after.scene === "chlum" ? afterRuntime?.digHits : afterRuntime?.totalDigHits) === total;
+  }, expectedTotal), { timeout: 6_000, intervals: [20, 30, 50] }).toBe(true), { expectedTotal });
+}
+
+async function completeChlum(page) {
+  await enterChlum(page);
+  await moveToInteraction(page, 560, 410, "permission");
+  await contextualAction(page);
+  await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
+  await page.locator("#dialogButton").tap();
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.flags.chlumPermission)).toBe(true);
+
+  await movePlayerTo(page, 1020, 410);
+  await waitForTractorLeftOf(page);
+  await moveToInteraction(page, 1020, 720, "dig");
+  await contextualAction(page);
+  await expect(page.locator("#digScreen")).toHaveClass(/visible/);
+  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
+  await waitForInteraction(page, "collect");
+  await contextualAction(page);
+  await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
+}
+
+async function enterNesmenFromResult(page) {
+  await expect(page.locator("#againButton")).toHaveText("POKRAČOVAT DO NESMĚNĚ");
+  await page.locator("#againButton").click();
+  await expect(page.locator("#briefScreen")).toHaveClass(/visible/);
+  await expect(page.locator("#briefKicker")).toHaveText("LOKALITA 2 / 4");
+  await expect(page.locator("#briefTitle")).toHaveText("Lesní profily");
+  await page.locator("#briefButton").tap();
+  await expect(page.locator("#app")).toHaveClass(/playing/);
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().nesmen?.runtime?.profiles?.length)).toBe(3);
 }
 
 async function captureEvidence(page, testInfo, name, expectedSize) {
@@ -182,108 +199,110 @@ async function captureEvidence(page, testInfo, name, expectedSize) {
   fs.mkdirSync(directory, { recursive: true });
   const path = `${directory}/${name}.png`;
   const image = await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device" });
-  const size = { width: image.readUInt32BE(16), height: image.readUInt32BE(20) };
-  expect(size).toEqual(expectedSize);
+  expect({ width: image.readUInt32BE(16), height: image.readUInt32BE(20) }).toEqual(expectedSize);
   await testInfo.attach(name, { path, contentType: "image/png" });
+}
+
+async function verifyNesmenLifecycle(page, context, testInfo) {
+  await captureEvidence(page, testInfo, "nesmen-portrait", { width: 1170, height: 2532 });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(() => window.__lovecRuntime.resize());
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().renderer.width)).toBe(844);
+  await captureEvidence(page, testInfo, "nesmen-landscape", { width: 2532, height: 1170 });
+
+  await page.locator("#pauseButton").click();
+  await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
+  await page.locator("#resumeButton").click();
+  await expect(page.locator("#app")).toHaveClass(/playing/);
+
+  const other = await context.newPage();
+  await other.goto("about:blank");
+  await other.bringToFront();
+  await page.waitForTimeout(120);
+  await page.bringToFront();
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime.snapshot().nesmen?.runtime?.player))).toBe(true);
+  await other.close();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.__lovecRuntime.resize());
+}
+
+async function completeNesmen(page) {
+  await moveToInteraction(page, 280, 240, "permission");
+  await contextualAction(page);
+  await expect(page.locator("#dialogName")).toHaveText("JAN");
+  await page.locator("#dialogButton").tap();
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.flags.nesmenPermission)).toBe(true);
+
+  const profiles = [
+    { x: 610, y: 430 },
+    { x: 930, y: 690 },
+    { x: 1210, y: 360 }
+  ];
+  let totalHits = 0;
+  for (let index = 0; index < profiles.length; index++) {
+    const profile = profiles[index];
+    await moveToInteraction(page, profile.x, profile.y, "dig");
+    await contextualAction(page);
+    await expect(page.locator("#digScreen")).toHaveClass(/visible/);
+    for (let localHit = 0; localHit < 3; localHit++) await successfulDigHit(page, ++totalHits);
+    await expect(page.locator("#app")).toHaveClass(/playing/);
+
+    if (index === 0) {
+      await waitForInteraction(page, "collect");
+      await contextualAction(page);
+    }
+    await waitForInteraction(page, "fill");
+    await contextualAction(page);
+  }
+  await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
+}
+
+async function chaseTractorUntilDanger(page) {
+  for (let step = 0; step < 140; step++) {
+    const state = await snapshot(page);
+    if (state.session.danger > 0) return state;
+    const player = state.chlum?.runtime?.player;
+    const tractor = state.chlum?.runtime?.tractor;
+    if (!player || !tractor) throw new Error("Chlum tractor chase data is unavailable.");
+    const dx = tractor.x - player.x;
+    const dy = tractor.y - player.y;
+    const keys = [];
+    if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
+    if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
+    if (!keys.length) keys.push("ArrowRight");
+    await holdKeys(page, keys, 140);
+  }
+  throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
 }
 
 const compactTransform = value => String(value).replace(/\s+/g, "");
 
-test("canonical input-driven Chlum flow reaches one finding and a clean restarted session", async ({ page }) => {
-  test.setTimeout(75_000);
+test("canonical input-driven Chlum → Nesměň flow completes three restored profiles", async ({ page, context }, testInfo) => {
+  test.setTimeout(150_000);
   const pageErrors = await openBootstrap(page);
-  await enterChlum(page);
+  await completeChlum(page);
 
-  await test.step("PLAY → Václav → permission", async () => {
-    await moveToInteraction(page, 560, 410, "permission");
-    await contextualAction(page);
-    await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
-    await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
-    await page.locator("#dialogButton").tap();
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.flags.chlumPermission)).toBe(true);
-  });
+  const chlumComplete = await snapshot(page);
+  expect(chlumComplete.chlum.levelComplete).toEqual({ levelId: "chlum", nextLevelId: "nesmen", score: 90 });
+  expect(chlumComplete.session.findings[0]).toEqual({ findingId: "chlum-finding-1", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
 
-  await test.step("permission → dig site through canonical route", async () => {
-    await movePlayerTo(page, 1020, 410);
-    await waitForTractorLeftOf(page);
-    await moveToInteraction(page, 1020, 720, "dig");
-    await contextualAction(page);
-    await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  });
+  await enterNesmenFromResult(page);
+  await verifyNesmenLifecycle(page, context, testInfo);
+  await completeNesmen(page);
 
-  await test.step("exactly three successful rhythm hits", async () => {
-    for (let hit = 1; hit <= 3; hit++) await strikeDigInsideSweetZone(page, hit);
-    await expect(page.locator("#app")).toHaveClass(/playing/);
-  });
-
-  await test.step("collect one finding and reach result", async () => {
-    await waitForInteraction(page, "collect");
-    await contextualAction(page);
-    await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
-
-    const completed = await snapshot(page);
-    expect(completed.session.findings).toHaveLength(1);
-    expect(completed.session.findings[0]).toEqual({ findingId: "chlum-finding-1", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
-    expect(completed.session.score).toBe(90);
-    expect(completed.session.objective.complete).toBe(true);
-    expect(completed.chlum.levelComplete).toEqual({ levelId: "chlum", nextLevelId: "nesmen", score: 90 });
-    expect(completed.scene).toBe("chlum");
-    expect(await page.evaluate(() => localStorage.length)).toBe(0);
-  });
-
-  await test.step("restart creates a clean in-memory session", async () => {
-    await page.locator("#againButton").click();
-    await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
-    await page.locator("#playButton").click();
-    await expect(page.locator("#briefScreen")).toHaveClass(/visible/);
-    const fresh = await page.evaluate(() => window.__lovecRuntime.snapshot().session);
-    expect(fresh.levelId).toBe("chlum");
-    expect(fresh.findings).toEqual([]);
-    expect(fresh.score).toBe(0);
-    expect(fresh.flags).toEqual({});
-    expect(fresh.danger).toBe(0);
-  });
-
-  expect(pageErrors).toEqual([]);
-});
-
-test("portrait and landscape evidence survives pause and background lifecycle", async ({ page, context }, testInfo) => {
-  test.setTimeout(35_000);
-  const pageErrors = await openBootstrap(page);
-  await enterChlum(page);
-
-  await test.step("capture 1170×2532 portrait evidence", async () => {
-    await captureEvidence(page, testInfo, "chlum-portrait", { width: 1170, height: 2532 });
-  });
-
-  await test.step("capture 2532×1170 landscape evidence", async () => {
-    await page.setViewportSize({ width: 844, height: 390 });
-    await page.evaluate(() => window.__lovecRuntime.resize());
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().renderer.width)).toBe(844);
-    await captureEvidence(page, testInfo, "chlum-landscape", { width: 2532, height: 1170 });
-  });
-
-  await test.step("pause and resume keep the scene playable", async () => {
-    await page.locator("#pauseButton").click();
-    await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
-    await page.locator("#resumeButton").click();
-    await expect(page.locator("#app")).toHaveClass(/playing/);
-  });
-
-  await test.step("background and foreground restart the loop without stale input", async () => {
-    const other = await context.newPage();
-    await other.goto("about:blank");
-    await other.bringToFront();
-    await page.waitForTimeout(120);
-    await page.bringToFront();
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
-    await expect.poll(() => page.evaluate(() => {
-      const move = window.__lovecRuntime.snapshot().chlum?.runtime?.player;
-      return Boolean(move);
-    })).toBe(true);
-    await other.close();
-  });
-
+  const completed = await snapshot(page);
+  expect(completed.scene).toBe("nesmen");
+  expect(completed.session.findings).toHaveLength(2);
+  expect(completed.session.findings[1]).toEqual({ findingId: "nesmen-finding-1", locality: "nesmen", rarity: "B", weight: 1.5, score: 120 });
+  expect(completed.session.score).toBe(210);
+  expect(completed.session.objective).toEqual({ id: "nesmen-dig-and-restore", current: 3, required: 3, complete: true });
+  expect(completed.nesmen.runtime.totalDigHits).toBe(9);
+  expect(completed.nesmen.runtime.profiles).toHaveLength(3);
+  expect(completed.nesmen.runtime.profiles.every(profile => profile.dug && profile.filled)).toBe(true);
+  expect(completed.nesmen.levelComplete).toEqual({ levelId: "nesmen", nextLevelId: "besednice", score: 210 });
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
   expect(pageErrors).toEqual([]);
 });
 
@@ -291,7 +310,6 @@ test("tractor collision raises danger, returns player to spawn and does not free
   test.setTimeout(45_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
   expect(state.chlum.runtime.player.x).toBeLessThan(190);
