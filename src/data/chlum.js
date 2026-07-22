@@ -11,65 +11,24 @@ const deepFreeze = value => {
 const level = getLevelDefinition("chlum");
 const farmerPosition = getLevelTarget("chlum", "farmer-vaclav")?.positions[0];
 const digPosition = getLevelTarget("chlum", "chlum-dig-site")?.positions[0];
-if (!level || !farmerPosition || !digPosition || !getDialogueDefinition("chlum-permission")) {
-  throw new Error("Chlum canonical data is incomplete.");
-}
+if (!level || !farmerPosition || !digPosition || !getDialogueDefinition("chlum-permission")) throw new Error("Chlum canonical data is incomplete.");
 
 const entities = [
-  {
-    id: "player",
-    components: {
-      transform: { ...level.spawn, rotation: 0, scale: 1 },
-      sprite: { assetId: "chlum-player", layer: "actors", frame: 0 },
-      collider: { shape: "circle", radius: 18, layer: "player", mask: ["hazard"] },
-      player: { speed: 220 }
-    }
-  },
-  {
-    id: "farmer-vaclav",
-    components: {
-      transform: { ...farmerPosition, rotation: 0, scale: 1 },
-      sprite: { assetId: "chlum-farmer-vaclav", layer: "actors", frame: 0 },
-      collider: { shape: "circle", radius: 24, layer: "npc", mask: [] },
-      interaction: { kind: "permission", label: "MLUVIT", action: CONTEXT_ACTION, range: 64, priority: 100, enabled: true },
-      npc: { name: "Václav", role: "farmer", dialogueId: "chlum-permission" }
-    }
-  },
-  {
-    id: "chlum-dig-site",
-    components: {
-      transform: { ...digPosition, rotation: 0, scale: 1 },
-      sprite: { assetId: "chlum-dig-marker", layer: "ground", frame: 0 },
-      interaction: { kind: "dig", label: "KOPAT", action: CONTEXT_ACTION, range: 58, priority: 50, enabled: false },
-      digSpot: { findingId: "chlum-finding-1", variantId: "chlum-standard", collected: false }
-    }
-  },
-  {
-    id: "tractor",
-    components: {
-      transform: { x: 360, y: 590, rotation: 0, scale: 1 },
-      sprite: { assetId: "chlum-tractor", layer: "actors", frame: 0 },
-      collider: { shape: "aabb", width: 112, height: 64, layer: "hazard", mask: ["player"] },
-      hazard: { kind: "tractor", danger: 100, consequence: "return-to-spawn", enabled: true },
-      patrol: { axis: "x", min: 240, max: 1360, speed: 135, direction: 1 }
-    }
-  }
+  { id: "player", components: { transform: { ...level.spawn, rotation: 0, scale: 1 }, sprite: { assetId: "player-hunter-walk", layer: "actors", frame: 0 }, collider: { shape: "circle", radius: 18, layer: "player", mask: ["hazard"] }, player: { speed: 220 } } },
+  { id: "farmer-vaclav", components: { transform: { ...farmerPosition, rotation: 0, scale: 1 }, sprite: { assetId: "npc-farmer-vaclav", layer: "actors", frame: 0 }, collider: { shape: "circle", radius: 24, layer: "npc", mask: [] }, interaction: { kind: "permission", label: "MLUVIT", action: CONTEXT_ACTION, range: 64, priority: 100, enabled: true }, npc: { name: "Václav", role: "farmer", dialogueId: "chlum-permission" } } },
+  { id: "chlum-dig-site", components: { transform: { ...digPosition, rotation: 0, scale: 1 }, model: { assetId: "model-chlum-field-marker", layer: "props" }, interaction: { kind: "dig", label: "KOPAT", action: CONTEXT_ACTION, range: 58, priority: 50, enabled: false }, digSpot: { findingId: "chlum-finding-1", variantId: "chlum-standard", collected: false } } },
+  { id: "tractor", components: { transform: { x: 360, y: 590, rotation: Math.PI / 2, scale: 1 }, model: { assetId: "model-chlum-tractor-no-driver", layer: "actors" }, collider: { shape: "aabb", width: 112, height: 64, layer: "hazard", mask: ["player"] }, hazard: { kind: "tractor", danger: 100, consequence: "return-to-spawn", enabled: true }, patrol: { axis: "x", min: 240, max: 1360, speed: 135, direction: 1 } } }
 ];
 
 export const CHLUM_ENTITY_DEFINITIONS = deepFreeze(entities);
 const entityById = new Map(CHLUM_ENTITY_DEFINITIONS.map(entity => [entity.id, entity]));
-
 export const CHLUM_FINDING_VARIANTS = deepFreeze([
-  { id: "chlum-small", rarity: "C", weight: 0.8, score: 50, assetId: "chlum-moldavite-small" },
-  { id: "chlum-standard", rarity: "B", weight: 1.2, score: 90, assetId: "chlum-moldavite-standard" },
-  { id: "chlum-rare", rarity: "A", weight: 1.7, score: 150, assetId: "chlum-moldavite-rare" }
+  { id: "chlum-small", rarity: "C", weight: 0.8, score: 50, assetId: "finding-vltavin-common" },
+  { id: "chlum-standard", rarity: "B", weight: 1.2, score: 90, assetId: "finding-vltavin-rare" },
+  { id: "chlum-rare", rarity: "A", weight: 1.7, score: 150, assetId: "finding-vltavin-besednice" }
 ]);
 const findingById = new Map(CHLUM_FINDING_VARIANTS.map(variant => [variant.id, variant]));
-
-export function getChlumEntityDefinition(id) {
-  return entityById.get(id) ?? null;
-}
-
+export function getChlumEntityDefinition(id) { return entityById.get(id) ?? null; }
 export function createChlumFinding(variantId = "chlum-standard", findingId = "chlum-finding-1") {
   const variant = findingById.get(variantId);
   if (!variant) throw new Error(`Unknown Chlum finding variant: ${variantId}`);

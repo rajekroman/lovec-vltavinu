@@ -2,6 +2,7 @@ import { getLevelDefinition } from "../data/levels.js";
 import { evaluateObjective } from "./Objectives.js";
 
 const roundProgress = value => Math.round(value * 10000) / 10000;
+const PERMISSION_FLAGS = Object.freeze({ chlum: "chlumPermission" });
 
 export class ObjectiveSystem {
   constructor(options = {}) {
@@ -9,15 +10,17 @@ export class ObjectiveSystem {
     this.session = options.session;
     this.levelId = options.levelId ?? "chlum";
     this.level = getLevelDefinition(this.levelId);
+    this.permissionFlag = options.permissionFlag ?? PERMISSION_FLAGS[this.levelId] ?? null;
     if (!this.session?.state || !this.session?.setFlag || !this.session?.recordFinding) throw new TypeError("ObjectiveSystem requires a GameSession.");
     if (!this.level) throw new Error(`Unknown level: ${this.levelId}`);
+    if (!this.permissionFlag) throw new Error(`ObjectiveSystem has no permission contract for level: ${this.levelId}`);
     this.lastProgress = null;
     this.completed = this.session.state.objective.complete === true;
   }
 
   grantPermission() {
-    if (this.session.state.flags.chlumPermission === true) return false;
-    this.session.setFlag("chlumPermission", true);
+    if (this.session.state.flags[this.permissionFlag] === true) return false;
+    this.session.setFlag(this.permissionFlag, true);
     return true;
   }
 
@@ -31,7 +34,7 @@ export class ObjectiveSystem {
 
   snapshot(runtime = {}) {
     return evaluateObjective(this.levelId, {
-      permit: this.session.state.flags.chlumPermission === true,
+      permit: this.session.state.flags[this.permissionFlag] === true,
       digHits: runtime.digHits ?? 0,
       findings: this.session.state.findings.filter(entry => entry.locality === this.levelId).length
     });
@@ -44,7 +47,6 @@ export class ObjectiveSystem {
       this.lastProgress = current;
       this.events?.emit("objective:progress", { id: this.level.objective.id, current, required: 1 });
     }
-
     if (snapshot.complete && !this.completed) {
       this.completed = true;
       this.session.setObjectiveProgress(this.level.objective.required, true);
