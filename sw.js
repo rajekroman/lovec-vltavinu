@@ -9,7 +9,7 @@ const CORE = [
   "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GlbModelLoader.js", "./src/render/ModelFactory.js",
   "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav.png",
-  "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-besednice.png",
+  "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png",
   "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png",
   "./assets/models/chlum/tractor-no-driver.glb", "./assets/models/chlum/hay-bale.glb", "./assets/models/chlum/field-marker.glb", "./assets/models/chlum/field-fence-segment.glb"
 ];
