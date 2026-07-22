@@ -34,10 +34,22 @@ jobs:
           find tests/unit -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
 
       - name: Validate static build
-        run: node tools/validate.mjs
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          node tools/validate.mjs 2>&1 | tee test-results/static-validation.log
 
       - name: Test modular core
         run: npm run test:unit
+
+      - name: Upload static validation report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: static-validation-report
+          path: test-results/static-validation.log
+          if-no-files-found: ignore
+          retention-days: 14
 
   browser-smoke:
     name: Mobile browser smoke
