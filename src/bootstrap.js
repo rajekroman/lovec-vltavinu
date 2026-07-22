@@ -67,10 +67,15 @@ const chlum = new ChlumScene({
 const title = new TitleScene({
   document: documentRef,
   screens,
-  onStart: () => app.changeScene("chlum").catch(showFatalError)
+  onStart: () => startNewRun().catch(showFatalError)
 });
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
+
+async function startNewRun() {
+  session.reset();
+  await app.changeScene("chlum");
+}
 
 function showFatalError(error) {
   console.error(error);
@@ -132,4 +137,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum };
+export { app, events, renderer, session, title, chlum, startNewRun };
