@@ -28,11 +28,13 @@ function nesmen(runtime) {
   return {
     text: !permit
       ? "Získej souhlas lesníka"
-      : dug < 3
-        ? `Profily ${dug}/3`
-        : filled < 3
-          ? `Zahrabáno ${filled}/3`
-          : findings < 1 ? "Vyzvedni nalezený vltavín" : "Les je uklizený",
+      : filled < dug
+        ? "Zasyp otevřenou díru"
+        : dug < 3
+          ? `Profily ${dug}/3`
+          : filled < 3
+            ? `Zasypáno ${filled}/3`
+            : findings < 1 ? "Vyzvedni nalezený vltavín" : "Les je uklizený",
     complete: permit && dug >= 3 && filled >= 3 && findings >= 1,
     progress: clamp01(
       (permit ? 0.1 : 0) +
