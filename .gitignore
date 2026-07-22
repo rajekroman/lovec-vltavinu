@@ -1,0 +1,7 @@
+node_modules/
+generated_images/
+*.zip
+zi*
+.DS_Store
+npm-debug.log*
+vite.config.*.timestamp-*

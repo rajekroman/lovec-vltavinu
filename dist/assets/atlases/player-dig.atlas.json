@@ -1,0 +1,17 @@
+{
+  "texture": "sprite.player.dig",
+  "columns": 4,
+  "rows": 4,
+  "frameRate": 6,
+  "directions": {
+    "south": 0,
+    "west": 1,
+    "east": 2,
+    "north": 3
+  },
+  "clips": {
+    "idle": [0],
+    "walk": [0, 1, 2, 3],
+    "dig": [0, 1, 2, 3]
+  }
+}
