@@ -1,4 +1,20 @@
 const pairKey = (a, b) => a < b ? `${a}:${b}` : `${b}:${a}`;
+const EPSILON = 1e-9;
+
+const acceptsLayer = (mask, layer) => {
+  if (mask === undefined || mask === null) return true;
+  if (mask === "*") return true;
+  const values = mask instanceof Set ? mask : new Set(Array.isArray(mask) ? mask : [mask]);
+  return values.has("*") || values.has(layer ?? "default");
+};
+
+export function canLayersCollide(a, b) {
+  const sourceA = a.source ?? a;
+  const sourceB = b.source ?? b;
+  const layerA = sourceA.layer ?? "default";
+  const layerB = sourceB.layer ?? "default";
+  return acceptsLayer(sourceA.mask, layerB) && acceptsLayer(sourceB.mask, layerA);
+}
 
 export function circleIntersectsCircle(a, b) {
   const dx = a.x - b.x;
@@ -46,12 +62,72 @@ export function intersects(a, b) {
   return circleIntersectsAabb(b, a);
 }
 
+function circleCircleContact(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const distance = Math.hypot(dx, dy);
+  const depth = a.radius + b.radius - distance;
+  if (depth < 0) return null;
+  return {
+    normal: distance > EPSILON ? { x: dx / distance, y: dy / distance } : { x: 1, y: 0 },
+    depth
+  };
+}
+
+function aabbAabbContact(a, b) {
+  const overlapX = (a.width + b.width) / 2 - Math.abs(b.x - a.x);
+  const overlapY = (a.height + b.height) / 2 - Math.abs(b.y - a.y);
+  if (overlapX < 0 || overlapY < 0) return null;
+  if (overlapX <= overlapY) {
+    return { normal: { x: b.x >= a.x ? 1 : -1, y: 0 }, depth: overlapX };
+  }
+  return { normal: { x: 0, y: b.y >= a.y ? 1 : -1 }, depth: overlapY };
+}
+
+function circleAabbContact(circle, box) {
+  const halfWidth = box.width / 2;
+  const halfHeight = box.height / 2;
+  const closestX = Math.max(box.x - halfWidth, Math.min(circle.x, box.x + halfWidth));
+  const closestY = Math.max(box.y - halfHeight, Math.min(circle.y, box.y + halfHeight));
+  let dx = closestX - circle.x;
+  let dy = closestY - circle.y;
+  let distance = Math.hypot(dx, dy);
+  if (distance > circle.radius) return null;
+
+  if (distance <= EPSILON) {
+    const left = circle.x - (box.x - halfWidth);
+    const right = box.x + halfWidth - circle.x;
+    const bottom = circle.y - (box.y - halfHeight);
+    const top = box.y + halfHeight - circle.y;
+    const minimum = Math.min(left, right, bottom, top);
+    if (minimum === left) ({ dx, dy, distance } = { dx: -1, dy: 0, distance: 0 });
+    else if (minimum === right) ({ dx, dy, distance } = { dx: 1, dy: 0, distance: 0 });
+    else if (minimum === bottom) ({ dx, dy, distance } = { dx: 0, dy: -1, distance: 0 });
+    else ({ dx, dy, distance } = { dx: 0, dy: 1, distance: 0 });
+    return { normal: { x: dx, y: dy }, depth: circle.radius + minimum };
+  }
+
+  return { normal: { x: dx / distance, y: dy / distance }, depth: circle.radius - distance };
+}
+
+export function collisionContact(a, b) {
+  if (a.shape === "circle" && b.shape === "circle") return circleCircleContact(a, b);
+  if (a.shape === "aabb" && b.shape === "aabb") return aabbAabbContact(a, b);
+  if (a.shape === "circle") return circleAabbContact(a, b);
+  const contact = circleAabbContact(b, a);
+  return contact ? {
+    normal: { x: -contact.normal.x, y: -contact.normal.y },
+    depth: contact.depth
+  } : null;
+}
+
 export class CollisionSystem {
   constructor(options = {}) {
     this.cellSize = options.cellSize ?? 128;
     this.events = options.events ?? null;
     this.filter = options.filter ?? (() => true);
     this.previousPairs = new Set();
+    this.pairEntities = new Map();
     if (!(this.cellSize > 0)) throw new RangeError("cellSize must be greater than zero.");
   }
 
@@ -108,19 +184,31 @@ export class CollisionSystem {
           const key = pairKey(a.entity, b.entity);
           if (checked.has(key)) continue;
           checked.add(key);
-          if (!this.filter(a, b) || !intersects(a, b)) continue;
+          if (!canLayersCollide(a, b) || !this.filter(a, b)) continue;
+          const contact = collisionContact(a, b);
+          if (!contact) continue;
 
           currentPairs.add(key);
+          this.pairEntities.set(key, { a: a.entity, b: b.entity });
           const phase = this.previousPairs.has(key) ? "stay" : "enter";
-          const collision = { key, phase, a, b };
+          const collision = { key, phase, a, b, normal: contact.normal, depth: contact.depth };
           collisions.push(collision);
-          this.events?.emit(`collision:${phase}`, collision);
+          this.events?.emit(`collision:${phase}`, {
+            a: a.entity,
+            b: b.entity,
+            normal: contact.normal,
+            depth: contact.depth
+          });
         }
       }
     }
 
     for (const key of this.previousPairs) {
-      if (!currentPairs.has(key)) this.events?.emit("collision:exit", { key, phase: "exit" });
+      if (!currentPairs.has(key)) {
+        const pair = this.pairEntities.get(key);
+        if (pair) this.events?.emit("collision:exit", pair);
+        this.pairEntities.delete(key);
+      }
     }
     this.previousPairs = currentPairs;
     return collisions;
@@ -128,5 +216,6 @@ export class CollisionSystem {
 
   reset() {
     this.previousPairs.clear();
+    this.pairEntities.clear();
   }
 }
