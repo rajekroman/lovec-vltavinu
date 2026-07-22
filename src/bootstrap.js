@@ -4,6 +4,7 @@ import { EVENT_CONTRACTS, validateEventPayload } from "./core/GameEvents.js";
 import { GameApp } from "./core/GameApp.js";
 import { createGameSession } from "./gameplay/GameSession.js";
 import { ThreeRenderer } from "./render/ThreeRenderer.js";
+import { loadGlbModel } from "./render/GlbModelLoader.js";
 import { ScreenController } from "./ui/ScreenController.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
@@ -55,6 +56,7 @@ app.assets.register("json", async entry => {
 app.assets.register("texture", entry => new Promise((resolve, reject) => {
   new THREE.TextureLoader().load(entry.url, resolve, undefined, reject);
 }));
+app.assets.register("gltf", entry => loadGlbModel(THREE, entry.url));
 
 const chlum = new ChlumScene({
   app,
