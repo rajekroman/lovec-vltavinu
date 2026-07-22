@@ -70,6 +70,8 @@ for (const relativePath of runtimeModules) if (!cachedPaths.has(relativePath)) f
 for (const relativePath of ["index.html", "style.css", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"]) if (!cachedPaths.has(relativePath)) fail(`PWA shell není v offline cache: ${relativePath}`);
 
 let assetManifest = null;
+let chlumAssetCount = 0;
+let nesmenAssetCount = 0;
 try { assetManifest = JSON.parse(assetManifestText); } catch (error) { fail(`Neplatný asset manifest: ${error.message}`); }
 if (!Array.isArray(assetManifest)) fail("Asset manifest musí být pole.");
 else {
@@ -99,7 +101,10 @@ else {
       if (!(entry.metrics?.triangles <= entry.budget?.triangles)) fail(`GLB asset ${entry.id} překračuje triangle budget.`);
     }
   }
-  if (assetManifest.length !== 11) warn(`Chlum manifest obsahuje ${assetManifest.length} položek, očekáváno 11 donorových assetů.`);
+  chlumAssetCount = assetManifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum").length;
+  nesmenAssetCount = assetManifest.filter(entry => entry.preload === "level:nesmen").length;
+  if (chlumAssetCount !== 11) fail(`Chlum/common preload musí obsahovat 11 assetů; nalezeno: ${chlumAssetCount}.`);
+  if (nesmenAssetCount !== 6) fail(`Nesměň preload musí obsahovat 6 assetů; nalezeno: ${nesmenAssetCount}.`);
 }
 
 const visibleVersion = html.match(/\bv(\d+)\.(\d+)\b/)?.slice(1).join(".");
@@ -115,7 +120,9 @@ console.log(`Kontrolováno HTML ID: ${htmlIds.length}`);
 console.log(`Kontrolováno runtime DOM referencí: ${referencedIds.size}`);
 console.log(`Kontrolováno runtime modulů: ${runtimeModules.size}`);
 console.log(`Kontrolováno PWA cest: ${cachedPaths.size}`);
-console.log(`Kontrolováno Chlum assetů: ${Array.isArray(assetManifest) ? assetManifest.length : 0}`);
+console.log(`Kontrolováno Chlum/common assetů: ${chlumAssetCount}`);
+console.log(`Kontrolováno Nesměň assetů: ${nesmenAssetCount}`);
+console.log(`Kontrolováno assetů celkem: ${Array.isArray(assetManifest) ? assetManifest.length : 0}`);
 console.log(`Kontrolováno eventových kontraktů: ${GAME_EVENT_NAMES.length}`);
 console.log(`Rozpoznaná release verze: ${visibleVersion ?? "neuvedena"}`);
 for (const message of warnings) console.warn(`VAROVÁNÍ: ${message}`);
