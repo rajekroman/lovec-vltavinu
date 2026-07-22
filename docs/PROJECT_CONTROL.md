@@ -1,23 +1,23 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po merge Chlum vertical slice PR #33 a uzavření mobilní stability issue #1. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po merge UI/mobil PR #43, merge QA PR #44 a uzavření issues #40 a #38. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- Aktuální publikovatelný základ je `main@817cfa6521ff0d168ff69b569bb1bc11336db893`, squash merge PR #39 po dokončení mobilní stability issue #1.
+- Aktuální publikovatelný základ je `main@e887a863ac270a7a4c2e96f5818487d80ac87724`, squash merge QA PR #44.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer` a ortografickou kamerou.
 - Gameplay/datová sanace z PR #23 zůstává závazná: levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
 - `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód jsou zmrazené historické soubory a produkční bootstrap je nesmí importovat.
 - PR #20 a uzavřený PR #21 jsou pouze donoři jednotlivých částí; nesmějí být sloučeny ani použity jako základ nové větve.
 - Issue #29 je dokončeno a uzavřeno. PR #33 byl sloučen z finálního headu `8772478f93895445ad10212f9289cae429583dea`.
-- Finální workflow Chlumu `Validate game` #322 prošel: syntaxe, statický validátor, celý unit suite a mobilní browser smoke jsou zelené.
-- Playwright artifact `8538592699` obsahuje portrait a landscape vizuální důkaz produkčního Chlumu.
 - Issue #1 je dokončeno a uzavřeno po merge PR #39 jako `main@817cfa6521ff0d168ff69b569bb1bc11336db893`; Roman výslovně potvrdil dokončení poslední fyzické Safari brány.
-- Jediným aktivním implementačním balíkem je nyní issue #40 na větvi `agent/ui-mobile-hud-safe-area-input`.
-- Issue #40 zpevňuje pouze obecnou HUD, safe-area a input vrstvu. Nesmí měnit levelová data, renderer ani gameplay pravidla a nesmí přidat další level.
-- Následujícím povinným implementačním balíkem je issue #42 na výslovně rezervované větvi `agent/asset-runtime-hardening`.
-- Issue #42 smí začít až z aktuálního `main` po merge issue #40 a musí být samostatným architektonickým PR.
-- Nesměň vertical slice je blokován do merge issue #40 i issue #42 a následné koordinační aktualizace tohoto dokumentu.
+- Issue #40 je dokončeno a uzavřeno po merge UI/mobil PR #43 jako `main@c2771b88418c07b53b064088c09b7cb64d286c65`.
+- PR #43 zpevnil HUD revision reset, ARIA, safe-area a robustní pointer/lifecycle release bez změny gameplay, rendereru nebo levelových dat.
+- Issue #38 je dokončeno a uzavřeno po merge QA PR #44 jako `main@e887a863ac270a7a4c2e96f5818487d80ac87724`.
+- PR #44 rozdělil mobilní Chlum E2E na deterministické scénáře; workflow #369 a #371 prošly po sobě na nezměněném headu bez rerunu a bez flaky výsledků.
+- Jediným aktivním implementačním balíkem je nyní issue #42 na povinné větvi `agent/asset-runtime-hardening`.
+- Issue #42 musí vycházet z aktuálního `main@e887a863ac270a7a4c2e96f5818487d80ac87724` a skončit jedním samostatným architektonickým draft PR.
+- Nesměň vertical slice zůstává blokován do merge issue #42 a následné koordinační aktualizace tohoto dokumentu.
 
 ## Rozhodnutí, která se znovu neotevírají
 
@@ -42,15 +42,15 @@
 | Proud / issue | Stav | Další přijímaný výstup | Integrační brána |
 |---|---|---|---|
 | P0 mobilní stabilita #1 | **Dokončeno a uzavřeno** | Pouze regresní ochrana | Nevracet opravy vstupu do paralelní větve |
-| CI a validace #2 | Chlum workflow #322 zelený | Testy aktivního issue #40, poté asset-runtime testy issue #42 | Zelený unit, validátor a mobilní browser smoke na každém finálním headu |
-| Architektura #3 / asset runtime #42 | **Přiděleno jako následující povinný balík** | Standardní GLTFLoader r185, zachování `entry.type`, manifest-driven preload | Samostatný PR po merge #40; bez dalšího levelu a bez druhého runtime |
-| Gameplay #4 | Chlum dokončen a sloučen | Bez změn během #40 a #42 | Nesměň nezačíná před merge obou předstupňů |
+| CI a validace #2 / mobilní QA #38 | **Dokončeno a uzavřeno pro Chlum** | Asset-runtime testy issue #42 | Zelený unit, validátor a mobilní browser smoke na finálním headu |
+| Architektura #3 / asset runtime #42 | **Aktuální implementační etapa** | Standardní GLTFLoader r185, zachování `entry.type`, manifest-driven preload | Jeden samostatný draft PR; bez dalšího levelu a bez druhého runtime |
+| Gameplay #4 | Chlum dokončen a sloučen | Bez změn během #42 | Nesměň nezačíná před merge architektonického předstupně |
 | Grafika #5 | Chlum assety, manifest a GLB sloučeny | U issue #42 pouze testovací standardní texturovaný GLB, ne Nesměň asset pack | Asset ID, preload, dispose a loader verze musí být doložené |
-| UI/mobil #40 | **Aktuální implementační etapa** | HUD revision reset, ARIA, safe-area a robustní input release | Jeden draft PR, zelené testy, portrait/landscape důkaz |
-| Audio/výkon #6 | Samostatný AudioEngine není aktivní etapa | Bez rozšíření #40 a #42 | Žádný audio redesign v těchto PR |
-| QA/release #7 | Chlum E2E prošel | Unit/browser testy #40 a následně asset runtime regresní testy #42 | Otočení, background, asset failure a dispose bez drženého vstupu nebo úniku |
+| UI/mobil #40 | **Dokončeno a uzavřeno** | Pouze regresní ochrana | Nevracet UI/input změny do asset runtime bez doložené nutnosti |
+| Audio/výkon #6 | Samostatný AudioEngine není aktivní etapa | Bez rozšíření #42 | Žádný audio redesign v tomto PR |
+| QA/release #7 | Mobilní E2E stabilizováno v PR #44 | Asset failure, preload a dispose regrese issue #42 | Dva zelené běhy finálního headu, pokud issue #42 mění mobilní smoke |
 | Chlum vertical slice #29 / PR #33 | **Dokončeno a sloučeno** | Pouze regresní ochrana | Nevracet levelovou implementaci do paralelní větve |
-| Nesměň vertical slice | **Blokováno** | Žádný branch ani PR | Povolit až po merge #40, merge #42 a koordinační aktualizaci |
+| Nesměň vertical slice | **Blokováno** | Žádný branch ani PR | Povolit až po merge #42 a koordinační aktualizaci |
 | Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
 
 ## Integrační fronta
@@ -107,41 +107,38 @@ Doložené vlastnosti:
 
 Issue #1 bylo uzavřeno po merge PR #39 jako `main@817cfa6521ff0d168ff69b569bb1bc11336db893`.
 
-Doložené vlastnosti:
+- akční tlačítko vlastní právě jeden aktivní pointer;
+- lifecycle přechody čistí lokální pointer a vizuální stav;
+- `InputManager` se bezpečně resetuje;
+- finální workflow #349 prošlo;
+- fyzická Safari akceptace byla Romanem potvrzena.
 
-1. akční tlačítko vlastní právě jeden aktivní pointer;
-2. cizí pointer nemůže předčasně uvolnit probíhající akci;
-3. blur, visibilitychange, orientationchange a `pagehide` čistí lokální pointer a vizuální stav;
-4. `InputManager` se při lifecycle přechodech bezpečně resetuje;
-5. regression unit testy pokrývají multi-touch, lifecycle cleanup a souběžné směrové klávesy;
-6. finální `Validate game` workflow #349 prošel včetně mobilního browser smoke;
-7. Roman výslovně potvrdil dokončení poslední fyzické Safari akceptace;
-8. nevznikl save systém, inventář, druhý renderer ani změna levelových dat.
+### 4b. UI/mobil stabilizace #40 — dokončeno
 
-### 4b. UI/mobil stabilizace — aktuální etapa
+Issue #40 bylo uzavřeno po merge PR #43 jako `main@c2771b88418c07b53b064088c09b7cb64d286c65`.
 
-Kanonický balík je issue #40.
+- HUD přijímá první model nového revision streamu a odmítá přesný duplikát;
+- danger a momentary action mají korektní ARIA kontrakty;
+- safe-area reaguje na visual viewport, otočení a browser chrome;
+- joystick i akce vlastní pointer ID a uvolňují se při lost capture a lifecycle změnách;
+- gameplay klávesy neblokují nativní Enter/Space na UI;
+- workflow #363 a portrait/landscape artifact `8539991684` jsou zelené.
 
-- **Base:** aktuální `main` po merge issue #1, tedy nejméně `817cfa6521ff0d168ff69b569bb1bc11336db893`.
-- **Větev:** `agent/ui-mobile-hud-safe-area-input`.
-- **Rozsah:** `src/ui`, `src/input`, jediná sdílená UI stylesheet vrstva, související unit/browser testy a pouze nezbytné obecné composition-root zapojení.
-- **Zakázáno:** levelová data/texty, renderer, kamera, loop, gameplay systémy, save/localStorage, inventář nebo další level.
+### 4c. Mobilní E2E stabilita #38 — dokončeno
 
-Povinné výstupy:
+Issue #38 bylo uzavřeno po merge PR #44 jako `main@e887a863ac270a7a4c2e96f5818487d80ac87724`.
 
-1. HUD přijme první model nového producenta/session a přitom odmítne přesný duplikát;
-2. danger progress a momentary action button mají korektní ARIA kontrakty bez falešného toggle stavu;
-3. safe-area funguje při visual viewport změně, otočení a změně browser chrome;
-4. joystick i akce vlastní pointer ID, ignorují cizí pointery a vždy se uvolní při lost capture, blur, pagehide, visibilitychange a změně orientace/viewportu;
-5. gameplay klávesy neblokují nativní Enter/Space na menu a overlay tlačítkách;
-6. unit testy a mobilní browser smoke pokrývají reset/revision, safe-area, orientation a input release;
-7. výstupem je jeden draft PR s úplným HANDOFFem.
+- monolitický Chlum smoke byl rozdělen na kratší deterministické scénáře;
+- skutečný browserový input zůstal zachován bez teleportu nebo přímé změny transformace;
+- kanonický Chlum flow, lifecycle, tractor regrese a joystick reset jsou oddělené;
+- workflow #369 a #371 prošly po sobě na stejném headu `afd934e12e2c21d5b6a00551782653a99a4800db` bez rerunu;
+- oba běhy vykázaly `0 unexpected`, `0 flaky` a zachovaly portrait `1170×2532` i landscape `2532×1170` důkaz.
 
-### 4c. Asset runtime hardening — přiděleno, čeká na merge #40
+### 4d. Asset runtime hardening #42 — aktuální etapa
 
 Kanonický balík je issue #42.
 
-- **Base:** aktuální `main` po merge issue #40 a governance změn.
+- **Base:** `main@e887a863ac270a7a4c2e96f5818487d80ac87724` po merge issues #40 a #38.
 - **Povinná větev:** `agent/asset-runtime-hardening`.
 - **Vlastník:** Platforma/architektura; QA a grafika poskytují pouze úzce vyžádané testovací podklady.
 - **Cíl:** odstranit ad-hoc assetové vazby před zavedením Nesměně.
@@ -164,7 +161,6 @@ Závazný rozsah:
 
 Samostatný Nesměň vertical slice smí být aktivován teprve po:
 
-1. merge issue #40;
-2. merge issue #42;
-3. zeleném workflow na obou finálních headech;
-4. koordinační aktualizaci tohoto dokumentu s novým branch pointem a samostatným issue/PR kontraktem.
+1. merge issue #42;
+2. zeleném workflow na finálním headu;
+3. koordinační aktualizaci tohoto dokumentu s novým branch pointem a samostatným issue/PR kontraktem.
