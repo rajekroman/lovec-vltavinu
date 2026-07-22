@@ -1,4 +1,5 @@
-const DIG_REQUIRED_HITS = 3;
+import { DIG_REQUIRED_HITS } from "../data/levels.js";
+
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 
 const bindOnce = (element, handler) => {
@@ -91,8 +92,7 @@ export class ScreenController {
     if (sweetMin >= sweetMax) throw new RangeError("Dig sweet spot must satisfy sweetMin < sweetMax.");
 
     this.element("digInfo").textContent = String(options.info ?? "Klepni, když je ukazatel v zeleném poli.");
-    this.element("digHits").textContent = [0, 1, 2]
-      .map(index => index < hits ? "◆" : "◇")
+    this.element("digHits").textContent = Array.from({ length: DIG_REQUIRED_HITS }, (_, index) => index < hits ? "◆" : "◇")
       .join(" ");
     this.element("digMarker").style.left = `calc(${marker * 100}% - 5px)`;
     const sweetZone = this.element("sweetZone");
@@ -103,7 +103,7 @@ export class ScreenController {
     button.setAttribute("aria-label", `${button.textContent}; zásahy ${hits} z ${DIG_REQUIRED_HITS}`);
   }
 
-  showLevelResult({ kicker = "CHLUM DOKONČEN", title, text, score = 0, stats = [], buttonLabel = "POKRAČOVAT", onContinue }) {
+  showLevelResult({ kicker = "ÚROVEŇ DOKONČENA", title, text, score = 0, stats = [], buttonLabel = "POKRAČOVAT", onContinue }) {
     this.element("resultKicker").textContent = kicker;
     this.element("resultTitle").textContent = String(title ?? "Výprava pokračuje");
     this.element("resultText").textContent = String(text ?? "");
