@@ -1,16 +1,16 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po integraci issue #4. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po integračním review PR #24. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- `main` obsahuje veřejně hratelný Canvas 2D build 5.2, paralelní neaktivní modulární základ 6.0, gameplay/datovou sanaci z PR #23 (`2e678506`) a řídicí aktualizaci z PR #25 (`17affd4`).
+- `main` obsahuje veřejně hratelný Canvas 2D build 5.2, paralelní neaktivní modulární základ 6.0, gameplay/datovou sanaci z PR #23 (`2e678506`) a řídicí aktualizace z PR #25 a #26 (`17affd4`, `880a1f7`).
 - Do `main` byly začleněny validační workflow (#9), mobilní stabilizace (#10), Playwright smoke testy (#11), modulární jádro (#12), datové registry (#13), legacy datový adaptér (#15), doménový stav se save migrací (#17), řídicí kontrakty (#22) a čtyřlevelový session-only gameplay kontrakt (#23).
 - Nové moduly v `src/` zatím nejsou produkčním bootstrapem načítány z `index.html`; veřejná hra tedy stále běží přes monolitický `game.js`.
 - PR #17 řeší save systém, který aktuální hlavní zadání výslovně vylučuje. Kód může dočasně zůstat kvůli historii, ale je zmrazený a nesmí být závislostí cílové hry.
 - Kanonické levely jsou nyní v datech přesně `chlum`, `nesmen`, `besednice`, `slavia`. Ločenice není samostatný cílový level.
-- Session-only `GameSession` používá nálezy ve tvaru `{ findingId, locality, rarity, weight, score }`. `findingId` je koordinačně potvrzený kanonický identifikátor; případná ukázka `findings[].id` v architektonickém dokumentu se musí opravit v architektonickém proudu, ne obcházet aliasem.
-- Draft PR #24 obsahuje kandidátní Three.js bootstrap, ale stále také vlastní hard-coded Chlum gameplay autoritu. Před integrací se musí aktualizovat z nového `main`, zúžit na platformní bootstrap a odstranit duplikovaná pravidla questů, kopání, objective postupu a hazardů.
+- Session-only `GameSession` používá nálezy ve tvaru `{ findingId, locality, rarity, weight, score }`. `findingId` je koordinačně potvrzený kanonický identifikátor. Ukázka `findings[].id` v aktuálním `main` se opraví v bootstrap PR #24.
+- PR #24 byl čistě rekonstruován nad `main@880a1f7`: odstranil paralelní Chlum gameplay autoritu, používá jediný ortografický renderer a prošel workflow #183. Po integračním review byl vrácen do draftu kvůli třem izolovaným kontraktním opravám: blokování fixed update během async přechodu scény, reset nové session při PLAY a přesná validace tří dig zásahů.
 - Draft PR #20 zůstává pouze donor jednotlivých částí. Nesmí být sloučen jako celek.
 - PR #21 je oddělený kandidátní asset pack pro Chlum. Runtime zapojení patří až do samostatného Chlum vertical slice po integraci bootstrapu.
 
@@ -24,9 +24,9 @@
 | Architektura | ES moduly, scene manager, asset loader, input manager, ECS-lite, kolize, animace |
 | Simulace | fixed timestep 60 Hz, max delta 100 ms, max 5 substepů, interpolovaný render |
 | Ovládání | směrový vstup + jedno kontextové akční tlačítko |
-| Kopání | tři zásahy do rytmu |
+| Kopání | tři zásahy do rytmu; dig eventy musí literal `3` striktně validovat |
 | Nálezy | session skóre/kolekce bez inventářového UI; ID pole je `findingId` |
-| Persistence | žádný nový save systém ani migrace |
+| Persistence | žádný nový save systém ani migrace; PLAY zahajuje čistou session |
 | Nasazení | relativní cesty a GitHub Pages; `main` zůstává hratelný |
 
 ## Stav pracovních proudů
@@ -35,7 +35,7 @@
 |---|---|---|---|
 | P0 mobilní stabilita #1 | Implementováno automaticky, chybí fyzický Safari důkaz | Záznam kompletního průchodu na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
 | CI a validace #2 | Základ sloučen | Rozšířit s novým bootstrapem | Zelený workflow na PR |
-| Architektura #3 | Core moduly sloučeny; PR #24 blokován rozsahem | Zúžený `src/bootstrap.js` + TitleScene + integrační kostra Chlum scény bez vlastní gameplay autority | Rebase na aktuální `main`, který obsahuje řídicí merge `17affd4`; jednotný renderer, žádná duplikace gameplay |
+| Architektura #3 | PR #24 má čistý bootstrap kandidát; po review opět draft | Opravit async transition guard, nový session reset a exact-three dig event kontrakty | Nový head, nové unit testy, zelený unit/validátor/mobile smoke, mergeable proti aktuálnímu `main` |
 | Gameplay #4 | Dokončeno v PR #23, issue uzavřena | Pouze integrační podpora pro navazující scény | Zachovat čtyři kanonické levely, session-only stav a unit testy |
 | Grafika #5 | PR #21 dodává izolovaný Chlum asset pack | Grafický audit manifestu a assetů | Rozpočty, pivoty, průhlednost, načtení bez 404; runtime až v Chlum slice |
 | Audio/výkon #6 | Legacy audio funguje | Oddělený AudioEngine a mobilní výkonový profil | Audio po gestu, bezpečný resume, stabilní FPS |
@@ -66,15 +66,23 @@ PR #23 byl sloučen jako `2e678506` a issue #4 byla uzavřena.
 
 ### 3. Produkční bootstrap — aktuální etapa
 
-Architektonická větev musí přepracovat PR #24:
+PR #24 již splnil původní rozsahovou bránu:
 
-1. aktualizovat větev z aktuálního `main`, který obsahuje minimálně gameplay merge `2e678506` a řídicí merge `17affd4`;
-2. zachovat jediný lokálně připnutý Three.js `WebGLRenderer`, ortografickou kameru a fixed-step loop;
-3. ponechat composition root `src/bootstrap.js`, TitleScene, HTML/CSS adaptéry a pouze integrační kostru Chlum scény;
-4. odstranit nebo přesunout vlastní hard-coded permission/dig/finding/objective/tractor tok;
-5. používat sloučené `LEVEL_DEFINITIONS`, `GameSession` a objective evaluátory místo paralelního stavu;
-6. opravit normativní ukázku session finding na `findingId` v architektonickém kontraktu;
-7. prokázat zelený unit, validátor a mobilní browser smoke bez regrese veřejného buildu.
+- větev je rekonstruována nad `main@880a1f7`;
+- produkční HTML spouští jediný `src/bootstrap.js`;
+- existuje jeden lokálně připnutý Three.js `WebGLRenderer` s ortografickou kamerou;
+- fixed-step parametry jsou 60 Hz, max delta 100 ms a max 5 substepů;
+- `ChlumScene` je pouze integrační kostra nad `LEVEL_DEFINITIONS`, `GameSession` a objective evaluátorem;
+- nejsou přítomné vlastní `DigSystem`, `InteractionSystem`, `ObjectiveSystem` ani `TractorSystem`;
+- workflow #183 prošel.
+
+Před sloučením musí architektonická větev dokončit tři opravy:
+
+1. `GameApp.updateFixed()` nesmí volat žádné scene update fáze, když `SceneManager.transitioning === true`; doplnit test s odloženým async přechodem;
+2. PLAY z titulní obrazovky musí před vstupem do Chlumu zahájit čistou session přes `session.reset()` nebo ekvivalent; doplnit regresní test návrat do menu → nový PLAY;
+3. eventový kontrakt musí pro `dig:start.requiredHits`, `dig:hit.requiredHits` a `dig:complete.hits` přijímat výhradně hodnotu `3`; doplnit pozitivní i negativní unit testy;
+4. po opravách spustit celý unit suite, statický validátor a mobilní browser smoke;
+5. aktualizovat HANDOFF a vrátit PR z draftu až nad novým zeleným headem.
 
 ### 4. Chlum vertical slice — až po bootstrapu
 
