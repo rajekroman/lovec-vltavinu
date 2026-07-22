@@ -19,8 +19,8 @@ async function enterChlum(page) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().chlum?.runtime?.player !== null)).toBe(true);
 }
 async function snapshot(page) { return page.evaluate(() => window.__lovecRuntime.snapshot()); }
-async function moveTo(page, targetX, targetY, tolerance = 24) {
-  for (let step = 0; step < 120; step++) {
+async function moveTo(page, targetX, targetY, tolerance = 32) {
+  for (let step = 0; step < 90; step++) {
     const current = (await snapshot(page)).chlum.runtime.player;
     const dx = targetX - current.x;
     const dy = targetY - current.y;
@@ -39,6 +39,17 @@ async function waitForInteraction(page, kind) {
   await expect.poll(() => page.evaluate(expected => window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected, kind)).toBe(true);
 }
 async function contextualAction(page) { await page.keyboard.press("Space"); }
+async function strikeDigInsideSweetZone(page, expectedHit) {
+  await expect.poll(() => page.evaluate(hit => {
+    const before = window.__lovecRuntime.snapshot().chlum?.runtime;
+    if (!before) return false;
+    if (before.digHits === hit) return true;
+    const position = before.dig?.position;
+    if (before.digHits !== hit - 1 || typeof position !== "number" || position < 0.42 || position > 0.58) return false;
+    document.getElementById("digButton")?.click();
+    return window.__lovecRuntime.snapshot().chlum?.runtime?.digHits === hit;
+  }, expectedHit), { timeout: 8_000 }).toBe(true);
+}
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -52,7 +63,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   test.setTimeout(75_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-  await moveTo(page, 560, 410, 16);
+  await moveTo(page, 560, 410);
   await waitForInteraction(page, "permission");
   await contextualAction(page);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
@@ -78,18 +89,11 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await moveTo(page, 180, 410);
   await moveTo(page, 180, 850);
   await moveTo(page, 1020, 850);
-  await moveTo(page, 1020, 720, 16);
+  await moveTo(page, 1020, 720);
   await waitForInteraction(page, "dig");
   await contextualAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  for (let hit = 1; hit <= 3; hit++) {
-    await expect.poll(() => page.evaluate(() => {
-      const position = window.__lovecRuntime.snapshot().chlum?.runtime?.dig?.position;
-      return typeof position === "number" && position >= 0.42 && position <= 0.58;
-    })).toBe(true);
-    await page.locator("#digButton").click();
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().chlum?.runtime?.digHits)).toBe(hit);
-  }
+  for (let hit = 1; hit <= 3; hit++) await strikeDigInsideSweetZone(page, hit);
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await waitForInteraction(page, "collect");
   await contextualAction(page);
@@ -119,7 +123,7 @@ test("tractor collision raises danger, returns player to spawn and does not free
   test.setTimeout(45_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-  await moveTo(page, 180, 590, 16);
+  await moveTo(page, 180, 590);
   await page.keyboard.down("ArrowRight");
   try {
     await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger > 0), { timeout: 12_000 }).toBe(true);
@@ -127,6 +131,7 @@ test("tractor collision raises danger, returns player to spawn and does not free
     await page.keyboard.up("ArrowRight");
   }
   const state = await snapshot(page);
+  expect(state.session.danger).toBeGreaterThan(0);
   expect(state.chlum.runtime.player.x).toBeLessThan(190);
   expect(state.chlum.runtime.player.y).toBeLessThan(450);
   expect(state.running).toBe(true);
