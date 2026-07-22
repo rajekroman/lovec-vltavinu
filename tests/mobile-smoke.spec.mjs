@@ -42,6 +42,12 @@ async function holdUntilInteraction(page, key, kind, timeout = 15_000) {
   ), kind, timeout);
 }
 
+async function waitForInteraction(page, kind, timeout = 8_000) {
+  await expect.poll(() => page.evaluate(expected => (
+    window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected
+  ), kind), { timeout, intervals: [30, 60, 100] }).toBe(true);
+}
+
 async function holdUntilCoordinate(page, key, condition, timeout = 15_000) {
   await holdKeyUntil(page, key, target => {
     const player = window.__lovecRuntime.snapshot().chlum?.runtime?.player;
@@ -112,13 +118,14 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await holdUntilCoordinate(page, "ArrowLeft", { axis: "x", direction: -1, value: 125 });
   await holdUntilCoordinate(page, "ArrowUp", { axis: "y", direction: 1, value: 840 });
   await holdUntilCoordinate(page, "ArrowRight", { axis: "x", direction: 1, value: 1000 });
-  await holdUntilInteraction(page, "ArrowDown", "dig");
+  await holdUntilCoordinate(page, "ArrowDown", { axis: "y", direction: -1, value: 780 });
+  await waitForInteraction(page, "dig");
   await contextualAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
 
   for (let hit = 1; hit <= 3; hit++) await strikeDigInsideSweetZone(page, hit);
   await expect(page.locator("#app")).toHaveClass(/playing/);
-  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === "collect")).toBe(true);
+  await waitForInteraction(page, "collect");
   await contextualAction(page);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 
