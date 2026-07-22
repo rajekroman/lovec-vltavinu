@@ -12,6 +12,12 @@ import {
   validateGameData,
   assertValidGameData
 } from "../../src/index.js";
+import {
+  CONTEXT_ACTION,
+  DIG_REQUIRED_HITS,
+  getLevelTarget,
+  isLevelTargetReachable
+} from "../../src/data/levels.js";
 
 const gameData = {
   levels: LEVEL_DEFINITIONS,
@@ -19,13 +25,13 @@ const gameData = {
   samples: SAMPLE_DEFINITIONS
 };
 
-test("game data registry contains the five ordered production levels", () => {
-  assert.deepEqual(LEVEL_ORDER, ["chlum", "locenice", "nesmen", "besednice", "malse"]);
-  assert.equal(LEVEL_DEFINITIONS.length, 5);
+test("game data registry contains the four canonical production levels", () => {
+  assert.deepEqual(LEVEL_ORDER, ["chlum", "nesmen", "besednice", "slavia"]);
+  assert.equal(LEVEL_DEFINITIONS.length, 4);
   assert.equal(LEVEL_DEFINITIONS.at(-1).final, true);
   assert.equal(LEVEL_DEFINITIONS.filter(level => level.final).length, 1);
-  assert.equal(getNextLevelId("chlum"), "locenice");
-  assert.equal(getNextLevelId("malse"), null);
+  assert.equal(getNextLevelId("chlum"), "nesmen");
+  assert.equal(getNextLevelId("slavia"), null);
   assert.equal(getLevelDefinition("besednice").objectives.at(-1).target, "crystal-karel");
 });
 
@@ -34,6 +40,8 @@ test("level, perk and sample definitions are immutable", () => {
   assert.equal(Object.isFrozen(LEVEL_DEFINITIONS[0]), true);
   assert.equal(Object.isFrozen(LEVEL_DEFINITIONS[0].objectives), true);
   assert.equal(Object.isFrozen(LEVEL_DEFINITIONS[0].objectives[0]), true);
+  assert.equal(Object.isFrozen(LEVEL_DEFINITIONS[0].targets), true);
+  assert.equal(Object.isFrozen(LEVEL_DEFINITIONS[0].targets[0].positions), true);
   assert.equal(Object.isFrozen(PERK_DEFINITIONS), true);
   assert.equal(Object.isFrozen(PERK_DEFINITIONS[0]), true);
   assert.equal(Object.isFrozen(SAMPLE_DEFINITIONS), true);
@@ -55,16 +63,38 @@ test("production game data passes the validation contract", () => {
   assert.strictEqual(assertValidGameData(gameData), gameData);
 });
 
+test("every objective uses one context action and a reachable declared target", () => {
+  for (const level of LEVEL_DEFINITIONS) {
+    for (const objective of level.objectives) {
+      assert.equal(objective.action, CONTEXT_ACTION, `${level.id}/${objective.id}`);
+      assert.ok(getLevelTarget(level.id, objective.target), `${level.id}/${objective.target}`);
+      assert.equal(
+        isLevelTargetReachable(level.id, objective.target, objective.required),
+        true,
+        `${level.id}/${objective.target}`
+      );
+      if (objective.type === "dig") assert.equal(objective.requiredHits, DIG_REQUIRED_HITS);
+    }
+  }
+});
+
 test("validation rejects duplicate ids, broken order and invalid targets", () => {
   const brokenLevels = LEVEL_DEFINITIONS.map(level => ({
     ...level,
     objectives: level.objectives.map(objective => ({ ...objective })),
+    targets: level.targets.map(target => ({
+      ...target,
+      positions: target.positions.map(position => ({ ...position })),
+      interaction: { ...target.interaction }
+    })),
     hazards: [...level.hazards]
   }));
   brokenLevels[1].id = "chlum";
   brokenLevels[2].order = 8;
   brokenLevels[0].objectives[0].required = 0;
-  brokenLevels[4].final = false;
+  brokenLevels[0].objectives[1].requiredHits = 2;
+  brokenLevels[0].objectives[2].target = "missing-finding";
+  brokenLevels.at(-1).final = false;
 
   const result = validateGameData({
     levels: brokenLevels,
@@ -76,6 +106,8 @@ test("validation rejects duplicate ids, broken order and invalid targets", () =>
   assert.ok(result.errors.some(error => error.includes("Duplicate level ids")));
   assert.ok(result.errors.some(error => error.includes("Level order")));
   assert.ok(result.errors.some(error => error.includes("positive integer")));
+  assert.ok(result.errors.some(error => error.includes("missing target")));
+  assert.ok(result.errors.some(error => error.includes("exactly three rhythm hits")));
   assert.ok(result.errors.some(error => error.includes("Exactly one level")));
   assert.throws(() => assertValidGameData({ levels: brokenLevels, perks: PERK_DEFINITIONS, samples: SAMPLE_DEFINITIONS }), {
     name: "GameDataValidationError"

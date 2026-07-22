@@ -5,83 +5,163 @@ const deepFreeze = value => {
   return value;
 };
 
+export const DIG_REQUIRED_HITS = 3;
+export const CONTEXT_ACTION = "action";
+
+const target = (id, kind, positions) => ({
+  id,
+  kind,
+  reachable: true,
+  positions,
+  interaction: { action: CONTEXT_ACTION, enabled: true }
+});
+
+const objective = (id, type, targetId, required, options = {}) => ({
+  id,
+  type,
+  target: targetId,
+  required,
+  action: CONTEXT_ACTION,
+  ...options
+});
+
 const definitions = [
   {
     order: 0,
     id: "chlum",
     name: "Chlum",
-    title: "Chlum po bouřce",
+    title: "Pole po dešti",
+    scene: "level",
     theme: "field",
     music: "field",
-    text: "Déšť omyl tmavou ornici. V brázdách leží první zelené záblesky, ale traktor už znovu vyráží do pole.",
-    goal: "Získej souhlas Václava a odnes 4 pravé kameny.",
+    text: "Déšť omyl tmavou ornici. Nejdříve je nutné získat souhlas hospodáře a teprve potom hledat mimo dráhu traktoru.",
+    goal: "Získej povolení, zvládni tři rytmické zásahy a najdi první vltavín.",
+    briefing: {
+      context: "Majitel pole Václav je přímo na místě a traktor už znovu vyráží do brázd.",
+      goal: "Promluv s Václavem, vykopej označené místo a odnes nález."
+    },
+    spawn: { x: 120, y: 380 },
+    bounds: { x: 0, y: 0, width: 1600, height: 1200 },
+    objective: { id: "chlum-permission-and-find", type: "chlum-permission-and-find", required: 1 },
     objectives: [
-      { id: "permission", type: "dialog", target: "farmer-vaclav", required: 1 },
-      { id: "collect-stones", type: "collect", target: "moldavite", required: 4 }
+      objective("permission", "dialog", "farmer-vaclav", 1),
+      objective("dig-finding", "dig", "chlum-dig-site", 1, { requiredHits: DIG_REQUIRED_HITS }),
+      objective("record-finding", "collect", "chlum-dig-site", 1)
     ],
-    hazards: ["tractor", "field-alert"]
+    targets: [
+      target("farmer-vaclav", "npc", [{ x: 560, y: 410 }]),
+      target("chlum-dig-site", "dig-site", [{ x: 1020, y: 720 }])
+    ],
+    hazards: ["tractor"],
+    assetGroups: ["common", "level:chlum"],
+    next: "nesmen"
   },
   {
     order: 1,
-    id: "locenice",
-    name: "Ločenice",
-    title: "Štěrková hrana",
-    theme: "meadow",
-    music: "meadow",
-    text: "Erozní rýha odkryla vltavíny i lahvové střepy. Tentokrát rozhoduje rychlé oko, ne síla lopaty.",
-    goal: "Správně urči 5 vzorků a najdi 3 pravé kusy.",
-    objectives: [
-      { id: "identify-samples", type: "identify", target: "sample", required: 5 },
-      { id: "collect-real-stones", type: "collect", target: "moldavite", required: 3 }
-    ],
-    hazards: ["patrol", "false-samples"]
-  },
-  {
-    order: 2,
     id: "nesmen",
     name: "Nesměň",
     title: "Lesní profily",
+    scene: "level",
     theme: "forest",
     music: "forest",
-    text: "Mělké jílové profily jsou povolené, pokud po sobě nezůstane ani jedna otevřená jáma.",
-    goal: "Vykopej a zasyp 3 profily bez zbytečného hluku.",
+    text: "V lese lze pracovat jen na vyznačených místech. Každá odkrytá díra musí být bezprostředně zasypaná.",
+    goal: "Získej souhlas lesníka, vykopej a zasyp 3 profily.",
+    briefing: {
+      context: "Lesník povolí průzkum pouze tehdy, když po výpravě nezůstane žádná otevřená díra.",
+      goal: "Promluv s lesníkem, dokonči tři profily a všechny vrať do původního stavu."
+    },
+    spawn: { x: 180, y: 980 },
+    bounds: { x: 0, y: 0, width: 1500, height: 1200 },
+    objective: { id: "nesmen-dig-and-restore", type: "nesmen-dig-and-restore", required: 3 },
     objectives: [
-      { id: "dig-profiles", type: "dig", target: "profile", required: 3 },
-      { id: "fill-holes", type: "restore", target: "hole", required: 3 }
+      objective("permission", "dialog", "forester", 1),
+      objective("dig-profiles", "dig", "forest-profile", 3, { requiredHits: DIG_REQUIRED_HITS }),
+      objective("fill-holes", "restore", "forest-profile", 3)
     ],
-    hazards: ["forester", "noise-alert"]
+    targets: [
+      target("forester", "npc", [{ x: 280, y: 240 }]),
+      target("forest-profile", "dig-site", [
+        { x: 610, y: 430 },
+        { x: 930, y: 690 },
+        { x: 1210, y: 360 }
+      ])
+    ],
+    hazards: ["forester", "noise-alert"],
+    assetGroups: ["common", "level:nesmen"],
+    next: "besednice"
+  },
+  {
+    order: 2,
+    id: "besednice",
+    name: "Besednice",
+    title: "Ježková vrstva",
+    scene: "level",
+    theme: "quarry",
+    music: "quarry",
+    text: "Tři stopy vedou k ježkové vrstvě. Konkurenční hledač čeká, až nález vytáhne někdo jiný.",
+    goal: "Najdi 3 stopy, vykopej ježek a získej jej zpět od Karla.",
+    briefing: {
+      context: "Na starém nalezišti jsou tři čitelné stopy a rival Karel sleduje každý kvalitní nález.",
+      goal: "Prozkoumej všechny stopy, zvládni kopání a nenech Karla s nálezem utéct."
+    },
+    spawn: { x: 140, y: 1040 },
+    bounds: { x: 0, y: 0, width: 1680, height: 1280 },
+    objective: { id: "besednice-hedgehog-recovery", type: "besednice-hedgehog-recovery", required: 1 },
+    objectives: [
+      objective("find-traces", "discover", "besednice-trace", 3),
+      objective("dig-hedgehog", "dig", "besednice-hedgehog", 1, { requiredHits: DIG_REQUIRED_HITS }),
+      objective("recover-hedgehog", "boss", "crystal-karel", 1)
+    ],
+    targets: [
+      target("besednice-trace", "clue", [
+        { x: 470, y: 890 },
+        { x: 880, y: 620 },
+        { x: 1240, y: 420 }
+      ]),
+      target("besednice-hedgehog", "dig-site", [{ x: 1430, y: 260 }]),
+      target("crystal-karel", "boss", [{ x: 1510, y: 900 }])
+    ],
+    hazards: ["crystal-karel", "quarry-edge"],
+    assetGroups: ["common", "level:besednice"],
+    next: "slavia"
   },
   {
     order: 3,
-    id: "besednice",
-    name: "Besednice",
-    title: "Ježková noc",
-    theme: "night",
-    music: "night",
-    text: "Tři stopy vedou k ježkové vrstvě. Ve tmě se ale pohybuje rival, který čeká na cizí nález.",
-    goal: "Najdi 3 stopy, vykopej ježek a dostaň ho zpět od Karla.",
-    objectives: [
-      { id: "find-traces", type: "discover", target: "trace", required: 3 },
-      { id: "dig-hedgehog", type: "dig", target: "besednice-hedgehog", required: 1 },
-      { id: "recover-hedgehog", type: "boss", target: "crystal-karel", required: 1 }
-    ],
-    hazards: ["crystal-karel", "darkness"]
-  },
-  {
-    order: 4,
-    id: "malse",
-    name: "Malše",
-    title: "Cesta ke Slávii",
+    id: "slavia",
+    name: "KD Slavia",
+    title: "Na Zelené Vlně",
+    scene: "finale",
     theme: "city",
-    music: "city",
-    text: "Podél Malše vede poslední úsek. Dokumentace se rozsypala mezi promenádou, lávkou a provozem před Slávií.",
-    goal: "Seber 3 složky, dožeň Frantu a vstup do Slávie.",
+    music: "finale",
+    text: "Před KD Slavia čeká znalkyně i zloděj Franta. Sbírka se na akci dostane až po certifikaci.",
+    goal: "Dolož původ sbírky, zastav Frantu, získej certifikát a vstup na akci.",
+    briefing: {
+      context: "Expertka čeká na dokumentaci nálezů, zatímco Franta se pokouší získat nejlepší kámen.",
+      goal: "Seber tři složky, promluv se znalkyní, zastav Frantu a nech sbírku certifikovat."
+    },
+    spawn: { x: 160, y: 860 },
+    bounds: { x: 0, y: 0, width: 1800, height: 1100 },
+    objective: { id: "slavia-certification", type: "slavia-certification", required: 1 },
     objectives: [
-      { id: "collect-documents", type: "collect", target: "documentation-folder", required: 3 },
-      { id: "catch-franta", type: "chase", target: "franta", required: 1 },
-      { id: "enter-slavia", type: "destination", target: "kd-slavia", required: 1 }
+      objective("collect-documents", "collect", "documentation-folder", 3),
+      objective("consult-expert", "dialog", "expert-eva", 1),
+      objective("recover-best-finding", "boss", "thief-franta", 1),
+      objective("receive-certificate", "dialog", "expert-eva", 1),
+      objective("enter-event", "destination", "kd-slavia", 1)
     ],
-    hazards: ["traffic", "franta"],
+    targets: [
+      target("documentation-folder", "document", [
+        { x: 410, y: 760 },
+        { x: 790, y: 460 },
+        { x: 1130, y: 780 }
+      ]),
+      target("expert-eva", "npc", [{ x: 1450, y: 430 }]),
+      target("thief-franta", "boss", [{ x: 1020, y: 260 }]),
+      target("kd-slavia", "destination", [{ x: 1630, y: 520 }])
+    ],
+    hazards: ["thief-franta", "traffic"],
+    assetGroups: ["common", "level:slavia"],
+    next: null,
     final: true
   }
 ];
@@ -95,6 +175,23 @@ export function getLevelDefinition(id) {
 }
 
 export function getNextLevelId(id) {
-  const index = LEVEL_ORDER.indexOf(id);
-  return index >= 0 && index < LEVEL_ORDER.length - 1 ? LEVEL_ORDER[index + 1] : null;
+  return getLevelDefinition(id)?.next ?? null;
+}
+
+export function getLevelTarget(levelId, targetId) {
+  const level = getLevelDefinition(levelId);
+  return level?.targets.find(entry => entry.id === targetId) ?? null;
+}
+
+export function isLevelTargetReachable(levelId, targetId, required = 1) {
+  const level = getLevelDefinition(levelId);
+  const entry = getLevelTarget(levelId, targetId);
+  if (!level || !entry || entry.reachable !== true || entry.interaction?.enabled !== true) return false;
+  if (entry.interaction.action !== CONTEXT_ACTION || entry.positions.length < required) return false;
+
+  const { x, y, width, height } = level.bounds;
+  return entry.positions.every(position => (
+    position.x >= x && position.x <= x + width &&
+    position.y >= y && position.y <= y + height
+  ));
 }
