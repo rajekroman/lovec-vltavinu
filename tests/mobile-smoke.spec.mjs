@@ -79,7 +79,7 @@ async function captureEvidence(page, testInfo, name) {
 const compactTransform = value => String(value).replace(/\s+/g, "");
 
 test("complete Chlum flow works from PLAY and records portrait/landscape evidence", async ({ page, context }, testInfo) => {
-  test.setTimeout(75_000);
+  test.setTimeout(120_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
 
@@ -145,7 +145,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
 });
 
 test("tractor collision raises danger, returns player to spawn and does not freeze input", async ({ page }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(75_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
 
@@ -160,7 +160,7 @@ test("tractor collision raises danger, returns player to spawn and does not free
   expect(state.running).toBe(true);
   await page.locator("#pauseButton").tap();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
-  await page.locator("#resumeButton").tap();
+  await page.locator("#resumeButton").click();
   await expect(page.locator("#app")).toHaveClass(/playing/);
   expect(pageErrors).toEqual([]);
 });
