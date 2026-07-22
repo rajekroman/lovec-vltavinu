@@ -4,7 +4,8 @@ import { EVENT_CONTRACTS, validateEventPayload } from "./core/GameEvents.js";
 import { GameApp } from "./core/GameApp.js";
 import { createGameSession } from "./gameplay/GameSession.js";
 import { ThreeRenderer } from "./render/ThreeRenderer.js";
-import { loadGlbModel } from "./render/GlbModelLoader.js";
+import { GltfAssetLoader, GLTF_LOADER_REVISION } from "./render/GltfAssetLoader.js";
+import { disposeObject3D, disposeTexture } from "./render/AssetDisposal.js";
 import { ScreenController } from "./ui/ScreenController.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
@@ -15,6 +16,9 @@ const documentRef = globalThis.document;
 const windowRef = globalThis.window;
 const canvas = documentRef.getElementById("game");
 if (!canvas) throw new Error("Missing #game canvas.");
+if (String(THREE.REVISION) !== GLTF_LOADER_REVISION) {
+  throw new Error(`Three.js revision ${THREE.REVISION} does not match GLTFLoader revision ${GLTF_LOADER_REVISION}.`);
+}
 documentRef.getElementById("soundButton")?.classList.add("hidden");
 
 const events = new EventBus({
@@ -48,15 +52,21 @@ const inputAdapter = new DomInputAdapter({
   onResize: resize
 });
 
-app.assets.register("json", async entry => {
+const textureLoader = new THREE.TextureLoader();
+const loadJson = async entry => {
   const response = await fetch(entry.url);
   if (!response.ok) throw new Error(`HTTP ${response.status} for ${entry.url}`);
   return response.json();
+};
+const loadTexture = entry => new Promise((resolve, reject) => {
+  textureLoader.load(entry.url, resolve, undefined, reject);
 });
-app.assets.register("texture", entry => new Promise((resolve, reject) => {
-  new THREE.TextureLoader().load(entry.url, resolve, undefined, reject);
-}));
-app.assets.register("gltf", entry => loadGlbModel(THREE, entry.url));
+const gltfLoader = new GltfAssetLoader();
+
+app.assets.register("json", loadJson);
+app.assets.register("texture", loadTexture, disposeTexture);
+app.assets.register("spritesheet", loadTexture, disposeTexture);
+app.assets.register("gltf", entry => gltfLoader.load(entry), disposeObject3D);
 
 const chlum = new ChlumScene({
   app,

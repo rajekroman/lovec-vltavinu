@@ -1,4 +1,4 @@
-const CACHE = "lovec-vltavinu-chlum-v6-0";
+const CACHE = "lovec-vltavinu-asset-runtime-v6-0";
 const CORE = [
   "./", "./index.html", "./style.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js",
@@ -6,7 +6,8 @@ const CORE = [
   "./src/ecs/World.js", "./src/systems/CollisionSystem.js", "./src/systems/AnimationSystem.js",
   "./src/data/levels.js", "./src/data/chlum.js", "./src/data/dialogues.js",
   "./src/gameplay/GameSession.js", "./src/gameplay/Objectives.js", "./src/gameplay/InteractionSystem.js", "./src/gameplay/DigSystem.js", "./src/gameplay/DangerSystem.js", "./src/gameplay/ObjectiveSystem.js",
-  "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GlbModelLoader.js", "./src/render/ModelFactory.js",
+  "./src/render/HybridRenderer.js", "./src/render/ThreeRenderer.js", "./src/render/GltfAssetLoader.js", "./src/render/AssetDisposal.js", "./src/render/ModelFactory.js",
+  "./vendor/three/addons/loaders/GLTFLoader.js", "./vendor/three/addons/utils/BufferGeometryUtils.js", "./vendor/three/addons/utils/SkeletonUtils.js",
   "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav.png",
   "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png",
