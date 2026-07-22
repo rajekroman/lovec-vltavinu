@@ -1,19 +1,22 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 během implementace Chlum vertical slice v draft PR #33. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po sloučení kompletního Chlum vertical slice PR #33. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- Runtime baseline je `777f6513aca45272935bf6f03c607c4453ff8b2e`, squash merge produkčního bootstrap PR #24.
-- Minimální governance baseline je `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`. Skutečný branch point další práce je vždy aktuální `main` v okamžiku založení větve a musí obsahovat všechny pozdější governance-only aktualizace.
-- Produkční `index.html` spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer` a ortografickou kamerou.
-- Gameplay/datová sanace z PR #23 zůstává závazná: levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
-- `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód jsou zmrazené historické soubory a produkční bootstrap je nesmí importovat.
+- Aktuální produkční základ je `main@91179090fcd28cec4b7ffbf7e50ff433d7eaabad`, squash merge PR #33.
+- Runtime bootstrap baseline zůstává `777f6513aca45272935bf6f03c607c4453ff8b2e`; PR #33 ji rozšířil pouze o obecné GLTF načtení, model binding a kompletní Chlum scénu.
+- Produkční `index.html` spouští jediný modulární `src/bootstrap.js`; runtime používá právě jeden Three.js `WebGLRenderer` s ortografickou kamerou.
+- Čtyřlevelové pořadí je přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
+- Issue #29 je uzavřená jako dokončená. PR #33 byl sloučen až po finálním review, zeleném workflow a ověření portrait/landscape artefaktů.
+- Chlum je dokončitelný v produkčním grafu: briefing → Václavovo povolení → naleziště → přesně tři zásahy → jeden nález → vyhnutí se traktoru → výsledek.
+- Chlum emituje `level:complete` s `nextLevelId: "nesmen"`, ale Nesměň dosud není implementována ani automaticky spuštěna.
+- Manifest obsahuje 11 aktivních Chlum assetů; GLB modely se načítají přes obecný `GlbModelLoader` a bindují přes `ModelFactory` do existujícího rendereru.
+- Workflow #322 na finálním headu PR #33 skončil `success`. První mobilní pokus narazil na globální timeout dlouhého E2E; kontrolní rerun stejného headu prošel celý.
+- Fyzický Safari průchod na konkrétním iPhonu zůstává manuálním release důkazem, nikoli blokací dokončené automatické integrační etapy.
+- `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód zůstávají zmrazené historické soubory a produkční bootstrap je nesmí importovat.
 - PR #20 a uzavřený PR #21 jsou pouze donoři jednotlivých částí; nesmějí být sloučeny ani použity jako základ celé větve.
-- Jediným aktivním implementačním balíkem je issue #29 a draft PR #33 na větvi `agent/chlum-vertical-slice`.
-- PR #33 nyní obsahuje gameplay systémy, Chlum entity/dialog data, obecné HUD/screen adaptéry, PNG/GLB/textury, asset manifest a unit testy. Tyto vrstvy zatím nejsou napojené do produkční `ChlumScene`.
-- Asset manifest a Chlum data používají rozdílné sady `assetId`; GLB traktor je v manifestu přítomný, ale data jej stále deklarují jako sprite a runtime dosud nemá GLTF loader/model binding.
-- Zelené workflow rozpracovaného headu prokazuje pouze regresi neaktivních vrstev, nikoli dokončený Chlum průchod.
+- Samostatný Nesměň vertical slice je nyní integračně přípustný, ale dosud pro něj nebyl vytvořen nový issue, pracovní branch ani PR.
 
 ## Rozhodnutí, která se znovu neotevírají
 
@@ -35,16 +38,17 @@
 
 | Proud / issue | Stav | Další přijímaný výstup | Integrační brána |
 |---|---|---|---|
-| P0 mobilní stabilita #1 | Automatické regrese sloučeny, chybí fyzický Safari důkaz | Záznam kompletního průchodu na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
-| CI a validace #2 | Bootstrap smoke sloučen | Celý Chlum tok a asset kontrola | Zelený workflow na finálním headu PR #33 |
-| Architektura #3 | Produkční bootstrap dokončen v PR #24 | Pouze doložená integrační podpora | Core/render/bootstrap změna musí být minimální, obecná a zdůvodněná |
-| Gameplay #4 | Systémy a Chlum data rozpracované v PR #33 | Napojit systémy do scény a dokončit tok | Žádná paralelní session nebo levelová data |
-| Grafika #5 | Assety a manifest přenesené do PR #33 | Sjednotit ID a prokázat runtime načtení | Manifest, rozpočty, pivoty, dispose, bez 404 |
-| UI/mobil | Obecné HUD/screen adaptéry rozpracované v PR #33 | Použít je ve skutečné scéně | Žádná DOM stavová autorita |
-| Audio/výkon #6 | Samostatný AudioEngine není aktivní etapa | Bez rozšíření Chlum balíku | Žádný audio redesign v PR #33 |
-| QA/release #7 | Unit a legacy smoke procházejí | End-to-end smoke skutečného Chlumu | iPhone viewport, portrait/landscape, pauza a background návrat |
-| Chlum vertical slice #29 / PR #33 | **Aktuální integrační etapa; draft, částečně implementováno** | Dokončit stejný PR bez vedlejšího implementačního PR | Kompletní Chlum, zelené testy, vizuální důkaz, žádný další level |
-| Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
+| P0 mobilní stabilita #1 | Automatické Chlum regrese zelené; chybí fyzický Safari důkaz | Manuální záznam na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
+| CI a validace #2 | Chlum asset/unit/mobile E2E sloučeny | Rozšíření pro další přidělený level | Zelený celý workflow na finálním headu příslušného PR |
+| Architektura #3 | Bootstrap a obecná GLTF/modelová integrace sloučeny | Pouze review nebo doložený obecný defect | Jeden renderer, žádná levelová logika v bootstrapu |
+| Gameplay #4 | Chlum systémy a produkční tok sloučeny | Až nově přidělený Nesměň balík | Žádná paralelní session nebo levelová data |
+| Grafika #5 | Chlum manifest, PNG, textury a GLB sloučeny | Až assety přiděleného dalšího levelu | Stabilní ID, rozpočty, pivot/bounds, dispose, bez 404 |
+| UI/mobil | Obecné dialog/dig/result/HUD adaptéry sloučeny | Pouze obecné rozšíření vyžádané dalším levelem | Žádná DOM stavová autorita |
+| Audio/výkon #6 | Samostatný AudioEngine není aktivní etapa | Bez práce do nového přidělení | Žádný nevyžádaný audio redesign |
+| QA/release #7 | Workflow #322 a vizuální důkazy sloučeny | Fyzický Safari důkaz a QA dalšího levelu | Portrait/landscape, pauza, background, input reset |
+| Chlum vertical slice #29 / PR #33 | **Dokončeno a sloučeno** | Pouze případný samostatný defect issue | Chlum zůstává hratelný na `main` |
+| Nesměň vertical slice | **Přípustný, dosud nezaložený** | Nový issue, samostatná větev a draft PR | Musí vycházet z aktuálního `main` po governance aktualizaci |
+| Master #8 | Aktivní | Určit nový Nesměň balík a udržovat frontu | Žádný paralelní release nebo další level bez přidělení |
 
 ## Integrační fronta
 
@@ -74,96 +78,66 @@ PR #24 byl sloučen jako `777f6513`.
 - fixed-step 60 Hz, max delta 100 ms, max 5 substepů;
 - fixed updates neběží během async transition;
 - PLAY resetuje session;
-- dig eventy přijímají literal `3`;
-- `ChlumScene` je integrační kostra.
+- dig eventy přijímají literal `3`.
 
-### 4. Chlum vertical slice — aktuální etapa
+### 4. Chlum vertical slice — dokončeno
 
-Kanonický balík je issue #29 a jediným implementačním PR je draft PR #33.
+Issue #29 byla dokončena merge PR #33 jako `91179090`.
 
-- **Runtime baseline:** `777f6513aca45272935bf6f03c607c4453ff8b2e`.
-- **Minimální governance baseline:** `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`.
-- **Branch point:** aktuální `main` při založení větve; před ready-for-review musí být větev znovu srovnána s aktuálním `main`.
-- **Větev:** `agent/chlum-vertical-slice`.
-- **PR:** draft #33; žádný vedlejší implementační PR není povolen.
-- **Tok:** briefing → povolení Václava → hledání místa → tři rytmické zásahy → jeden nález → traktor → dokončení Chlumu.
-- **Výsledek:** `level:complete` používá `levelId: "chlum"`, `nextLevelId: "nesmen"` a aktuální score, ale Nesměň se neimplementuje ani nespouští.
+- finální implementační head: `8772478f93895445ad10212f9289cae429583dea`;
+- jedna kontextová akce pro permission, dig a finding;
+- přesně tři úspěšné rytmické zásahy;
+- právě jeden finding `chlum-finding-1`, score 90;
+- aktivní low-poly GLB traktor bez viditelného řidiče;
+- obecný GLB loader a `ModelFactory` bez druhého rendereru;
+- sjednocená datová a manifestová asset ID;
+- assetové testy ověřují fyzické soubory, PNG rozměry, GLB parse, trojúhelníky, rozpočty a model binding;
+- mobilní E2E ověřuje celý tok, tractor danger, pauzu, background návrat, čistou session a joystick reset;
+- workflow #322 na finálním headu skončil zeleně;
+- Playwright artefakt obsahuje portrait `1170×2532` a landscape `2532×1170` důkaz;
+- nevznikl save systém, inventář, druhý renderer ani implementace Nesměně.
 
-Aktuálně přijatelná rozpracovaná vrstva PR #33:
+### 5. Nesměň vertical slice — další přípustná etapa, dosud nezaložena
 
-1. `InteractionSystem`, `DigSystem`, `DangerSystem` a objective vazba jsou v povoleném gameplay rozsahu;
-2. Chlum entity, permission dialog a tři finding varianty jsou datově oddělené;
-3. `ScreenController` a `HudController` zůstávají obecnými DOM adaptéry bez session autority;
-4. skutečné PNG, textury a low-poly GLB soubory mají manifestové rozpočty a metadata;
-5. unit testy gameplay, dat a UI procházejí;
-6. dokud moduly nejsou v produkčním grafu, zelené CI neprokazuje vertical slice.
+Nový implementační balík smí vzniknout až po sloučení této governance aktualizace.
 
-Povinné zbývající kroky PR #33:
+Povinné koordinační pořadí:
 
-1. srovnat větev s aktuálním `main` a zachovat governance aktualizace;
-2. sjednotit všechny datové `assetId` s jedinou kanonickou sadou ID manifestu;
-3. doplnit statický test, že každý `sprite.assetId`, `model.assetId` a finding `assetId` existuje právě jednou v manifestu;
-4. instancovat Chlum entity do `World` a bezpečně mapovat stringová datová ID na interní entity ID;
-5. napojit pohyb, interakci, danger, dig a objective v závazném fixed-step pořadí `ChlumScene`;
-6. aktivovat permission dialog, dig site, tři zásahy, jeden nález, tractor hazard a level completion;
-7. doplnit GLTF runtime načtení a model binding pro skutečný traktor a další GLB;
-8. prokázat skutečné byte size, PNG rozměry, GLB parse/triangles, pivot/bounds, relativní URL bez 404 a dispose vlastnictví;
-9. doplnit end-to-end mobilní browser průchod, portrait/landscape vizuální důkaz a úplný HANDOFF.
+1. hlavní koordinační chat vytvoří samostatný Nesměň issue s přesným rozsahem a akceptací;
+2. implementační chat znovu načte aktuální `AGENTS.md`, `ARCHITECTURE_CONTRACT.md` a `PROJECT_CONTROL.md`;
+3. vytvoří jedinou větev `agent/<nesmen-tema>` z tehdy aktuálního `main`;
+4. odevzdá jeden draft PR pouze pro Nesměň;
+5. znovu použije sloučené obecné systémy, UI adaptéry, GLTF loader a model binding místo paralelních implementací;
+6. neimplementuje Besednici ani Slavii;
+7. vrátí PR z draftu až po dokončitelném toku, zeleném celém workflow, assetové validaci, portrait/landscape důkazu a HANDOFFu.
 
-Doložená GLTF integrační výjimka:
+Do vytvoření samostatného issue není žádný Nesměň implementační chat aktivní.
 
-- bootstrap registruje pouze `json` a `texture`, přestože manifest obsahuje typ `gltf`;
-- Chlum data zatím označují traktor jako `sprite`, ačkoli manifest obsahuje `model-chlum-tractor-no-driver`;
-- v PR #33 je povolena minimální obecná výjimka pro lokálně připnutý GLTF loader, registraci `gltf`, modelovou factory/binding a nezbytné composition-root zapojení;
-- výjimka nesmí vložit quest logiku do bootstrapu ani vytvořit druhý renderer, kameru nebo loop.
+### 6. Besednice a Slavia — blokováno Nesmění
 
-Další technické podmínky:
+Besednice a Slavia se převádějí po jednom, každý v samostatném PR nad sloučeným předchozím stupněm.
 
-- objective modul musí být explicitně Chlum-only, nebo odvozovat permission flag z kanonických dat; nesmí působit obecně a skrytě hardcodovat `chlumPermission`;
-- asset ID v datech a manifestu musí být přesně shodná; současné dvojice `chlum-player`/`player-hunter-walk`, `chlum-farmer-vaclav`/`npc-farmer-vaclav`, `chlum-tractor`/`model-chlum-tractor-no-driver` a finding ID jsou blokující;
-- `chlum-dig-marker` musí mít manifestovou položku nebo používat kanonické existující ID;
-- položka pojmenovaná `finding-vltavin-besednice` v Chlum balíku vyžaduje přejmenování nebo výslovné zdůvodnění;
-- fake-DOM unit test není náhradou browser testu produkční `ChlumScene`.
+### 7. Legacy odstranění a finální release — blokováno levely
 
-Zakázané změny:
-
-- druhý renderer, kamera, loop, eventový katalog nebo `GameSession`;
-- save/import/export, localStorage, continue nebo inventář;
-- implementace Nesměně, Besednice nebo Slávie;
-- merge celého PR #20 nebo PR #21;
-- vedlejší implementační PR mimo #33.
-
-Akceptační brána:
-
-1. Chlum je dokončitelný od PLAY bez konzole nebo ruční URL;
-2. Václavovo povolení vznikne přiblížením a jedním stiskem `AKCE`;
-3. kopání dokončí pouze přesně tři úspěšné zásahy a používá kanonické dig eventy;
-4. nález se přes `findingId` zapíše právě jednou do `GameSession` a zvýší score;
-5. traktor je skutečný čitelný low-poly GLB hazard bez freeze, dvojí akce nebo zablokovaného vstupu;
-6. objective se dokončí pouze po povolení, třech zásazích a jednom nálezu;
-7. všechny runtime assety mají stabilní a použité ID, relativní URL, rozpočet, pivot/rozměry a dispose vlastníka;
-8. syntaxe, celý unit suite, validátor a mobilní browser smoke celého toku jsou zelené;
-9. PR obsahuje portrait/landscape vizuální důkaz a HANDOFF podle `AGENTS.md`;
-10. existuje stále právě jeden renderer a nevznikl save systém ani inventář.
-
-Teprve po merge issue #29 / PR #33 lze otevřít Nesměň vertical slice.
-
-### 5. Zbývající levely a finále — blokováno Chlumem
-
-Nesměň, Besednice a Slavia se převádějí po jednom v samostatných PR nad sloučeným předchozím stupněm.
+Canvas monolit, runtime opravné vrstvy a legacy save kód se odstraní až po převodu všech čtyř levelů. Finální release vyžaduje kompletní mobilní QA včetně fyzického Safari důkazu.
 
 ## Přidělení práce dalším chatům
 
-Aktivní je pouze implementační chat issue #29 na větvi `agent/chlum-vertical-slice` a draft PR #33. Všechny další Chlum změny musí pokračovat v tomto PR. Před ready-for-review musí být větev srovnána s aktuálním `main`.
+Momentálně není aktivní žádný nový implementační levelový chat. Hlavní koordinační chat musí nejprve vytvořit Nesměň issue a určit jediný pracovní balík.
 
-Ostatní proudy smějí dodat pouze úzce vyžádanou podporu v témže PR:
+Do té doby jsou povoleny pouze:
 
-1. **Gameplay/data:** čisté systémy, Chlum data a objective testy; bez paralelní session.
-2. **Grafika:** Chlum manifest, PNG, GLB, textury a rozpočty; bez gameplay pravidel.
-3. **UI/mobil:** obecné HUD/screen/input vazby; bez levelových dat.
-4. **QA:** unit/browser testy, asset dostupnost a vizuální důkaz; bez nové funkce.
-5. **Architektura:** review a minimální doložená GLTF/modelová integrační výjimka.
-6. **Audio/výkon:** samostatný vývoj je do merge Chlumu pozastaven.
+1. review sloučeného Chlumu a samostatné defect issue;
+2. fyzický Safari/iPhone důkaz;
+3. governance příprava Nesměň zadání;
+4. údržba CI bez rozšíření produktového rozsahu.
+
+Zakázáno je:
+
+- pokračovat na uzavřené větvi `agent/chlum-vertical-slice`;
+- vytvářet Nesměň implementaci bez samostatného issue;
+- implementovat Besednici nebo Slavii;
+- vytvářet alternativní renderer, bootstrap, eventový katalog, `GameSession`, save systém nebo inventář.
 
 ## Formát hlášení chatu
 
