@@ -1,17 +1,18 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po sloučení produkčního bootstrap PR #24. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po sloučení produkčního bootstrap PR #24 a řídicího PR #31. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- Závazný integrační základ je `main@777f6513aca45272935bf6f03c607c4453ff8b2e`, squash merge PR #24.
+- Runtime baseline je `777f6513aca45272935bf6f03c607c4453ff8b2e`, squash merge produkčního bootstrap PR #24.
+- Aktuální `main` a povinný branch point pro další práci je `65ce1380aa84f1446d05b437fe4ebb50a3660d6c`; oproti runtime baseline přidává pouze řídicí aktualizaci z PR #31.
 - Produkční `index.html` nyní spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer` a ortografickou kamerou.
 - PR #24 sloučil transition-safe fixed update, čistý session start při PLAY, striktní literal `3` u dig eventů, kanonický katalog eventů a mobilní regresní testy.
 - Gameplay/datová sanace z PR #23 zůstává závazná: levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
 - `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód mohou v repozitáři dočasně zůstat pouze jako zmrazené historické soubory. Produkční bootstrap je nesmí importovat.
 - PR #20 zůstává pouze donor jednotlivých částí a nesmí být sloučen jako celek.
-- PR #21 je starý nemergeable donor Chlum assetů nad `main@1837c7b`. Vybrané assety se mohou přenést nebo znovu vytvořit pouze v novém Chlum balíku nad aktuálním `main`; PR #21 se neslučuje samostatně.
-- Jediným aktivním implementačním balíkem integrační etapy 4 je issue #29: samostatný Chlum Three.js vertical slice na větvi `agent/chlum-vertical-slice` nad `main@777f6513`.
+- PR #21 je starý uzavřený donor Chlum assetů nad `main@1837c7b`. Vybrané assety se mohou přenést nebo znovu vytvořit pouze v novém Chlum balíku nad aktuálním `main`; PR #21 se neslučuje samostatně.
+- Jediným aktivním implementačním balíkem integrační etapy 4 je issue #29: samostatný Chlum Three.js vertical slice na větvi `agent/chlum-vertical-slice` založené z aktuálního `main@65ce1380`.
 
 ## Rozhodnutí, která se znovu neotevírají
 
@@ -37,10 +38,10 @@
 | CI a validace #2 | Základ a bootstrap smoke sloučeny | Rozšířit o celý Chlum tok a asset kontrolu | Zelený workflow na PR #29 |
 | Architektura #3 | Produkční bootstrap dokončen v PR #24 | Pouze integrační podpora při doloženém defectu | `src/core`, `src/render` a `src/bootstrap.js` se v Chlum PR běžně nemění |
 | Gameplay #4 | Čtyřlevelová data a session-only stav dokončeny | Chlum gameplay systémy a objective tok v issue #29 | Žádná paralelní session nebo levelová data |
-| Grafika #5 | PR #21 je donor Chlum assetů | Vybrané assety integrovat přímo v issue #29 nad aktuálním `main` | Manifest, rozpočty, pivoty, dispose, bez 404 |
+| Grafika #5 | PR #21 je uzavřený donor Chlum assetů | Vybrané assety integrovat přímo v issue #29 nad aktuálním `main` | Manifest, rozpočty, pivoty, dispose, bez 404 |
 | Audio/výkon #6 | Samostatný nový AudioEngine dosud není aktivní etapa | Bez rozšíření Chlum balíku, kromě minimálních již existujících hooků | Žádný nový audio redesign v PR #29 |
 | QA/release #7 | Bootstrap smoke sloučen | Unit a mobilní end-to-end smoke celého Chlumu | iPhone viewport, portrait/landscape, pauza a background návrat |
-| Chlum vertical slice #29 | **Aktuální integrační etapa** | Jeden samostatný draft PR z `agent/chlum-vertical-slice` | Kompletní Chlum, zelené testy, vizuální důkaz, žádný další level |
+| Chlum vertical slice #29 | **Aktuální integrační etapa; větev ani PR zatím nevznikly** | Jeden samostatný draft PR z `agent/chlum-vertical-slice` | Kompletní Chlum, zelené testy, vizuální důkaz, žádný další level |
 | Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
 
 ## Integrační fronta
@@ -82,7 +83,8 @@ PR #24 byl sloučen jako `777f6513`.
 
 Kanonický balík je issue #29.
 
-- **Základ:** `main@777f6513aca45272935bf6f03c607c4453ff8b2e`.
+- **Runtime baseline:** `777f6513aca45272935bf6f03c607c4453ff8b2e`.
+- **Branch point:** aktuální `main@65ce1380aa84f1446d05b437fe4ebb50a3660d6c`.
 - **Větev:** `agent/chlum-vertical-slice`.
 - **Výstup:** jeden samostatný draft PR do `main`.
 - **Tok:** briefing → povolení zemědělce Václava → hledání vhodného místa → tři rytmické zásahy → jeden zapsaný nález → vyhnutí traktoru → dokončení Chlumu.
@@ -126,7 +128,7 @@ Nesměň, Besednice a Slavia se převádějí po jednom, každý v samostatném 
 
 ## Přidělení práce dalším chatům
 
-Aktuálně je povolen pouze implementační chat pro issue #29. Musí pracovat z `main@777f6513` na větvi `agent/chlum-vertical-slice` a nesmí současně otevírat další level nebo alternativní architekturu.
+Aktuálně je povolen pouze implementační chat pro issue #29. Musí založit `agent/chlum-vertical-slice` z aktuálního `main@65ce1380` a nesmí současně otevírat další level nebo alternativní architekturu. Runtime API a implementační rozsah jsou dány baseline `777f6513`.
 
 Ostatní proudy smějí dodat pouze review nebo úzce vyžádanou integrační podporu:
 
