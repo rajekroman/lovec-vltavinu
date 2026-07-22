@@ -11,7 +11,7 @@ import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
-import { NesmenScene } from "./scenes/NesmenScene.js";
+import { NesmenRestorationScene } from "./scenes/NesmenRestorationScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -77,7 +77,7 @@ const chlum = new ChlumNesmenBridgeScene({
   screens,
   session
 });
-const nesmen = new NesmenScene({
+const nesmen = new NesmenRestorationScene({
   app,
   events,
   renderer,
