@@ -24,22 +24,31 @@ async function snapshot(page) {
   return page.evaluate(() => window.__lovecRuntime.snapshot());
 }
 
-async function holdKeyUntil(page, key, predicate, argument, timeout = 15_000) {
-  await page.keyboard.down(key);
+async function pulseKeys(page, keys, duration = 65) {
+  for (const key of keys) await page.keyboard.down(key);
   try {
-    await expect.poll(() => page.evaluate(predicate, argument), {
-      timeout,
-      intervals: [30, 60, 100]
-    }).toBe(true);
+    await page.waitForTimeout(duration);
   } finally {
-    await page.keyboard.up(key);
+    for (const key of keys) await page.keyboard.up(key);
   }
 }
 
-async function holdUntilInteraction(page, key, kind, timeout = 15_000) {
-  await holdKeyUntil(page, key, expected => (
-    window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected
-  ), kind, timeout);
+async function movePlayerTo(page, targetX, targetY, tolerance = 20, maxSteps = 260) {
+  for (let step = 0; step < maxSteps; step++) {
+    const state = await snapshot(page);
+    const player = state.chlum?.runtime?.player;
+    if (!player) throw new Error("Chlum player is not available.");
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
+    if (Math.abs(dx) <= tolerance && Math.abs(dy) <= tolerance) return state;
+
+    const keys = [];
+    if (Math.abs(dx) > tolerance) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
+    if (Math.abs(dy) > tolerance) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
+    await pulseKeys(page, keys);
+  }
+  const player = (await snapshot(page)).chlum?.runtime?.player;
+  throw new Error(`Player did not reach ${targetX},${targetY}; current ${player?.x},${player?.y}`);
 }
 
 async function waitForInteraction(page, kind, timeout = 8_000) {
@@ -48,14 +57,28 @@ async function waitForInteraction(page, kind, timeout = 8_000) {
   ), kind), { timeout, intervals: [30, 60, 100] }).toBe(true);
 }
 
-async function holdUntilCoordinate(page, key, condition, timeout = 15_000) {
-  await holdKeyUntil(page, key, target => {
-    const player = window.__lovecRuntime.snapshot().chlum?.runtime?.player;
-    if (!player) return false;
-    return target.axis === "x"
-      ? (target.direction < 0 ? player.x <= target.value : player.x >= target.value)
-      : (target.direction < 0 ? player.y <= target.value : player.y >= target.value);
-  }, condition, timeout);
+async function moveToInteraction(page, x, y, kind) {
+  await movePlayerTo(page, x, y);
+  await waitForInteraction(page, kind);
+}
+
+async function chaseTractorUntilDanger(page) {
+  for (let step = 0; step < 280; step++) {
+    const state = await snapshot(page);
+    if (state.session.danger > 0) return state;
+    const player = state.chlum?.runtime?.player;
+    const tractor = state.chlum?.runtime?.tractor;
+    if (!player || !tractor) throw new Error("Chlum tractor chase data is unavailable.");
+
+    const dx = tractor.x - player.x;
+    const dy = tractor.y - player.y;
+    const keys = [];
+    if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
+    if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
+    if (!keys.length) keys.push("ArrowRight");
+    await pulseKeys(page, keys);
+  }
+  throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
 }
 
 async function contextualAction(page) {
@@ -89,7 +112,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
 
-  await holdUntilInteraction(page, "ArrowRight", "permission");
+  await moveToInteraction(page, 560, 410, "permission");
   await contextualAction(page);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
@@ -115,11 +138,10 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
   await other.close();
 
-  await holdUntilCoordinate(page, "ArrowLeft", { axis: "x", direction: -1, value: 125 });
-  await holdUntilCoordinate(page, "ArrowUp", { axis: "y", direction: 1, value: 840 });
-  await holdUntilCoordinate(page, "ArrowRight", { axis: "x", direction: 1, value: 1000 });
-  await holdUntilCoordinate(page, "ArrowDown", { axis: "y", direction: -1, value: 780 });
-  await waitForInteraction(page, "dig");
+  await movePlayerTo(page, 120, 410);
+  await movePlayerTo(page, 120, 850);
+  await movePlayerTo(page, 1020, 850);
+  await moveToInteraction(page, 1020, 720, "dig");
   await contextualAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
 
@@ -156,16 +178,12 @@ test("tractor collision raises danger, returns player to spawn and does not free
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
 
-  await holdUntilCoordinate(page, "ArrowLeft", { axis: "x", direction: -1, value: 125 });
-  await holdUntilCoordinate(page, "ArrowUp", { axis: "y", direction: 1, value: 570 });
-  await holdKeyUntil(page, "ArrowRight", () => window.__lovecRuntime.snapshot().session.danger > 0, null, 15_000);
-
-  const state = await snapshot(page);
+  const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
   expect(state.chlum.runtime.player.x).toBeLessThan(190);
   expect(state.chlum.runtime.player.y).toBeLessThan(450);
   expect(state.running).toBe(true);
-  await page.locator("#pauseButton").tap();
+  await page.locator("#pauseButton").click();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
   await page.locator("#resumeButton").click();
   await expect(page.locator("#app")).toHaveClass(/playing/);
