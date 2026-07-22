@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { DIG_REQUIRED_HITS } from "../../src/data/levels.js";
 import { HudController } from "../../src/ui/HudController.js";
 import { ScreenController } from "../../src/ui/ScreenController.js";
 
@@ -195,7 +196,14 @@ test("ScreenController exposes one-button dialog and exact-three dig overlay wit
   document.getElementById("dialogButton").onclick({ preventDefault() {} });
   assert.equal(confirmed, 1);
 
-  screens.showDig({ hits: 2, marker: 0.5, sweetMin: 0.4, sweetMax: 0.6, onAction() {} });
+  screens.showDig({
+    hits: 2,
+    requiredHits: DIG_REQUIRED_HITS,
+    marker: 0.5,
+    sweetMin: 0.4,
+    sweetMax: 0.6,
+    onAction() {}
+  });
   assert.equal(screens.activeId, "digScreen");
   assert.equal(document.getElementById("digHits").textContent, "◆ ◆ ◇");
   assert.equal(document.getElementById("digMarker").style.left, "calc(50% - 5px)");
@@ -205,7 +213,7 @@ test("ScreenController exposes one-button dialog and exact-three dig overlay wit
   assert.throws(() => screens.updateDig({ requiredHits: 4 }), /literal 3/);
 });
 
-test("ScreenController renders a generic Chlum result and restores playing overlays", () => {
+test("ScreenController renders a generic level result and restores playing overlays", () => {
   const document = createUiDocument();
   const screens = new ScreenController(document);
   let continued = false;
@@ -217,6 +225,7 @@ test("ScreenController renders a generic Chlum result and restores playing overl
     onContinue: () => { continued = true; }
   });
 
+  assert.equal(document.getElementById("resultKicker").textContent, "ÚROVEŇ DOKONČENA");
   assert.equal(document.getElementById("resultScore").textContent, "150");
   assert.equal(document.getElementById("resultStats").children.length, 1);
   assert.equal(document.getElementById("resultStats").children[0].children[0].textContent, "NÁLEZY");
