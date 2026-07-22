@@ -103,7 +103,7 @@ else {
 }
 
 const visibleVersion = html.match(/\bv(\d+)\.(\d+)\b/)?.slice(1).join(".");
-const cacheVersion = serviceWorker.match(/CACHE\s*=\s*["'][^"']*v(\d+)-(\d+)["']/)?.slice(1).join(".");
+const cacheVersion = serviceWorker.match(/CACHE\s*=\s*["'][^"']*v(\d+)-(\d+)(?:-[^"']+)?["']/)?.slice(1, 3).join(".");
 if (!visibleVersion || !cacheVersion) fail("Nelze určit verzi UI nebo PWA cache.");
 else if (visibleVersion !== cacheVersion) fail(`Nesoulad UI a cache verze: ${visibleVersion} vs ${cacheVersion}.`);
 const expectedEvents = 33;
