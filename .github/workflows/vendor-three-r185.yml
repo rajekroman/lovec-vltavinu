@@ -1,16 +1,15 @@
 name: Vendor Three r185 addons
 
 on:
-  push:
-    branches:
-      - agent/asset-runtime-hardening
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   vendor:
-    if: ${{ !contains(github.event.head_commit.message, '[vendor-complete]') }}
+    if: ${{ github.head_ref == 'agent/asset-runtime-hardening' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,6 +34,7 @@ jobs:
           grep -q "../../three.module.min.js" vendor/three/addons/loaders/GLTFLoader.js
       - name: Commit pinned files
         run: |
+          if git diff --quiet -- vendor/three/addons; then exit 0; fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add vendor/three/addons
