@@ -11,6 +11,7 @@ import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumScene } from "./scenes/ChlumScene.js";
+import { NesmenScene } from "./scenes/NesmenScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -76,6 +77,14 @@ const chlum = new ChlumScene({
   screens,
   session
 });
+const nesmen = new NesmenScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
 const title = new TitleScene({
   document: documentRef,
   screens,
@@ -83,6 +92,7 @@ const title = new TitleScene({
 });
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
+app.scenes.register("nesmen", nesmen);
 
 async function startNewRun() {
   session.reset();
@@ -129,7 +139,8 @@ function installDebugApi() {
         type: "three-webgl-orthographic"
       },
       session: session.state,
-      chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null
+      chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
+      nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null
     }),
     resetInput: reason => inputAdapter.reset(reason),
     resize
@@ -149,4 +160,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum, startNewRun };
+export { app, events, renderer, session, title, chlum, nesmen, startNewRun };
