@@ -38,10 +38,12 @@ export class ChlumScene {
   }
 
   updateCollisions() {
+    if (this.session.state.phase !== "playing") return;
     this.app.collisions.update(this.app.world);
   }
 
   updateAnimations(dt) {
+    if (this.session.state.phase !== "playing") return;
     this.app.animations.update(this.app.world, dt);
   }
 
@@ -58,7 +60,9 @@ export class ChlumScene {
     this.app.input.reset("pause-overlay");
     this.screens.showPause({
       onResume: () => this.resume(),
-      onMenu: () => this.app.changeScene("title")
+      onMenu: () => {
+        void this.app.changeScene("title").catch(error => console.error("Scene transition:", error));
+      }
     });
     this.emitHud(true);
   }
@@ -118,10 +122,9 @@ export class ChlumScene {
     );
     group.add(ground);
 
-    const stripGeometry = new this.THREE.PlaneGeometry(this.level.bounds.width * 0.92, 18);
     for (let index = 0; index < 10; index++) {
       const strip = new this.THREE.Mesh(
-        stripGeometry.clone(),
+        new this.THREE.PlaneGeometry(this.level.bounds.width * 0.92, 18),
         new this.THREE.MeshBasicMaterial({ color: index % 2 ? 0x796744 : 0x57472f })
       );
       strip.position.set(
