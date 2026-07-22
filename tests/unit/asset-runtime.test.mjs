@@ -39,7 +39,7 @@ test("AssetLoader vybírá preload z level.assetGroups a zachová manifestový t
   ]);
 });
 
-test("AssetLoader emituje kanonický error a retry nepoužije neúspěšný cache record", async () => {
+test("AssetLoader emituje kanonický HTTP error a retry nepoužije neúspěšný cache record", async () => {
   const events = new EventSink();
   const assets = new AssetLoader({ events });
   let attempts = 0;
@@ -58,6 +58,25 @@ test("AssetLoader emituje kanonický error a retry nepoužije neúspěšný cach
   });
   assert.deepEqual(await assets.load(entry), { recovered: true });
   assert.equal(attempts, 2);
+});
+
+test("AssetLoader emituje kanonický error i při selhání parseru", async () => {
+  const events = new EventSink();
+  const assets = new AssetLoader({ events });
+  assets.register("gltf", async () => { throw new Error("THREE.GLTFLoader: Unexpected end of JSON input"); });
+
+  await assert.rejects(
+    assets.load({ id: "broken-glb", type: "gltf", url: "./broken.glb" }),
+    /Unexpected end of JSON input/
+  );
+  assert.deepEqual(events.items.at(-1), {
+    type: "asset:load:error",
+    payload: {
+      id: "broken-glb",
+      type: "gltf",
+      message: "THREE.GLTFLoader: Unexpected end of JSON input"
+    }
+  });
 });
 
 test("AssetLoader používá typový disposer pro cached source", async () => {
