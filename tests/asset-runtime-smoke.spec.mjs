@@ -56,6 +56,7 @@ test("standardní GLTFLoader r185 načte texturovaný GLB a instance mají oddě
       secondGeometry: secondMesh?.geometry?.uuid
     };
     factory.dispose(first);
+    const level = app.scenes.activeScene?.level;
 
     return {
       revision: GLTF_LOADER_REVISION,
@@ -67,7 +68,7 @@ test("standardní GLTFLoader r185 načte texturovaný GLB a instance mají oddě
       secondTextureAlive: Boolean(secondMesh?.material?.map?.isTexture),
       sourceTextureAlive: Boolean(sourceMesh?.material?.map?.isTexture),
       spritesheetType: app.assets.cachedEntry("player-hunter-walk")?.type ?? null,
-      selectedIds: app.assets.selectPreload(app.scenes.active.level.assetGroups).map(entry => entry.id)
+      selectedIds: app.assets.selectPreload(level?.assetGroups ?? []).map(entry => entry.id)
     };
   });
 
