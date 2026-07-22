@@ -25,6 +25,22 @@ const gameData = {
   samples: SAMPLE_DEFINITIONS
 };
 
+const cloneLevels = () => LEVEL_DEFINITIONS.map(level => ({
+  ...level,
+  briefing: { ...level.briefing },
+  spawn: { ...level.spawn },
+  bounds: { ...level.bounds },
+  objective: { ...level.objective },
+  objectives: level.objectives.map(objective => ({ ...objective })),
+  targets: level.targets.map(target => ({
+    ...target,
+    positions: target.positions.map(position => ({ ...position })),
+    interaction: { ...target.interaction }
+  })),
+  hazards: [...level.hazards],
+  assetGroups: [...level.assetGroups]
+}));
+
 test("game data registry contains the four canonical production levels", () => {
   assert.deepEqual(LEVEL_ORDER, ["chlum", "nesmen", "besednice", "slavia"]);
   assert.equal(LEVEL_DEFINITIONS.length, 4);
@@ -78,17 +94,56 @@ test("every objective uses one context action and a reachable declared target", 
   }
 });
 
-test("validation rejects duplicate ids, broken order and invalid targets", () => {
-  const brokenLevels = LEVEL_DEFINITIONS.map(level => ({
-    ...level,
-    objectives: level.objectives.map(objective => ({ ...objective })),
-    targets: level.targets.map(target => ({
+test("validation rejects renamed or legacy fifth level sets", () => {
+  const renamedLevels = cloneLevels();
+  renamedLevels[0].next = "locenice";
+  renamedLevels[1].id = "locenice";
+
+  const renamedResult = validateGameData({
+    levels: renamedLevels,
+    perks: PERK_DEFINITIONS,
+    samples: SAMPLE_DEFINITIONS
+  });
+  assert.equal(renamedResult.valid, false);
+  assert.ok(renamedResult.errors.some(error => error.includes("exactly the four canonical levels")));
+
+  const fiveLevels = cloneLevels();
+  fiveLevels.at(-1).final = false;
+  fiveLevels.at(-1).next = "locenice";
+  const legacyBase = fiveLevels.at(-1);
+  fiveLevels.push({
+    ...legacyBase,
+    order: 4,
+    id: "locenice",
+    name: "Ločenice",
+    title: "Legacy Ločenice",
+    next: null,
+    final: true,
+    briefing: { ...legacyBase.briefing },
+    spawn: { ...legacyBase.spawn },
+    bounds: { ...legacyBase.bounds },
+    objective: { ...legacyBase.objective, id: "locenice-legacy" },
+    objectives: legacyBase.objectives.map(objective => ({ ...objective })),
+    targets: legacyBase.targets.map(target => ({
       ...target,
       positions: target.positions.map(position => ({ ...position })),
       interaction: { ...target.interaction }
     })),
-    hazards: [...level.hazards]
-  }));
+    hazards: [...legacyBase.hazards],
+    assetGroups: [...legacyBase.assetGroups]
+  });
+
+  const fiveLevelResult = validateGameData({
+    levels: fiveLevels,
+    perks: PERK_DEFINITIONS,
+    samples: SAMPLE_DEFINITIONS
+  });
+  assert.equal(fiveLevelResult.valid, false);
+  assert.ok(fiveLevelResult.errors.some(error => error.includes("exactly the four canonical levels")));
+});
+
+test("validation rejects duplicate ids, broken order and invalid targets", () => {
+  const brokenLevels = cloneLevels();
   brokenLevels[1].id = "chlum";
   brokenLevels[2].order = 8;
   brokenLevels[0].objectives[0].required = 0;
