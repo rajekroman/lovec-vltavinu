@@ -9,6 +9,8 @@ export { World } from "./ecs/World.js";
 export {
   CollisionSystem,
   intersects,
+  canLayersCollide,
+  collisionContact,
   circleIntersectsCircle,
   aabbIntersectsAabb,
   circleIntersectsAabb,
