@@ -45,25 +45,50 @@ async function holdKeys(page, keys, duration) {
   }
 }
 
-async function movePlayerTo(page, targetX, targetY, tolerance = MOVE_TOLERANCE, maxSteps = 180) {
+async function moveAxisTo(page, axis, target, tolerance = 30, timeout = 20_000) {
+  const initial = await snapshot(page);
+  const player = initial.chlum?.runtime?.player;
+  if (!player) throw new Error("Chlum player is not available.");
+  const delta = target - player[axis];
+  if (Math.abs(delta) <= tolerance) return initial;
+
+  const positiveKey = axis === "x" ? "ArrowRight" : "ArrowUp";
+  const negativeKey = axis === "x" ? "ArrowLeft" : "ArrowDown";
+  const key = delta > 0 ? positiveKey : negativeKey;
+  const direction = Math.sign(delta);
+
+  await page.keyboard.down(key);
+  try {
+    await expect.poll(async () => {
+      const current = (await snapshot(page)).chlum?.runtime?.player?.[axis];
+      if (typeof current !== "number") return false;
+      return direction > 0 ? current >= target - tolerance : current <= target + tolerance;
+    }, { timeout, intervals: [80, 120, 180, 250] }).toBe(true);
+  } finally {
+    await page.keyboard.up(key);
+  }
+
+  const final = await snapshot(page);
+  const current = final.chlum?.runtime?.player?.[axis];
+  if (typeof current !== "number" || Math.abs(target - current) > 55) {
+    throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
+  }
+  return final;
+}
+
+async function movePlayerTo(page, targetX, targetY, tolerance = MOVE_TOLERANCE) {
   return withPhaseSnapshot(page, "input movement", async () => {
-    for (let step = 0; step < maxSteps; step++) {
-      const state = await snapshot(page);
-      const player = state.chlum?.runtime?.player;
-      if (!player) throw new Error("Chlum player is not available.");
-      const dx = targetX - player.x;
-      const dy = targetY - player.y;
-      if (Math.abs(dx) <= tolerance && Math.abs(dy) <= tolerance) return state;
+    await moveAxisTo(page, "x", targetX, Math.max(30, tolerance));
+    await moveAxisTo(page, "y", targetY, Math.max(30, tolerance));
+    return snapshot(page);
+  }, { x: targetX, y: targetY, tolerance });
+}
 
-      const keys = [];
-      if (Math.abs(dx) > tolerance) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
-      if (Math.abs(dy) > tolerance) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
-      await holdKeys(page, keys, 120);
-    }
-
-    const player = (await snapshot(page)).chlum?.runtime?.player;
-    throw new Error(`Player did not reach ${targetX},${targetY}; current ${player?.x},${player?.y}.`);
-  }, { x: targetX, y: targetY, tolerance, maxSteps });
+async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
+  await withPhaseSnapshot(page, "tractor clearance", () => expect.poll(async () => {
+    const tractorX = (await snapshot(page)).chlum?.runtime?.tractor?.x;
+    return typeof tractorX === "number" && tractorX <= maxX;
+  }, { timeout, intervals: [100, 180, 250] }).toBe(true), { maxX });
 }
 
 async function waitForInteraction(page, kind, timeout = 8_000) {
@@ -141,9 +166,8 @@ test("canonical input-driven Chlum flow reaches one finding and a clean restarte
   });
 
   await test.step("permission → dig site through canonical route", async () => {
-    await movePlayerTo(page, 120, 410);
-    await movePlayerTo(page, 120, 850);
-    await movePlayerTo(page, 1020, 850);
+    await movePlayerTo(page, 1020, 410);
+    await waitForTractorLeftOf(page);
     await moveToInteraction(page, 1020, 720, "dig");
     await contextualAction(page);
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
