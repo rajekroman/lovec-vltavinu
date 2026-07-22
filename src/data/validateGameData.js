@@ -1,5 +1,6 @@
 const nonEmptyString = value => typeof value === "string" && value.trim().length > 0;
 const finiteNumber = value => Number.isFinite(Number(value));
+const CANONICAL_LEVEL_ORDER = Object.freeze(["chlum", "nesmen", "besednice", "slavia"]);
 
 const positionInsideBounds = (position, bounds) => (
   finiteNumber(bounds?.x) && finiteNumber(bounds?.y) &&
@@ -25,7 +26,15 @@ export function validateGameData({ levels, perks, samples } = {}) {
   if (!Array.isArray(levels) || levels.length === 0) {
     errors.push("Levels must be a non-empty array.");
   } else {
-    const duplicateIds = duplicateValues(levels.map(level => level?.id));
+    const actualLevelIds = levels.map(level => level?.id);
+    if (
+      actualLevelIds.length !== CANONICAL_LEVEL_ORDER.length ||
+      actualLevelIds.some((id, index) => id !== CANONICAL_LEVEL_ORDER[index])
+    ) {
+      errors.push(`Levels must contain exactly the four canonical levels in order: ${CANONICAL_LEVEL_ORDER.join(", ")}.`);
+    }
+
+    const duplicateIds = duplicateValues(actualLevelIds);
     if (duplicateIds.length) errors.push(`Duplicate level ids: ${duplicateIds.join(", ")}`);
 
     const duplicateOrders = duplicateValues(levels.map(level => level?.order));
