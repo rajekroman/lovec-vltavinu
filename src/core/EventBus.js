@@ -1,6 +1,9 @@
 export class EventBus {
-  constructor() {
+  constructor(options = {}) {
     this.listeners = new Map();
+    this.contracts = options.contracts ?? null;
+    this.strict = options.strict ?? Boolean(this.contracts);
+    this.validatePayload = options.validatePayload ?? null;
   }
 
   on(type, handler, options = {}) {
@@ -41,6 +44,9 @@ export class EventBus {
   }
 
   emit(type, payload) {
+    if (this.strict && !this.contracts?.[type]) throw new Error(`Unknown event type: ${type}`);
+    if (this.contracts?.[type]) this.validatePayload?.(type, payload, this.contracts);
+
     const handlers = this.listeners.get(type);
     if (!handlers?.size) return 0;
 
