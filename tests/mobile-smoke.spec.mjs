@@ -3,21 +3,43 @@ import { test, expect } from "@playwright/test";
 
 const MOVE_TOLERANCE = 20;
 
-async function openBootstrap(page) {
+async function openBootstrap(page, url = "/?debug=1") {
   const pageErrors = [];
+  const httpErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
-  await page.goto("/?debug=1", { waitUntil: "domcontentloaded" });
+  page.on("response", response => {
+    if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`);
+  });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
   await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
-  return pageErrors;
+  return { pageErrors, httpErrors };
 }
 
 async function snapshot(page) {
   return page.evaluate(() => window.__lovecRuntime.snapshot());
 }
 
+async function inputSnapshot(page) {
+  return page.evaluate(async () => {
+    const { app } = await import("./src/bootstrap.js");
+    return app.input.snapshot();
+  });
+}
+
 function activeRuntime(state) {
   return state[state.scene]?.runtime ?? null;
+}
+
+async function expectReleasedInput(page) {
+  await expect.poll(async () => {
+    const input = await inputSnapshot(page);
+    return {
+      move: input.axes.move?.length ?? 0,
+      action: Boolean(input.actions.action?.down),
+      pause: Boolean(input.actions.pause?.down)
+    };
+  }).toEqual({ move: 0, action: false, pause: false });
 }
 
 async function enterChlum(page) {
@@ -192,6 +214,9 @@ async function enterNesmenFromResult(page) {
   await page.locator("#briefButton").tap();
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().nesmen?.runtime?.profiles?.length)).toBe(3);
+  await expect(page.locator("#placeLabel")).toHaveText("NESMĚŇ");
+  await expect(page.locator("#objectiveLabel")).toHaveText("Získej souhlas lesníka");
+  await expect(page.locator("#actionText")).toHaveText("AKCE");
 }
 
 async function captureEvidence(page, testInfo, name, expectedSize) {
@@ -208,12 +233,14 @@ async function verifyNesmenLifecycle(page, context, testInfo) {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.evaluate(() => window.__lovecRuntime.resize());
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().renderer.width)).toBe(844);
+  await expectReleasedInput(page);
   await captureEvidence(page, testInfo, "nesmen-landscape", { width: 2532, height: 1170 });
 
   await page.locator("#pauseButton").click();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
   await page.locator("#resumeButton").click();
   await expect(page.locator("#app")).toHaveClass(/playing/);
+  await expectReleasedInput(page);
 
   const other = await context.newPage();
   await other.goto("about:blank");
@@ -222,10 +249,12 @@ async function verifyNesmenLifecycle(page, context, testInfo) {
   await page.bringToFront();
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
   await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime.snapshot().nesmen?.runtime?.player))).toBe(true);
+  await expectReleasedInput(page);
   await other.close();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.__lovecRuntime.resize());
+  await expectReleasedInput(page);
 }
 
 async function completeNesmen(page) {
@@ -234,6 +263,7 @@ async function completeNesmen(page) {
   await expect(page.locator("#dialogName")).toHaveText("JAN");
   await page.locator("#dialogButton").tap();
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.flags.nesmenPermission)).toBe(true);
+  await expectReleasedInput(page);
 
   const profiles = [
     { x: 610, y: 430 },
@@ -248,13 +278,18 @@ async function completeNesmen(page) {
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
     for (let localHit = 0; localHit < 3; localHit++) await successfulDigHit(page, ++totalHits);
     await expect(page.locator("#app")).toHaveClass(/playing/);
+    await expect(page.locator("#resultScreen")).not.toHaveClass(/visible/);
+    await expect(page.locator("#objectiveLabel")).toHaveText("Zasyp otevřenou díru");
 
     if (index === 0) {
       await waitForInteraction(page, "collect");
       await contextualAction(page);
     }
     await waitForInteraction(page, "fill");
+    await expect(page.locator("#actionText")).toHaveText("ZAHRNOUT");
     await contextualAction(page);
+    await expectReleasedInput(page);
+    if (index < profiles.length - 1) await expect(page.locator("#resultScreen")).not.toHaveClass(/visible/);
   }
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
@@ -281,7 +316,7 @@ const compactTransform = value => String(value).replace(/\s+/g, "");
 
 test("canonical input-driven Chlum → Nesměň flow completes three restored profiles", async ({ page, context }, testInfo) => {
   test.setTimeout(150_000);
-  const pageErrors = await openBootstrap(page);
+  const errors = await openBootstrap(page, "/");
   await completeChlum(page);
 
   const chlumComplete = await snapshot(page);
@@ -303,12 +338,13 @@ test("canonical input-driven Chlum → Nesměň flow completes three restored pr
   expect(completed.nesmen.runtime.profiles.every(profile => profile.dug && profile.filled)).toBe(true);
   expect(completed.nesmen.levelComplete).toEqual({ levelId: "nesmen", nextLevelId: "besednice", score: 210 });
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
-  expect(pageErrors).toEqual([]);
+  expect(errors.httpErrors).toEqual([]);
+  expect(errors.pageErrors).toEqual([]);
 });
 
 test("tractor collision raises danger, returns player to spawn and does not freeze input", async ({ page }) => {
   test.setTimeout(45_000);
-  const pageErrors = await openBootstrap(page);
+  const errors = await openBootstrap(page);
   await enterChlum(page);
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
@@ -319,11 +355,12 @@ test("tractor collision raises danger, returns player to spawn and does not free
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
   await page.locator("#resumeButton").click();
   await expect(page.locator("#app")).toHaveClass(/playing/);
-  expect(pageErrors).toEqual([]);
+  expect(errors.httpErrors).toEqual([]);
+  expect(errors.pageErrors).toEqual([]);
 });
 
 test("runtime reset releases the mobile joystick in the Chlum scene", async ({ page }) => {
-  const pageErrors = await openBootstrap(page);
+  const errors = await openBootstrap(page);
   await enterChlum(page);
   const zone = page.locator("#moveZone");
   const stick = page.locator("#stick");
@@ -337,5 +374,6 @@ test("runtime reset releases the mobile joystick in the Chlum scene", async ({ p
   await page.evaluate(() => window.__lovecRuntime.resetInput("playwright-smoke"));
   await page.mouse.up();
   await expect.poll(async () => compactTransform(await stick.evaluate(element => element.style.transform))).toBe("translate(-50%,-50%)");
-  expect(pageErrors).toEqual([]);
+  expect(errors.httpErrors).toEqual([]);
+  expect(errors.pageErrors).toEqual([]);
 });
