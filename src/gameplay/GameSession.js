@@ -11,9 +11,10 @@ const deepFreeze = value => {
 };
 
 const finiteNumber = (value, field) => {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0) throw new TypeError(`${field} must be a non-negative finite number.`);
-  return number;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new TypeError(`${field} must be a non-negative finite number.`);
+  }
+  return value;
 };
 
 function initialObjective(level) {
