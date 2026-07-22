@@ -19,7 +19,7 @@ test("legacy tables preserve the exact property shape expected by game.js", () =
   assert.deepEqual(Object.keys(perks[0]), ["id", "icon", "name", "text", "max"]);
   assert.deepEqual(Object.keys(samples[0]), ["real", "title", "text"]);
   assert.equal(levels[0].id, "chlum");
-  assert.equal(levels.at(-1).id, "malse");
+  assert.equal(levels.at(-1).id, "slavia");
   assert.equal(samples.some(sample => sample.real), true);
   assert.equal(samples.some(sample => !sample.real), true);
 });

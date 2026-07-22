@@ -27,7 +27,7 @@ test("GameState normalizuje poškozené hodnoty", () => {
     perks: { boots: 20, case: 1 }, stats: { digs: "4", misses: -3 },
     stones: [{ id: "a", weight: "2.5", quality: 180, value: -20, documented: false }, null]
   });
-  assert.equal(state.levelIndex, 4);
+  assert.equal(state.levelIndex, 3);
   assert.equal(state.score, 0);
   assert.equal(state.heat, 100);
   assert.equal(state.combo, 6);
@@ -103,16 +103,10 @@ test("migrateLegacySave odstraní zdroj pouze na vyžádání", () => {
   assert.ok(storage.getItem(CURRENT_SAVE_KEY));
 });
 
-test("Chlum vyžaduje povolení i čtyři kameny", () => {
-  assert.equal(evaluateObjective("chlum", { permit: false, collected: 4 }).text, "Promluv s Václavem");
-  assert.equal(isObjectiveComplete("chlum", { permit: false, collected: 4 }), false);
-  assert.equal(isObjectiveComplete("chlum", { permit: true, collected: 4 }), true);
-});
-
-test("Ločenice vyžaduje pět správných určení a tři pravé kusy", () => {
-  assert.equal(evaluateObjective("locenice", { correct: 4, real: 3 }).text, "Správně 4/5 · pravé 3/3");
-  assert.equal(isObjectiveComplete("locenice", { correct: 5, real: 2 }), false);
-  assert.equal(isObjectiveComplete("locenice", { correct: 5, real: 3 }), true);
+test("Chlum vyžaduje povolení, tři zásahy i nález", () => {
+  assert.equal(evaluateObjective("chlum", { permit: false, digHits: 3, findings: 1 }).text, "Promluv s Václavem");
+  assert.equal(isObjectiveComplete("chlum", { permit: true, digHits: 2, findings: 1 }), false);
+  assert.equal(isObjectiveComplete("chlum", { permit: true, digHits: 3, findings: 1 }), true);
 });
 
 test("Nesměň vyžaduje povolení, kopání i zahrabání", () => {
@@ -124,24 +118,31 @@ test("Nesměň vyžaduje povolení, kopání i zahrabání", () => {
 test("Besednice používá texty všech fází", () => {
   assert.equal(evaluateObjective("besednice", { clues: 2 }).text, "Stopy 2/3");
   assert.equal(evaluateObjective("besednice", { clues: 3 }).text, "Vykopej ježkový profil");
-  assert.equal(evaluateObjective("besednice", { bossStarted: true }).text, "Dostaň ježek zpět");
-  assert.equal(evaluateObjective("besednice", { bossStarted: true, bossDefeated: true }).text, "Ježek je v bezpečí");
+  assert.equal(evaluateObjective("besednice", { clues: 3, hedgehog: true, bossStarted: true }).text, "Dostaň ježek zpět");
+  assert.equal(evaluateObjective("besednice", { clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true }).text, "Ježek je v bezpečí");
 });
 
-test("Malše vyžaduje dokumenty i porážku Franty", () => {
-  assert.equal(evaluateObjective("malse", { papers: 2 }).text, "Dokumenty 2/3");
-  assert.equal(evaluateObjective("malse", { papers: 3, bossStarted: true }).text, "Dožeň Frantu");
-  assert.equal(evaluateObjective("malse", { papers: 3, bossStarted: true, bossDefeated: true }).text, "Vstup do Slávie");
-  assert.equal(isObjectiveComplete("malse", { papers: 2, bossDefeated: true }), false);
-  assert.equal(isObjectiveComplete("malse", { papers: 3, bossDefeated: true }), true);
+test("Slavia vyžaduje dokumenty, znalkyni, Frantu, certifikát i vstup", () => {
+  assert.equal(evaluateObjective("slavia", { papers: 2 }).text, "Dokumenty 2/3");
+  assert.equal(evaluateObjective("slavia", { papers: 3 }).text, "Promluv se znalkyní");
+  assert.equal(evaluateObjective("slavia", { papers: 3, expertConsulted: true }).text, "Získej kámen zpět od Franty");
+  assert.equal(isObjectiveComplete("slavia", { papers: 3, expertConsulted: true, bossStarted: true, bossDefeated: true }), false);
+  assert.equal(isObjectiveComplete("slavia", {
+    papers: 3,
+    expertConsulted: true,
+    bossStarted: true,
+    bossDefeated: true,
+    certified: true,
+    entered: true
+  }), true);
 });
 
 test("progress objektivů zůstává v rozsahu 0 až 1", () => {
   const cases = [
-    ["chlum", { permit: true, collected: 999 }], ["locenice", { correct: 999, real: 999 }],
+    ["chlum", { permit: true, digHits: 999, findings: 999 }],
     ["nesmen", { permit: true, dug: 999, filled: 999 }],
     ["besednice", { clues: 999, hedgehog: true, bossStarted: true, bossDefeated: true }],
-    ["malse", { papers: 999, bossStarted: true, bossDefeated: true }]
+    ["slavia", { papers: 999, expertConsulted: true, bossStarted: true, bossDefeated: true, certified: true, entered: true }]
   ];
   for (const [level, runtime] of cases) {
     const progress = evaluateObjective(level, runtime).progress;

@@ -1,4 +1,14 @@
 const nonEmptyString = value => typeof value === "string" && value.trim().length > 0;
+const finiteNumber = value => Number.isFinite(Number(value));
+const CANONICAL_LEVEL_ORDER = Object.freeze(["chlum", "nesmen", "besednice", "slavia"]);
+
+const positionInsideBounds = (position, bounds) => (
+  finiteNumber(bounds?.x) && finiteNumber(bounds?.y) &&
+  finiteNumber(bounds?.width) && finiteNumber(bounds?.height) &&
+  finiteNumber(position?.x) && finiteNumber(position?.y) &&
+  position.x >= bounds.x && position.x <= bounds.x + bounds.width &&
+  position.y >= bounds.y && position.y <= bounds.y + bounds.height
+);
 
 function duplicateValues(values) {
   const seen = new Set();
@@ -16,7 +26,15 @@ export function validateGameData({ levels, perks, samples } = {}) {
   if (!Array.isArray(levels) || levels.length === 0) {
     errors.push("Levels must be a non-empty array.");
   } else {
-    const duplicateIds = duplicateValues(levels.map(level => level?.id));
+    const actualLevelIds = levels.map(level => level?.id);
+    if (
+      actualLevelIds.length !== CANONICAL_LEVEL_ORDER.length ||
+      actualLevelIds.some((id, index) => id !== CANONICAL_LEVEL_ORDER[index])
+    ) {
+      errors.push(`Levels must contain exactly the four canonical levels in order: ${CANONICAL_LEVEL_ORDER.join(", ")}.`);
+    }
+
+    const duplicateIds = duplicateValues(actualLevelIds);
     if (duplicateIds.length) errors.push(`Duplicate level ids: ${duplicateIds.join(", ")}`);
 
     const duplicateOrders = duplicateValues(levels.map(level => level?.order));
@@ -34,8 +52,43 @@ export function validateGameData({ levels, perks, samples } = {}) {
 
     for (const level of levels) {
       const prefix = `Level ${level?.id ?? "(missing id)"}`;
-      for (const field of ["id", "name", "title", "theme", "music", "text", "goal"]) {
+      for (const field of ["id", "name", "title", "scene", "theme", "music", "text", "goal"]) {
         if (!nonEmptyString(level?.[field])) errors.push(`${prefix} has invalid ${field}.`);
+      }
+
+      if (!nonEmptyString(level?.briefing?.context) || !nonEmptyString(level?.briefing?.goal)) {
+        errors.push(`${prefix} has an invalid briefing.`);
+      }
+      if (!finiteNumber(level?.spawn?.x) || !finiteNumber(level?.spawn?.y)) {
+        errors.push(`${prefix} has an invalid spawn.`);
+      }
+      if (!finiteNumber(level?.bounds?.x) || !finiteNumber(level?.bounds?.y) ||
+          !finiteNumber(level?.bounds?.width) || level.bounds.width <= 0 ||
+          !finiteNumber(level?.bounds?.height) || level.bounds.height <= 0) {
+        errors.push(`${prefix} has invalid bounds.`);
+      }
+      if (!nonEmptyString(level?.objective?.id) || !nonEmptyString(level?.objective?.type) ||
+          !Number.isInteger(level?.objective?.required) || level.objective.required < 1) {
+        errors.push(`${prefix} has an invalid objective summary.`);
+      }
+
+      const targets = Array.isArray(level?.targets) ? level.targets : [];
+      if (targets.length === 0) errors.push(`${prefix} must define reachable targets.`);
+      const duplicateTargetIds = duplicateValues(targets.map(entry => entry?.id));
+      if (duplicateTargetIds.length) errors.push(`${prefix} has duplicate target ids: ${duplicateTargetIds.join(", ")}`);
+
+      const targetById = new Map(targets.map(entry => [entry?.id, entry]));
+      for (const entry of targets) {
+        if (!nonEmptyString(entry?.id) || !nonEmptyString(entry?.kind) || entry?.reachable !== true) {
+          errors.push(`${prefix} contains an invalid or unreachable target.`);
+        }
+        if (entry?.interaction?.action !== "action" || entry?.interaction?.enabled !== true) {
+          errors.push(`${prefix} target ${entry?.id ?? "(missing id)"} must use the context action.`);
+        }
+        if (!Array.isArray(entry?.positions) || entry.positions.length === 0 ||
+            entry.positions.some(position => !positionInsideBounds(position, level.bounds))) {
+          errors.push(`${prefix} target ${entry?.id ?? "(missing id)"} has an unreachable position.`);
+        }
       }
 
       if (!Array.isArray(level?.objectives) || level.objectives.length === 0) {
@@ -52,10 +105,29 @@ export function validateGameData({ levels, perks, samples } = {}) {
           if (!Number.isInteger(objective?.required) || objective.required < 1) {
             errors.push(`${prefix} objective ${objective?.id ?? "(missing id)"} must require a positive integer.`);
           }
+          if (objective?.action !== "action") {
+            errors.push(`${prefix} objective ${objective?.id ?? "(missing id)"} must use the context action.`);
+          }
+          const target = targetById.get(objective?.target);
+          if (!target) {
+            errors.push(`${prefix} objective ${objective?.id ?? "(missing id)"} references a missing target.`);
+          } else if (target.reachable !== true || target.interaction?.enabled !== true ||
+                     !Array.isArray(target.positions) || target.positions.length < objective.required ||
+                     target.positions.some(position => !positionInsideBounds(position, level.bounds))) {
+            errors.push(`${prefix} objective ${objective?.id ?? "(missing id)"} target is not reachable.`);
+          }
+          if (objective?.type === "dig" && objective.requiredHits !== 3) {
+            errors.push(`${prefix} objective ${objective?.id ?? "(missing id)"} must require exactly three rhythm hits.`);
+          }
         }
       }
 
       if (!Array.isArray(level?.hazards)) errors.push(`${prefix} hazards must be an array.`);
+      if (!Array.isArray(level?.assetGroups) || level.assetGroups.length === 0) {
+        errors.push(`${prefix} assetGroups must be a non-empty array.`);
+      }
+      const expectedNext = levels[level.order + 1]?.id ?? null;
+      if ((level?.next ?? null) !== expectedNext) errors.push(`${prefix} has an invalid next level.`);
     }
   }
 
