@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "assets/manifests/assets.json"), "utf8"));
-const EXPECTED_IDS = ["player-hunter-walk", "npc-farmer-vaclav", "finding-vltavin-common", "finding-vltavin-rare", "finding-vltavin-besednice", "terrain-chlum-field", "terrain-chlum-furrows", "model-chlum-tractor-no-driver", "model-chlum-hay-bale", "model-chlum-field-marker", "model-chlum-field-fence-segment"];
+const EXPECTED_IDS = ["player-hunter-walk", "npc-farmer-vaclav", "finding-vltavin-common", "finding-vltavin-rare", "finding-vltavin-standard", "terrain-chlum-field", "terrain-chlum-furrows", "model-chlum-tractor-no-driver", "model-chlum-hay-bale", "model-chlum-field-marker", "model-chlum-field-fence-segment"];
 
 test("Chlum asset manifest has stable IDs, budgets, relative URLs and dispose ownership", () => {
   assert.equal(manifest.length, EXPECTED_IDS.length);
