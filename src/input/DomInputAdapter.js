@@ -13,6 +13,7 @@ export class DomInputAdapter {
     this.onResize = options.onResize ?? (() => {});
     this.keys = new Set();
     this.movePointer = null;
+    this.actionPointer = null;
     this.controller = new AbortController();
     this.bind();
   }
@@ -72,12 +73,16 @@ export class DomInputAdapter {
 
     this.listen(action, "pointerdown", event => {
       event.preventDefault();
+      if (this.actionPointer !== null) return;
+      this.actionPointer = event.pointerId;
       try { action.setPointerCapture?.(event.pointerId); } catch {}
       action.classList.add("active");
       this.input.press("action");
     });
     const releaseAction = event => {
+      if (event.pointerId !== this.actionPointer) return;
       event.preventDefault();
+      this.actionPointer = null;
       action.classList.remove("active");
       this.input.release("action");
     };
@@ -93,6 +98,7 @@ export class DomInputAdapter {
     this.listen(this.document, "visibilitychange", () => {
       if (this.document.hidden) this.reset("document-hidden");
     });
+    this.listen(this.window, "pagehide", () => this.clearDomState());
     this.listen(this.window, "orientationchange", () => {
       this.reset("orientation-change");
       this.window.setTimeout(this.onResize, 80);
@@ -129,10 +135,16 @@ export class DomInputAdapter {
     this.document.getElementById("stick").style.transform = "translate(-50%, -50%)";
   }
 
-  reset(reason = "dom-reset") {
+  clearDomState() {
     this.keys.clear();
     this.movePointer = null;
+    this.actionPointer = null;
+    this.document.getElementById("actionButton")?.classList.remove("active");
     this.resetStick();
+  }
+
+  reset(reason = "dom-reset") {
+    this.clearDomState();
     this.input.reset(reason);
   }
 
