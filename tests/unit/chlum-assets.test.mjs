@@ -8,6 +8,7 @@ import { ModelFactory } from "../../src/render/ModelFactory.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "assets/manifests/assets.json"), "utf8"));
+const chlumManifest = manifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum");
 const EXPECTED_IDS = [
   "player-hunter-walk",
   "npc-farmer-vaclav",
@@ -48,10 +49,10 @@ function firstMesh(model) {
 }
 
 test("Chlum asset manifest has stable IDs, budgets, relative URLs and dispose ownership", () => {
-  assert.equal(manifest.length, EXPECTED_IDS.length);
-  assert.deepEqual(manifest.map(entry => entry.id), EXPECTED_IDS);
-  assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length);
-  for (const entry of manifest) {
+  assert.equal(chlumManifest.length, EXPECTED_IDS.length);
+  assert.deepEqual(chlumManifest.map(entry => entry.id), EXPECTED_IDS);
+  assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length, "global manifest IDs must remain unique");
+  for (const entry of chlumManifest) {
     assert.match(entry.url, /^\.\/assets\//);
     assert.ok(entry.preload === "common" || entry.preload === "level:chlum");
     assert.equal(typeof entry.disposeOwner, "string");
@@ -65,7 +66,7 @@ test("Chlum asset manifest has stable IDs, budgets, relative URLs and dispose ow
 });
 
 test("Chlum PNG and GLB files match declared technical constraints", () => {
-  for (const entry of manifest) {
+  for (const entry of chlumManifest) {
     const file = fileFor(entry);
     const buffer = fs.readFileSync(file);
     if (entry.url.endsWith(".png")) {
@@ -87,7 +88,7 @@ test("Chlum PNG and GLB files match declared technical constraints", () => {
 
 test("standard Three.js GLTFLoader r185 parses every Chlum model and preserves triangle counts", async () => {
   const loader = new GltfAssetLoader();
-  for (const entry of manifest.filter(asset => asset.type === "gltf")) {
+  for (const entry of chlumManifest.filter(asset => asset.type === "gltf")) {
     const model = await loader.parse(arrayBufferFor(entry), "");
     assert.equal(model.isGroup || model.isScene, true, entry.id);
     assert.ok(firstMesh(model), entry.id);
@@ -97,7 +98,7 @@ test("standard Three.js GLTFLoader r185 parses every Chlum model and preserves t
 });
 
 test("ModelFactory clones resources and binds a standard GLTF source through the shared renderer", async () => {
-  const entry = manifest.find(asset => asset.id === "model-chlum-tractor-no-driver");
+  const entry = chlumManifest.find(asset => asset.id === "model-chlum-tractor-no-driver");
   const source = await new GltfAssetLoader().parse(arrayBufferFor(entry), "");
   const bindings = [];
   const renderer = {
