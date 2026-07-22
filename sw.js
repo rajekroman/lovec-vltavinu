@@ -1,4 +1,4 @@
-const CACHE = "lovec-vltavinu-v6-0-chlum";
+const CACHE = "lovec-vltavinu-chlum-v6-0";
 const CORE = [
   "./", "./index.html", "./style.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js",
