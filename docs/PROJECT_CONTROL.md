@@ -1,10 +1,10 @@
 # Řízení a integrace projektu
 
-> Stav k 22. 7. 2026 po merge UI/mobil issue #40, mobilní QA issue #38, asset-runtime issue #42 / PR #45 a před aktivací Nesměň vertical slice. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+> Stav k 22. 7. 2026 po merge UI/mobil issue #40, mobilní QA issue #38, asset-runtime issue #42 / PR #45 a aktivaci Nesměň vertical slice. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
 
 ## Aktuální realita
 
-- Aktuální publikovatelný základ je `main@23a2ca3c396e8456af3cac71ab5c91ce81dd77e4`; runtime obsahuje merge PR #45 jako `f68d2064c39da1bf7e3a08e380ebe1f4b647af22` a navazující governance commit #46.
+- Aktuální publikovatelný základ je `main@de8f0a0a1e346dd00f3f8e7866d3cdff75cec91c`, squash merge governance PR #48; runtime obsahuje merge PR #45 jako `f68d2064c39da1bf7e3a08e380ebe1f4b647af22`.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer`, jednou ortografickou kamerou, jedním loopem a jednou session.
 - Kanonické levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
 - `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód jsou zmrazené historické soubory a produkční bootstrap je nesmí importovat.
@@ -15,7 +15,7 @@
 - Finální workflow PR #45 `Validate game` #417 prošel: syntaxe, statický validátor, celý unit suite a mobilní browser smoke jsou zelené.
 - Playwright artifact `8541110319` obsahuje texturovaný GLB test a portrait/landscape vizuální důkaz Chlumu.
 - Jediným aktivním implementačním balíkem je nyní issue #47 — samostatný Nesměň vertical slice.
-- Povinná implementační větev issue #47 je `agent/nesmen-vertical-slice` a musí vzniknout z `main` až po merge této governance aktualizace.
+- Povinná implementační větev issue #47 `agent/nesmen-vertical-slice` byla vytvořena přesně z `main@de8f0a0a1e346dd00f3f8e7866d3cdff75cec91c`.
 - Besednice vertical slice zůstává blokován do merge issue #47 a další koordinační aktualizace tohoto dokumentu.
 
 ## Rozhodnutí, která se znovu neotevírají
@@ -50,7 +50,7 @@
 | Audio/výkon #6 | Neaktivní samostatná etapa | Pouze úzce nutné Nesměň audio/perf podklady po přidělení | Žádný audio redesign v #47 |
 | QA/release #7 | **Podpora issue #47** | Unit, statické a mobilní E2E | Portrait, landscape, pause/resume, background a nezamrzlý input |
 | Chlum vertical slice #29 / PR #33 | **Dokončeno a sloučeno** | Pouze regresní ochrana | Neměnit questy nebo balance bez samostatného issue |
-| Nesměň vertical slice #47 | **Výslovně aktivováno** | `agent/nesmen-vertical-slice` | Base z governance-updated `main`; jeden draft PR |
+| Nesměň vertical slice #47 | **Výslovně aktivováno** | `agent/nesmen-vertical-slice` | Base `de8f0a0a`; jeden draft PR |
 | Besednice vertical slice | **Blokováno** | Žádný branch ani PR | Povolit až po merge #47 a další governance aktualizaci |
 | Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
 
@@ -128,7 +128,7 @@ Kanonický balík je issue #47.
 
 - **Vlastník:** Gameplay/data.
 - **Povinná větev:** `agent/nesmen-vertical-slice`.
-- **Base:** commit, který sloučí tuto governance aktualizaci nad `main@23a2ca3c396e8456af3cac71ab5c91ce81dd77e4`.
+- **Base:** `main@de8f0a0a1e346dd00f3f8e7866d3cdff75cec91c`.
 - **Výstup:** jeden samostatný draft PR s úplným HANDOFFem.
 - **Zakázáno:** Besednice/Slavia implementace, druhý renderer/kamera/loop/session/loader, ruční asset seznamy, persistence, inventář nebo změna dokončeného Chlum obsahu mimo nezbytný přechod.
 
