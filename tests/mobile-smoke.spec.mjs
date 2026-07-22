@@ -61,6 +61,47 @@ test("pause overlay resets input and returns to title without freeze", async ({ 
   expect(pageErrors).toEqual([]);
 });
 
+test("new PLAY starts a fresh in-memory session", async ({ page }) => {
+  const pageErrors = await openBootstrap(page);
+  await enterChlum(page);
+
+  await page.evaluate(async () => {
+    const { session } = await import("/src/bootstrap.js");
+    session.recordFinding({
+      findingId: "smoke-finding",
+      locality: "chlum",
+      rarity: "A",
+      weight: 4.2,
+      score: 300
+    });
+    session.setFlag("chlumPermission", true);
+    session.setDanger(80);
+  });
+
+  await page.locator("#pauseButton").tap();
+  await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
+  await page.locator("#menuButton").tap();
+  await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
+
+  await page.locator("#playButton").tap();
+  await expect(page.locator("#briefScreen")).toHaveClass(/visible/);
+  const snapshot = await page.evaluate(() => window.__lovecRuntime.snapshot().session);
+  expect(snapshot.levelId).toBe("chlum");
+  expect(snapshot.phase).toBe("briefing");
+  expect(snapshot.findings).toEqual([]);
+  expect(snapshot.score).toBe(0);
+  expect(snapshot.flags).toEqual({});
+  expect(snapshot.health).toBe(3);
+  expect(snapshot.danger).toBe(0);
+  expect(snapshot.objective).toEqual({
+    id: "chlum-permission-and-find",
+    current: 0,
+    required: 1,
+    complete: false
+  });
+  expect(pageErrors).toEqual([]);
+});
+
 test("runtime reset releases the mobile joystick", async ({ page }) => {
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
