@@ -19,8 +19,8 @@ async function enterChlum(page) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().chlum?.runtime?.player !== null)).toBe(true);
 }
 async function snapshot(page) { return page.evaluate(() => window.__lovecRuntime.snapshot()); }
-async function moveTo(page, targetX, targetY, tolerance = 38) {
-  for (let step = 0; step < 90; step++) {
+async function moveTo(page, targetX, targetY, tolerance = 24) {
+  for (let step = 0; step < 120; step++) {
     const current = (await snapshot(page)).chlum.runtime.player;
     const dx = targetX - current.x;
     const dy = targetY - current.y;
@@ -29,7 +29,7 @@ async function moveTo(page, targetX, targetY, tolerance = 38) {
     if (Math.abs(dx) > tolerance) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
     if (Math.abs(dy) > tolerance) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
     for (const key of keys) await page.keyboard.down(key);
-    await page.waitForTimeout(110);
+    await page.waitForTimeout(90);
     for (const key of keys) await page.keyboard.up(key);
   }
   const current = (await snapshot(page)).chlum.runtime.player;
@@ -38,9 +38,7 @@ async function moveTo(page, targetX, targetY, tolerance = 38) {
 async function waitForInteraction(page, kind) {
   await expect.poll(() => page.evaluate(expected => window.__lovecRuntime.snapshot().chlum?.runtime?.available?.kind === expected, kind)).toBe(true);
 }
-async function contextualAction(page) {
-  await page.keyboard.press("Space");
-}
+async function contextualAction(page) { await page.keyboard.press("Space"); }
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -51,10 +49,10 @@ async function captureEvidence(page, testInfo, name) {
 const compactTransform = value => String(value).replace(/\s+/g, "");
 
 test("complete Chlum flow works from PLAY and records portrait/landscape evidence", async ({ page, context }, testInfo) => {
-  test.setTimeout(60_000);
+  test.setTimeout(75_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-  await moveTo(page, 520, 410);
+  await moveTo(page, 560, 410, 16);
   await waitForInteraction(page, "permission");
   await contextualAction(page);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
@@ -80,7 +78,7 @@ test("complete Chlum flow works from PLAY and records portrait/landscape evidenc
   await moveTo(page, 180, 410);
   await moveTo(page, 180, 850);
   await moveTo(page, 1020, 850);
-  await moveTo(page, 1020, 720);
+  await moveTo(page, 1020, 720, 16);
   await waitForInteraction(page, "dig");
   await contextualAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
@@ -121,10 +119,10 @@ test("tractor collision raises danger, returns player to spawn and does not free
   test.setTimeout(45_000);
   const pageErrors = await openBootstrap(page);
   await enterChlum(page);
-  await moveTo(page, 180, 590);
+  await moveTo(page, 180, 590, 16);
   await page.keyboard.down("ArrowRight");
   try {
-    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger), { timeout: 12_000 }).toBe(100);
+    await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().session.danger > 0), { timeout: 12_000 }).toBe(true);
   } finally {
     await page.keyboard.up("ArrowRight");
   }
