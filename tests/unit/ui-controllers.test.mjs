@@ -53,6 +53,10 @@ class FakeElement {
     return this.attributes.get(name);
   }
 
+  removeAttribute(name) {
+    this.attributes.delete(name);
+  }
+
   querySelector(selector) {
     if (selector === "button:not([disabled])") {
       return this.children.find(child => child.tagName === "BUTTON" && !child.disabled) ?? null;
@@ -137,26 +141,24 @@ const createUiDocument = () => {
   return document;
 };
 
-test("HudController renders Chlum action and tractor danger states from a revisioned model", () => {
+test("HudController de-duplicates exact models, accepts a new revision stream and exposes momentary ARIA contracts", () => {
   const document = createUiDocument();
   const events = new FakeEvents();
   const hud = new HudController({ document, events });
+  const model = {
+    missionNumber: 1,
+    placeLabel: "Chlum",
+    objective: "Promluv s Václavem",
+    findings: 2,
+    danger: 0.92,
+    hint: "Přibliž se k Václavovi",
+    actionReady: true,
+    actionLabel: "MLUVIT",
+    actionIcon: "!"
+  };
 
   assert.equal(events.type, "hud:model:changed");
-  events.handler({
-    revision: 1,
-    model: {
-      missionNumber: 1,
-      placeLabel: "Chlum",
-      objective: "Promluv s Václavem",
-      findings: 2,
-      danger: 0.92,
-      hint: "Přibliž se k Václavovi",
-      actionReady: true,
-      actionLabel: "MLUVIT",
-      actionIcon: "!"
-    }
-  });
+  events.handler({ revision: 7, model });
 
   assert.equal(document.getElementById("placeLabel").textContent, "CHLUM");
   assert.equal(document.getElementById("objectiveLabel").textContent, "Promluv s Václavem");
@@ -164,15 +166,41 @@ test("HudController renders Chlum action and tractor danger states from a revisi
   assert.equal(document.getElementById("dangerMeterText").textContent, "KRITICKÉ");
   assert.equal(document.getElementById("heatPill").classList.contains("detected"), true);
   assert.equal(document.getElementById("heatPill").classList.contains("critical"), true);
+  assert.equal(document.getElementById("heatPill").getAttribute("role"), "progressbar");
+  assert.equal(document.getElementById("heatPill").getAttribute("aria-valuenow"), "92");
   assert.equal(document.getElementById("dangerBanner").classList.contains("hidden"), false);
+  assert.equal(document.getElementById("dangerBanner").getAttribute("role"), "status");
+  assert.equal(document.getElementById("dangerBanner").getAttribute("aria-hidden"), "false");
   assert.equal(document.getElementById("dangerText").textContent, "TRAKTOR JE BLÍZKO");
   assert.equal(document.getElementById("app").classList.contains("danger-state"), true);
   assert.equal(document.getElementById("actionButton").classList.contains("ready"), true);
   assert.equal(document.getElementById("actionButton").getAttribute("aria-label"), "MLUVIT");
+  assert.equal(document.getElementById("actionButton").getAttribute("aria-disabled"), "false");
+  assert.equal(document.getElementById("actionButton").getAttribute("aria-pressed"), undefined);
   assert.equal(document.getElementById("actionIcon").textContent, "!");
 
-  events.handler({ revision: 1, model: { objective: "stale" } });
-  assert.equal(document.getElementById("objectiveLabel").textContent, "Promluv s Václavem");
+  document.getElementById("objectiveLabel").textContent = "sentinel";
+  events.handler({ revision: 7, model });
+  assert.equal(document.getElementById("objectiveLabel").textContent, "sentinel");
+
+  events.handler({
+    revision: 1,
+    model: {
+      missionNumber: 2,
+      placeLabel: "Nesměň",
+      objective: "Nová session",
+      findings: 0,
+      danger: 0,
+      actionReady: false,
+      actionLabel: "AKCE"
+    }
+  });
+  assert.equal(document.getElementById("placeLabel").textContent, "NESMĚŇ");
+  assert.equal(document.getElementById("objectiveLabel").textContent, "Nová session");
+  assert.equal(document.getElementById("heatPill").classList.contains("detected"), false);
+  assert.equal(document.getElementById("dangerBanner").getAttribute("aria-hidden"), "true");
+  assert.equal(document.getElementById("actionButton").getAttribute("aria-disabled"), "true");
+
   hud.dispose();
   assert.equal(document.getElementById("app").classList.contains("danger-state"), false);
 });
