@@ -8,21 +8,6 @@ import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "chlum-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
-const TEXTURE_IDS = Object.freeze([
-  "player-hunter-walk",
-  "npc-farmer-vaclav",
-  "finding-vltavin-common",
-  "finding-vltavin-standard",
-  "finding-vltavin-rare",
-  "terrain-chlum-field",
-  "terrain-chlum-furrows"
-]);
-const MODEL_IDS = Object.freeze([
-  "model-chlum-tractor-no-driver",
-  "model-chlum-hay-bale",
-  "model-chlum-field-marker",
-  "model-chlum-field-fence-segment"
-]);
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -82,6 +67,8 @@ export class ChlumScene {
     this.danger.reset();
     this.objectives.reset();
     this.assetEntries.clear();
+    this.loadedTextureIds.clear();
+    this.loadedModelIds.clear();
     this.loadedModels.clear();
     this.entityByExternalId.clear();
     this.externalIdByEntity.clear();
@@ -102,9 +89,21 @@ export class ChlumScene {
   async loadAssets() {
     const manifest = await this.app.assets.load(MANIFEST_ENTRY);
     if (!Array.isArray(manifest)) throw new Error("Chlum asset manifest must be an array.");
-    for (const entry of manifest) this.assetEntries.set(entry.id, Object.freeze({ ...entry }));
-    await Promise.all(TEXTURE_IDS.map(id => this.loadTexture(id)));
-    await Promise.all(MODEL_IDS.map(id => this.loadModel(id)));
+    this.app.assets.setManifest(manifest);
+    const selected = this.app.assets.selectPreload(this.level.assetGroups);
+    this.assetEntries = new Map(selected.map(entry => [entry.id, entry]));
+    const loaded = await this.app.assets.loadAll(selected);
+    for (const [id, asset] of loaded) {
+      const entry = this.requireAsset(id);
+      if (entry.type === "texture" || entry.type === "spritesheet") {
+        this.configureTexture(entry, asset);
+        this.loadedTextureIds.add(id);
+      } else if (entry.type === "gltf") {
+        asset.userData.assetId = id;
+        this.loadedModelIds.add(id);
+        this.loadedModels.set(id, asset);
+      }
+    }
   }
 
   requireAsset(id) {
@@ -113,30 +112,23 @@ export class ChlumScene {
     return entry;
   }
 
-  async loadTexture(id) {
-    const entry = this.requireAsset(id);
-    const texture = await this.app.assets.load({ ...entry, type: "texture" });
+  configureTexture(entry, texture) {
     texture.colorSpace = this.THREE.SRGBColorSpace;
     if (entry.wrap === "repeat") {
       texture.wrapS = this.THREE.RepeatWrapping;
       texture.wrapT = this.THREE.RepeatWrapping;
     }
     texture.needsUpdate = true;
-    this.loadedTextureIds.add(id);
     return texture;
   }
 
-  async loadModel(id) {
+  texture(id) {
     const entry = this.requireAsset(id);
-    if (entry.type !== "gltf") throw new Error(`Asset ${id} must use type gltf.`);
-    const model = await this.app.assets.load(entry);
-    model.userData.assetId = id;
-    this.loadedModelIds.add(id);
-    this.loadedModels.set(id, model);
-    return model;
+    if (entry.type !== "texture" && entry.type !== "spritesheet") throw new Error(`Asset ${id} is not a texture.`);
+    const texture = this.app.assets.get(id, entry.type);
+    if (!texture) throw new Error(`Texture is not loaded: ${id}`);
+    return texture;
   }
-
-  texture(id) { return this.app.assets.get(id, "texture"); }
   model(id) {
     const model = this.loadedModels.get(id);
     if (!model) throw new Error(`Model is not loaded: ${id}`);
