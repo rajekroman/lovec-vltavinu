@@ -2,7 +2,7 @@ import { getLevelDefinition } from "../data/levels.js";
 import { evaluateObjective } from "./Objectives.js";
 
 const roundProgress = value => Math.round(value * 10000) / 10000;
-const PERMISSION_FLAGS = Object.freeze({ chlum: "chlumPermission" });
+const PERMISSION_FLAGS = Object.freeze({ chlum: "chlumPermission", nesmen: "nesmenPermission" });
 
 export class ObjectiveSystem {
   constructor(options = {}) {
@@ -34,22 +34,23 @@ export class ObjectiveSystem {
 
   snapshot(runtime = {}) {
     return evaluateObjective(this.levelId, {
+      ...runtime,
       permit: this.session.state.flags[this.permissionFlag] === true,
-      digHits: runtime.digHits ?? 0,
       findings: this.session.state.findings.filter(entry => entry.locality === this.levelId).length
     });
   }
 
   update(runtime = {}) {
     const snapshot = this.snapshot(runtime);
-    const current = roundProgress(snapshot.progress);
+    const required = this.level.objective.required;
+    const current = roundProgress(snapshot.progress * required);
     if (current !== this.lastProgress) {
       this.lastProgress = current;
-      this.events?.emit("objective:progress", { id: this.level.objective.id, current, required: 1 });
+      this.events?.emit("objective:progress", { id: this.level.objective.id, current, required });
     }
     if (snapshot.complete && !this.completed) {
       this.completed = true;
-      this.session.setObjectiveProgress(this.level.objective.required, true);
+      this.session.setObjectiveProgress(required, true);
       this.events?.emit("objective:complete", { id: this.level.objective.id, levelId: this.levelId });
       this.events?.emit("level:complete", { levelId: this.levelId, nextLevelId: this.level.next ?? null, score: this.session.state.score });
     }
