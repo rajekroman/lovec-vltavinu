@@ -1,0 +1,42 @@
+name: Vendor Three r185 addons
+
+on:
+  push:
+    branches:
+      - agent/asset-runtime-hardening
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: ${{ !contains(github.event.head_commit.message, '[vendor-complete]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/asset-runtime-hardening
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Copy official Three.js r185 addons
+        run: |
+          npm pack three@0.185.0 --silent
+          tar -xzf three-0.185.0.tgz
+          mkdir -p vendor/three/addons/loaders vendor/three/addons/utils
+          cp package/examples/jsm/loaders/GLTFLoader.js vendor/three/addons/loaders/GLTFLoader.js
+          cp package/examples/jsm/utils/BufferGeometryUtils.js vendor/three/addons/utils/BufferGeometryUtils.js
+          cp package/examples/jsm/utils/SkeletonUtils.js vendor/three/addons/utils/SkeletonUtils.js
+          sed -i "s/from 'three';/from '..\/..\/three.module.min.js';/" vendor/three/addons/loaders/GLTFLoader.js
+          sed -i "s/from 'three';/from '..\/..\/three.module.min.js';/" vendor/three/addons/utils/BufferGeometryUtils.js
+          sed -i "s/from 'three';/from '..\/..\/three.module.min.js';/" vendor/three/addons/utils/SkeletonUtils.js
+          grep -q "class GLTFLoader" vendor/three/addons/loaders/GLTFLoader.js
+          grep -q "../../three.module.min.js" vendor/three/addons/loaders/GLTFLoader.js
+      - name: Commit pinned files
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add vendor/three/addons
+          git commit -m "Vendor standard Three.js r185 GLTFLoader [vendor-complete]"
+          git push origin HEAD:agent/asset-runtime-hardening
