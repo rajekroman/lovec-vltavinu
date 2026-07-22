@@ -124,7 +124,7 @@ function createAdapter() {
   return { adapter, document, window, input };
 }
 
-test("mobile action remains owned by its first pointer and reset clears the pressed visual", () => {
+test("mobile action remains owned by its first pointer and lifecycle resets clear the pressed visual", () => {
   const { adapter, document, window, input } = createAdapter();
   const action = document.getElementById("actionButton");
 
@@ -154,7 +154,17 @@ test("mobile action remains owned by its first pointer and reset clears the pres
   assert.deepEqual(input.releases, ["action"]);
 
   action.dispatch("pointerdown", { pointerId: 44 });
-  assert.deepEqual(input.presses, ["action", "action", "action"]);
+  assert.equal(action.classList.contains("active"), true);
+  window.dispatch("pagehide");
+  assert.equal(action.classList.contains("active"), false);
+  assert.equal(adapter.actionPointer, null);
+  assert.deepEqual(input.resets, ["window-blur"]);
+
+  action.dispatch("pointerup", { pointerId: 44 });
+  assert.deepEqual(input.releases, ["action"]);
+  action.dispatch("pointerdown", { pointerId: 55 });
+  assert.deepEqual(input.presses, ["action", "action", "action", "action"]);
+
   adapter.dispose();
   assert.equal(action.classList.contains("active"), false);
   assert.deepEqual(input.resets, ["window-blur", "dom-dispose"]);
