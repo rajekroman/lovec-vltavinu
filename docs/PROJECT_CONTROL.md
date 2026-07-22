@@ -4,7 +4,7 @@
 
 ## Aktuální realita
 
-- `main@2e678506` obsahuje veřejně hratelný Canvas 2D build 5.2, paralelní neaktivní modulární základ 6.0 a sloučenou gameplay/datovou sanaci z PR #23.
+- `main` obsahuje veřejně hratelný Canvas 2D build 5.2, paralelní neaktivní modulární základ 6.0, gameplay/datovou sanaci z PR #23 (`2e678506`) a řídicí aktualizaci z PR #25 (`17affd4`).
 - Do `main` byly začleněny validační workflow (#9), mobilní stabilizace (#10), Playwright smoke testy (#11), modulární jádro (#12), datové registry (#13), legacy datový adaptér (#15), doménový stav se save migrací (#17), řídicí kontrakty (#22) a čtyřlevelový session-only gameplay kontrakt (#23).
 - Nové moduly v `src/` zatím nejsou produkčním bootstrapem načítány z `index.html`; veřejná hra tedy stále běží přes monolitický `game.js`.
 - PR #17 řeší save systém, který aktuální hlavní zadání výslovně vylučuje. Kód může dočasně zůstat kvůli historii, ale je zmrazený a nesmí být závislostí cílové hry.
@@ -35,7 +35,7 @@
 |---|---|---|---|
 | P0 mobilní stabilita #1 | Implementováno automaticky, chybí fyzický Safari důkaz | Záznam kompletního průchodu na cílovém iPhonu | Žádný freeze, dvojí akce ani konfliktní overlay |
 | CI a validace #2 | Základ sloučen | Rozšířit s novým bootstrapem | Zelený workflow na PR |
-| Architektura #3 | Core moduly sloučeny; PR #24 blokován rozsahem | Zúžený `src/bootstrap.js` + TitleScene + integrační kostra Chlum scény bez vlastní gameplay autority | Rebase na `main@2e678506`, jednotný renderer, žádná duplikace gameplay |
+| Architektura #3 | Core moduly sloučeny; PR #24 blokován rozsahem | Zúžený `src/bootstrap.js` + TitleScene + integrační kostra Chlum scény bez vlastní gameplay autority | Rebase na aktuální `main`, který obsahuje řídicí merge `17affd4`; jednotný renderer, žádná duplikace gameplay |
 | Gameplay #4 | Dokončeno v PR #23, issue uzavřena | Pouze integrační podpora pro navazující scény | Zachovat čtyři kanonické levely, session-only stav a unit testy |
 | Grafika #5 | PR #21 dodává izolovaný Chlum asset pack | Grafický audit manifestu a assetů | Rozpočty, pivoty, průhlednost, načtení bez 404; runtime až v Chlum slice |
 | Audio/výkon #6 | Legacy audio funguje | Oddělený AudioEngine a mobilní výkonový profil | Audio po gestu, bezpečný resume, stabilní FPS |
@@ -68,7 +68,7 @@ PR #23 byl sloučen jako `2e678506` a issue #4 byla uzavřena.
 
 Architektonická větev musí přepracovat PR #24:
 
-1. aktualizovat větev z `main@2e678506`;
+1. aktualizovat větev z aktuálního `main`, který obsahuje minimálně gameplay merge `2e678506` a řídicí merge `17affd4`;
 2. zachovat jediný lokálně připnutý Three.js `WebGLRenderer`, ortografickou kameru a fixed-step loop;
 3. ponechat composition root `src/bootstrap.js`, TitleScene, HTML/CSS adaptéry a pouze integrační kostru Chlum scény;
 4. odstranit nebo přesunout vlastní hard-coded permission/dig/finding/objective/tractor tok;
