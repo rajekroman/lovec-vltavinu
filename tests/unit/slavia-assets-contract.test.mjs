@@ -9,14 +9,13 @@ const readBuffer = path => fs.readFileSync(new URL(path, rootUrl));
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
 const serviceWorker = read("sw.js");
 const slaviaData = read("src/data/slavia.js");
-const slaviaScene = read("src/scenes/SlaviaScene.js");
+const slaviaScene = read("src/scenes/ProductionSlaviaScene.js");
 
 const expectedAssets = Object.freeze([
   "model-slavia-kd-building",
   "model-slavia-document-folder",
   "npc-expert-eva",
-  "npc-thief-franta",
-  "npc-rival-franta"
+  "npc-thief-franta"
 ]);
 
 const sha256 = buffer => crypto.createHash("sha256").update(buffer).digest("hex");
@@ -26,7 +25,7 @@ const localPath = url => {
   return url.slice(2);
 };
 
-test("Slavia asset pack has stable IDs, budgets and lifecycle ownership", () => {
+test("Slavia asset pack has stable canonical IDs, budgets and lifecycle ownership", () => {
   const byId = new Map(manifest.map(entry => [entry.id, entry]));
   assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length);
 
@@ -41,9 +40,7 @@ test("Slavia asset pack has stable IDs, budgets and lifecycle ownership", () => 
     assert.match(entry.sha256, /^[a-f0-9]{64}$/);
   }
 
-  assert.equal(byId.get("npc-rival-franta").aliasOf, "npc-thief-franta");
-  assert.equal(byId.get("npc-rival-franta").url, byId.get("npc-thief-franta").url);
-  assert.equal(byId.get("npc-rival-franta").sha256, byId.get("npc-thief-franta").sha256);
+  assert.equal(byId.has("npc-rival-franta"), false, "temporary Franta alias must not remain in the production manifest");
 });
 
 test("Slavia manifest integrity matches physical production asset files", () => {
@@ -63,7 +60,7 @@ test("Slavia manifest integrity matches physical production asset files", () => 
 
 test("Slavia PNG sprites have valid signatures and declared dimensions", () => {
   const byId = new Map(manifest.map(entry => [entry.id, entry]));
-  for (const id of ["npc-expert-eva", "npc-thief-franta", "npc-rival-franta"]) {
+  for (const id of ["npc-expert-eva", "npc-thief-franta"]) {
     const entry = byId.get(id);
     assert.match(entry.url, /\.png$/);
     const buffer = readBuffer(localPath(entry.url));
@@ -99,7 +96,7 @@ test("Slavia GLB models are valid, bounded and within triangle budgets", () => {
   }
 });
 
-test("Slavia data and scene asset references resolve through the manifest", () => {
+test("Slavia data and production scene references resolve through the manifest", () => {
   const ids = new Set(manifest.map(entry => entry.id));
   for (const id of [
     "model-slavia-kd-building",
@@ -112,18 +109,20 @@ test("Slavia data and scene asset references resolve through the manifest", () =
   }
 
   assert.match(slaviaScene, /this\.model\("model-slavia-kd-building"\)/);
-  assert.match(slaviaScene, /\["thief-franta", "npc-rival-franta"\]/);
-  assert.ok(ids.has("npc-rival-franta"), "manifest missing temporary scene compatibility alias");
+  assert.match(slaviaScene, /this\.model\("model-slavia-document-folder"\)/);
+  assert.match(slaviaScene, /\["thief-franta", "npc-thief-franta"\]/);
+  assert.doesNotMatch(slaviaScene, /npc-rival-franta/);
+  assert.equal(ids.has("npc-rival-franta"), false);
 });
 
 test("service worker pre-caches production Slavia modules and unique asset paths", () => {
   const byId = new Map(manifest.map(entry => [entry.id, entry]));
   const paths = new Set(expectedAssets.map(id => byId.get(id).url));
 
-  assert.ok(serviceWorker.includes('"./src/scenes/SlaviaScene.js"'));
+  assert.ok(serviceWorker.includes('"./src/scenes/ProductionSlaviaScene.js"'));
   for (const path of paths) assert.ok(serviceWorker.includes(`"${path}"`), `service worker missing ${path}`);
 
   assert.doesNotMatch(serviceWorker, /assets\/(?:sprites|textures)\/.*\.svg/);
   assert.doesNotMatch(serviceWorker, /assets\/models\/slavia\/kd-slavia\.gltf/);
-  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-0/);
+  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-1/);
 });
