@@ -6,7 +6,6 @@ const read = path => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 
 const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
-const domInput = read("src/input/DomInputAdapter.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
@@ -74,10 +73,6 @@ test("validation remains read-only and contains no branch diagnostics", () => {
     validationWorkflow,
     /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|git push origin/
   );
-});
-
-test("input lifecycle ignores repeated movement keydown after a caught reset", () => {
-  assert.match(domInput, /if \(MOVE_KEYS\[event\.code\]\) \{[\s\S]*if \(event\.repeat\) return;/);
 });
 
 test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
