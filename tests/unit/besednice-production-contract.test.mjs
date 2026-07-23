@@ -71,7 +71,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|git push origin/
   );
 });
 
@@ -95,8 +95,8 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
-  assert.match(mobileSmoke, /window\.__lovecQaDanger/);
-  assert.match(mobileSmoke, /tracker\?\.caught/);
+  assert.doesNotMatch(mobileSmoke, /window\.__lovecQaDanger|tracker\?\.caught/);
+  assert.match(mobileSmoke, /await holdKeys\(page, keys, 100\)/);
   assert.match(mobileSmoke, /resetInput\("playwright-tractor-caught"\)/);
   assert.match(mobileSmoke, /Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(40\)/);
   assert.match(mobileSmoke, /return "triggered"/);
