@@ -162,10 +162,23 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await page.evaluate(() => document.activeElement?.blur?.());
-  await page.keyboard.down("e");
-  await page.waitForTimeout(50);
-  await page.keyboard.up("e");
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", {
+    code: "KeyE",
+    key: "e",
+    bubbles: true,
+    cancelable: true
+  })));
+  await expect.poll(async () => Boolean((await inputSnapshot(page)).actions.action?.down), {
+    timeout: 1_000,
+    intervals: [10, 20, 30]
+  }).toBe(true);
+  await page.waitForTimeout(100);
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", {
+    code: "KeyE",
+    key: "e",
+    bubbles: true,
+    cancelable: true
+  })));
   await expectReleasedInput(page);
 }
 
