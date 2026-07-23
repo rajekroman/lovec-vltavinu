@@ -68,6 +68,7 @@ test("service worker includes Besednice production modules", () => {
 
 test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
   assert.match(mobileSmoke, /Chlum → Nesměň → Besednice flow completes hedgehog recovery/);
+  assert.match(mobileSmoke, /openBootstrap\(page, "\/"\)/);
   assert.match(mobileSmoke, /enterBesedniceFromResult/);
   assert.match(mobileSmoke, /verifyBesedniceLifecycle/);
   assert.match(mobileSmoke, /waitForInteraction\(page, "recover", 15_000\)/);
