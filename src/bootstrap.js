@@ -13,6 +13,7 @@ import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
 import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
 import { BesedniceScene } from "./scenes/BesedniceScene.js";
+import { SlaviaScene } from "./scenes/SlaviaScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -94,6 +95,14 @@ const besednice = new BesedniceScene({
   screens,
   session
 });
+const slavia = new SlaviaScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
 const title = new TitleScene({
   document: documentRef,
   screens,
@@ -103,6 +112,7 @@ app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
 app.scenes.register("nesmen", nesmen);
 app.scenes.register("besednice", besednice);
+app.scenes.register("slavia", slavia);
 
 async function startNewRun() {
   session.reset();
@@ -151,7 +161,8 @@ function installDebugApi() {
       session: session.state,
       chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
       nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null,
-      besednice: app.scenes.activeId === "besednice" ? besednice.snapshot() : null
+      besednice: app.scenes.activeId === "besednice" ? besednice.snapshot() : null,
+      slavia: app.scenes.activeId === "slavia" ? slavia.snapshot() : null
     }),
     resetInput: reason => inputAdapter.reset(reason),
     resize
@@ -171,4 +182,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum, nesmen, besednice, startNewRun };
+export { app, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun };
