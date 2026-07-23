@@ -4,6 +4,7 @@ const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 
 const bindOnce = (element, handler) => {
   element.disabled = false;
+  element.setAttribute("aria-disabled", "false");
   element.onclick = event => {
     event.preventDefault();
     handler?.(event);
@@ -101,16 +102,31 @@ export class ScreenController {
     const button = this.element("digButton");
     button.disabled = Boolean(options.disabled);
     button.setAttribute("aria-label", `${button.textContent}; zásahy ${hits} z ${DIG_REQUIRED_HITS}`);
+    button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
   }
 
   showLevelResult({ kicker = "ÚROVEŇ DOKONČENA", title, text, score = 0, stats = [], buttonLabel = "POKRAČOVAT", onContinue }) {
+    const resultScreen = this.element("resultScreen");
+    resultScreen.setAttribute("role", "dialog");
+    resultScreen.setAttribute("aria-modal", "true");
+    resultScreen.setAttribute("aria-labelledby", "resultTitle");
+    resultScreen.setAttribute("aria-describedby", "resultText");
+    resultScreen.setAttribute("aria-live", "polite");
+    resultScreen.setAttribute("aria-busy", "true");
+
     this.element("resultKicker").textContent = kicker;
     this.element("resultTitle").textContent = String(title ?? "Výprava pokračuje");
     this.element("resultText").textContent = String(text ?? "");
-    this.element("resultScore").textContent = String(Math.max(0, Number(score) || 0));
+    const normalizedScore = Math.max(0, Number(score) || 0);
+    const scoreElement = this.element("resultScore");
+    scoreElement.textContent = String(normalizedScore);
+    scoreElement.setAttribute("aria-label", `${normalizedScore} bodů`);
+
     const container = this.element("resultStats");
+    container.setAttribute("role", "list");
     container.replaceChildren(...stats.map(stat => {
       const item = this.document.createElement("div");
+      item.setAttribute("role", "listitem");
       const label = this.document.createElement("span");
       const value = this.document.createElement("strong");
       label.textContent = String(stat.label ?? "");
@@ -118,10 +134,14 @@ export class ScreenController {
       item.append(label, value);
       return item;
     }));
+
     const button = this.element("againButton");
     button.textContent = buttonLabel;
     bindOnce(button, onContinue);
-    this.element("resultRecordsButton").classList.add("hidden");
+    const recordsButton = this.element("resultRecordsButton");
+    recordsButton.classList.add("hidden");
+    recordsButton.setAttribute("aria-hidden", "true");
+    resultScreen.setAttribute("aria-busy", "false");
     return this.show("resultScreen", { playing: false });
   }
 
