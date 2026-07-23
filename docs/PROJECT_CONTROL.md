@@ -1,159 +1,259 @@
-# Řízení a integrace projektu
+# PROJECT_CONTROL.md — dokončovací plán a integrační stav
 
-> Stav k 23. 7. 2026 po merge Nesměň issue #47 / PR #50 a rezervaci Besednice issue #51. Tento dokument propojuje práci všech projektových chatů. Normativní technický kontrakt je v `ARCHITECTURE_CONTRACT.md`.
+Revize: **2.1 · 23. 7. 2026**  
+Repozitář: **`rajekroman/lovec-vltavinu`**
 
-## Aktuální realita
+Tento dokument je jediný autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
-- Aktuální publikovatelný základ je `main@8905a0da77d4bd906ca3b1202aa3fcf35421e17c`, squash merge PR #50.
-- Produkční `index.html` spouští jediný modulární `src/bootstrap.js`; aktivním runtime je Three.js verze 6.0 s jedním `WebGLRenderer`, jednou ortografickou kamerou, jedním loopem a jednou session.
-- Kanonické levely jsou přesně `chlum`, `nesmen`, `besednice`, `slavia`; `GameSession` je session-only a nálezy používají `findingId`.
-- `game.js`, `runtime-stability.js`, legacy Canvas runtime a save kód jsou zmrazené historické soubory a produkční bootstrap je nesmí importovat.
-- Issue #29 / PR #33 je dokončeno a sloučeno: Chlum je produkčně průchozí od PLAY po `level:complete` s `nextLevelId: "nesmen"`.
-- Issue #40 / PR #43 je dokončeno a sloučeno: HUD, safe-area a input lifecycle jsou stabilizované.
-- Issue #38 / PR #44 je dokončeno a sloučeno: mobilní E2E je rozdělené a deterministické.
-- Issue #42 / PR #45 je dokončeno a sloučeno: standardní lokální Three.js `GLTFLoader` revision 185, manifest-driven preload, zachování `entry.type` a bezpečné dispose vlastnictví jsou produkční kontrakt.
-- Issue #47 / PR #50 je dokončeno a sloučeno jako `main@8905a0da77d4bd906ca3b1202aa3fcf35421e17c`: Nesměň je produkčně průchozí z dokončeného Chlumu po `level:complete` s `nextLevelId: "besednice"`.
-- Finální workflow PR #50 `Validate game` #508 prošel: statický validátor, 100/100 unit testů a mobilní browser smoke jsou zelené.
-- Playwright artifact `8543839126` obsahuje produkční průchod Chlum → Nesměň a portrait/landscape vizuální důkaz.
-- Issue #51 je samostatná rezervace Besednice vertical slice. Implementace smí začít až po merge této governance aktualizace.
-- Slavia vertical slice zůstává blokován do merge issue #51 a další koordinační aktualizace tohoto dokumentu.
+## 1. Aktuální ověřená realita
 
-## Rozhodnutí, která se znovu neotevírají
+- Publikovatelný základ je `main@e137fe389bfd04b9402298b371df13e24fd38104`, vzniklý merge PR #55.
+- Produkční `index.html` spouští jediný modulární `src/bootstrap.js`.
+- Aktivní runtime používá Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop a jednu `GameSession`.
+- Kanonické levely jsou `chlum`, `nesmen`, `besednice`, `slavia`.
+- Chlum, Nesměň a Besednice jsou sloučené a regresně chráněné.
+- HUD, safe-area, input lifecycle, mobilní E2E a GLTF asset runtime byly sloučeny v předchozích integračních krocích.
+- Besednice issue #51 / PR #55 je sloučena jako `main@e137fe389bfd04b9402298b371df13e24fd38104`; finální feature head byl `3ae2cceb0b57ac61b628c2ef45d9f09c26360bb9`.
+- Workflow `Validate game` #691 na feature headu prošlo úspěšně a doložilo produkční průchod Chlum → Nesměň → Besednice.
+- Slavia / KD Slavia vertical slice je rezervována jako issue #61 s povinnou větví `agent/slavia-vertical-slice` a base SHA `e137fe389bfd04b9402298b371df13e24fd38104`; implementace se aktivuje po merge governance issue #60.
+- Starý draft PR #20 je nekanonický kompletní snapshot. Nesmí být sloučen ani použit jako nový základ; A0 jej má po ověření unikátních použitelných částí uzavřít jako superseded.
+
+## 2. Neměnná rozhodnutí
 
 | Oblast | Závazné rozhodnutí |
 |---|---|
-| Rendering | Three.js/WebGL, právě jeden renderer, ortografická kamera |
-| Produkční vstup | jediný `src/bootstrap.js`; žádný druhý gameplay runtime |
-| Vizuální skladba | 2D transparentní sprity + low-poly GLB |
-| UI | HTML/CSS overlay, žádné herní DOM elementy uvnitř ECS komponent |
-| Architektura | ES moduly, scene manager, asset loader, input manager, ECS-lite, kolize, animace |
-| Simulace | fixed timestep 60 Hz, max delta 100 ms, max 5 substepů, interpolovaný render |
-| Ovládání | směrový vstup + jedno kontextové tlačítko `AKCE` |
-| Kopání | přesně tři zásahy do rytmu; dig eventy literal `3` striktně validují |
-| Nálezy | session skóre/kolekce bez inventářového UI; ID pole je `findingId` |
-| Persistence | žádný nový save systém ani migrace; PLAY zahajuje čistou session |
-| Nasazení | relativní cesty a GitHub Pages; `main` musí zůstat spustitelný |
-| GLTF runtime | lokálně připnutý standardní Three.js `GLTFLoader` revision 185; žádný remote CDN loader |
-| Asset preload | řízen manifestem a `level.assetGroups`; původní `entry.type` se nesmí za běhu přepisovat |
-| Asset vlastnictví | cached source a každá modelová instance mají oddělené dispose vlastnictví |
-| Dokončené levely | Chlum a Nesměň se mění pouze regresním fixem nebo nezbytným přechodem do dalšího levelu |
+| Repozitář | pouze `rajekroman/lovec-vltavinu` |
+| Produkční větev | pouze `main` |
+| Runtime | ES moduly + Three.js, jeden renderer/kamera/loop/session |
+| Produkční vstup | pouze `src/bootstrap.js` |
+| Simulace | fixed step 60 Hz, max delta 100 ms, max 5 substepů |
+| Vizuál | 2D transparentní sprity + low-poly GLB |
+| UI | HTML/CSS overlay mimo ECS data |
+| Ovládání | směrový vstup + jedno tlačítko `AKCE` |
+| Kopání | přesně tři úspěšné zásahy |
+| Levely | Chlum → Nesměň → Besednice → Slavia |
+| Nálezy | stabilní `findingId`, session score, bez inventáře |
+| Persistence | žádný nový save systém ani localStorage gameplay stav |
+| Assety | manifest-driven preload, lokální GLTFLoader r185 |
+| Nasazení | relativní cesty, GitHub Pages, release pouze z `main` |
 
-## Stav pracovních proudů
+## 3. Stav pracovních proudů
 
-| Proud / issue | Stav | Další přijímaný výstup | Integrační brána |
+| Role / balík | Stav | Přijímaný výstup | Integrační brána |
 |---|---|---|---|
-| P0 mobilní stabilita #1 | **Dokončeno a uzavřeno** | Pouze regresní ochrana | Nevracet input opravy do paralelní větve |
-| CI a validace #2 / mobilní QA #38 | **Dokončeno pro Chlum a Nesměň** | Testy issue #51 | Zelený unit, validátor a mobilní browser smoke na finálním headu |
-| Architektura #3 / asset runtime #42 | **Dokončeno a uzavřeno** | Pouze regresní ochrana loaderu, preloadu a dispose | Žádný ad-hoc loader ani ruční asset seznam |
-| Gameplay/data #47 | **Dokončeno a uzavřeno** | Pouze regresní ochrana Nesměně | Neměnit quest nebo balance bez samostatného issue |
-| Gameplay/data #51 | **Rezervováno; aktivace tímto governance PR** | Kompletní Besednice vertical slice | Jeden draft PR, produkční přechod z Nesměně, zelené E2E |
-| Grafika/asset pipeline | **Aktivní pouze v rámci #51 po merge governance PR** | Besednice asset pack | Manifest ID, typ, preload, budget a dispose vlastník |
-| UI/mobil #40 | **Dokončeno a uzavřeno** | Pouze nezbytný adaptér a regresní ochrana | Bez nové UI architektury |
-| Audio/výkon #6 | Neaktivní samostatná etapa | Pouze úzce nutné Besednice podklady po přidělení | Žádný audio redesign v #51 |
-| QA/release #7 | **Podpora issue #51 po aktivaci** | Unit, statické a mobilní E2E | Portrait, landscape, pause/resume, background a nezamrzlý input |
-| Chlum vertical slice #29 / PR #33 | **Dokončeno a sloučeno** | Pouze regresní ochrana | Neměnit questy nebo balance bez samostatného issue |
-| Nesměň vertical slice #47 / PR #50 | **Dokončeno a sloučeno** | Pouze regresní ochrana | Produkční průchod musí zůstat zelený |
-| Besednice vertical slice #51 | **Rezervováno; implementace blokována do merge tohoto PR** | `agent/besednice-vertical-slice` | Branch point je merge commit tohoto governance PR |
-| Slavia vertical slice | **Blokováno** | Žádný branch ani PR | Povolit až po merge #51 a další governance aktualizaci |
-| Master #8 | Aktivní | Udržovat pořadí, rozhodnutí a blokace PR | Žádný paralelní release mimo frontu |
+| A0 koordinace #60 | **ACTIVE** | governance PR a aktivace issue #61 | diff pouze v `docs/PROJECT_CONTROL.md` |
+| A1 architektura | **STANDBY** | pouze regresní fix nebo pozdější legacy cleanup | žádná změna architektury během Slavia slice |
+| A2 Besednice #51 / PR #55 | **MERGED** | pouze regresní opravy | produkční tok Chlum → Nesměň → Besednice musí zůstat zelený |
+| A3 Besednice assety | **INTEGRATED V #55** | pouze regresní opravy | manifest, budget, SHA-256, dispose |
+| A4 UI/mobil | **STANDBY** | nezbytný Slavia adaptér až v issue #61 | portrait/landscape, pause/resume, input release |
+| A5 audio/výkon | **BLOCKED** | žádný samostatný redesign | aktivovat až po Slavia vertical slice |
+| A6 QA | **STANDBY / SUPPORT #61** | testovací kontrakty pro Slavii po aktivaci | unit, validátor, desktop a mobilní smoke |
+| A7 release | **BLOCKED** | žádný release | až po Slavii, legacy cleanup a finálním QA |
+| Slavia vertical slice #61 | **RESERVED** | `agent/slavia-vertical-slice` po merge #60 | base `e137fe389bfd04b9402298b371df13e24fd38104` |
+| Legacy cleanup | **BLOCKED** | odstranění starého runtime | až po zeleném kompletním průchodu čtyř levelů |
+| PR #20 snapshot | **SUPERSEDED / TO CLOSE** | pouze audit unikátních souborů | nesloučit jako celek |
 
-## Integrační fronta
+## 4. Integrační fronta do dokončení projektu
 
-### 1. Řídicí kontrakt — dokončeno
+### Brána 0 — koordinační review Besednice — dokončeno
 
-`AGENTS.md`, `ARCHITECTURE_CONTRACT.md`, `PROJECT_CONTROL.md` a PR šablona jsou závazné. Každá implementační větev vzniká z aktuálního `main` a končí jedním draft PR.
+**Vlastník:** A0, podpora A6.  
+**Aktuální PR:** #55 — sloučeno jako `e137fe389bfd04b9402298b371df13e24fd38104`.  
+**Ověřený feature head:** `3ae2cceb0b57ac61b628c2ef45d9f09c26360bb9`.  
+**Workflow:** `Validate game` #691 — success.
 
-### 2. Sanace datového rozsahu — dokončeno
+Ověřený tok:
 
-- `LEVEL_ORDER = ["chlum", "nesmen", "besednice", "slavia"]`;
-- session-only `GameSession` žije pouze v paměti;
-- nálezy používají `findingId` a automaticky zvyšují score;
-- žádná inventářová správa, persistence, migrace ani nový renderer.
+```text
+dokončená Nesměň
+→ briefing Besednice
+→ tři jednorázové stopy
+→ odemčený ježkový profil
+→ tři rytmické zásahy
+→ finding
+→ Karel
+→ recovery
+→ level:complete(nextLevelId: "slavia")
+```
 
-### 3. Produkční bootstrap — dokončeno
+### Brána 1 — Slavia / KD Slavia vertical slice
 
-- jediný `src/bootstrap.js` a jeden ortografický `WebGLRenderer`;
-- fixed-step 60 Hz, max delta 100 ms, max 5 substepů;
-- fixed updates neběží během async transition;
-- PLAY resetuje session;
-- dig eventy přijímají literal `3`.
+**Aktivace:** po merge governance issue #60.  
+**Vlastník:** A2, assety A3, nezbytný UI adaptér A4, QA A6.  
+**Issue:** #61.  
+**Větev:** `agent/slavia-vertical-slice`.  
+**Base SHA:** `e137fe389bfd04b9402298b371df13e24fd38104`.
 
-### 4. Chlum vertical slice — dokončeno
+**Kanonický průchod:**
 
-Issue #29 bylo uzavřeno po merge PR #33. Produkční tok je:
+```text
+dokončená Besednice
+→ briefing Malše / KD Slavia
+→ příchod k rozpoznatelné budově
+→ registrace sbírky
+→ interakce se znalcem / porotou
+→ vyhodnocení findingů a score
+→ finální výsledek akce „Na Zelené Vlně“
+→ možnost zahájit novou čistou session
+```
 
-`PLAY → briefing → Václav → jedna AKCE → povolení → naleziště → přesně tři zásahy → jeden finding → vyhnutí se traktoru → výsledek Chlumu → level:complete(nextLevelId: "nesmen")`
+**Acceptance criteria:**
 
-### 4a. UI/mobil hardening — dokončeno
+1. produkční přechod z Besednice bez debug URL;
+2. 3D nebo hybridní rozpoznatelná budova KD Slavia načtená z manifestu;
+3. výsledek vychází pouze z aktuální `GameSession` a `findingId` z předchozích levelů;
+4. žádný inventář, ukládání nebo import/export;
+5. finální obrazovka je čitelná v portrait, landscape i desktopu;
+6. restart vytvoří čistou session a vrátí hráče na titulní obrazovku;
+7. jeden draft PR s kompletním HANDOFFem a mobilním důkazem.
 
-Issue #40 bylo uzavřeno po merge PR #43. Doložené jsou HUD revision, ARIA kontrakty, safe-area, pointer ownership, lifecycle release a nativní aktivace overlay tlačítek.
+### Brána 2 — celoproduktový obsahový a vizuální polish
 
-### 4b. Mobilní E2E stabilita — dokončeno
+**Vlastník:** A3, s úzkými opravami A2/A4.  
+**Cíl:** odstranit produkční placeholdery a sjednotit čitelnost bez změny questového rozsahu.
 
-Issue #38 bylo uzavřeno po merge PR #44. Produkční browserový input je testovaný bez teleportu nebo přímé změny transformace a portrait/landscape důkaz je zachovaný.
+**Povinné kontroly:**
 
-### 4c. Asset runtime hardening — dokončeno
+- unikátní siluety hráče, klíčových NPC, traktoru a Karla;
+- animace pohybu ve všech levelech;
+- konzistentní měřítko stromů, traktoru, profilů/děr a budovy;
+- manifest bez 404, duplicitních ID a překročených rozpočtů;
+- žádné nepoužité assety načítané produkčním preloaderem;
+- portrait a landscape screenshot každého levelu.
 
-Issue #42 bylo uzavřeno po merge PR #45. Produkční kontrakt zahrnuje lokální `GLTFLoader` r185, manifest-driven preload, původní `entry.type`, oddělené dispose vlastnictví a kanonický `asset:load:error`.
+### Brána 3 — audio a výkonový hardening
 
-### 5. Nesměň vertical slice — dokončeno
+**Vlastník:** A5, podpora A1/A6.  
+**Větev:** přidělí A0 z aktuálního `main` po Bráně 2.
 
-Issue #47 bylo uzavřeno po merge PR #50 jako `main@8905a0da77d4bd906ca3b1202aa3fcf35421e17c`.
+**Povinné výstupy:**
 
-Produkční tok:
+- audio se odemkne pouze uživatelským gestem;
+- pause/background/resume nevytváří duplicitní track;
+- hudba a ambient nejsou agresivně krátká smyčka;
+- jednotné hlasitostní skupiny a mute;
+- měření FPS, frame time, paměti a load time;
+- adaptivní DPR nejvýše 2 a interní render plocha v kontraktu;
+- rozumné velikosti audio a obrazových souborů.
 
-`dokončený Chlum → briefing Nesměň → lesník Jan → jedna AKCE → povolení → profil 1: tři zásahy + finding + zahrnutí → profil 2: tři zásahy + zahrnutí → profil 3: tři zásahy + zahrnutí → výsledek → level:complete(nextLevelId: "besednice")`
+### Brána 4 — odstranění legacy runtime
 
-Doložené vlastnosti:
+**Vlastník:** A1, nezávislé ověření A6.  
+**Podmínka:** kompletní čtyřlevelový průchod je zelený na aktuálním `main`.
 
-1. přesně tři dosažitelné profily;
-2. právě jedna otevřená díra a povinné zahrnutí před dalším profilem;
-3. každé kopání vyžaduje přesně tři úspěšné zásahy;
-4. finding používá `findingId`, zapisuje se právě jednou a zvyšuje stejné session score;
-5. manifest-driven preload `assetGroups: ["common", "level:nesmen"]`;
-6. šest Nesměň assetů s budgety, SHA-256 a dispose vlastníkem;
-7. pohybová sprite animace a opravené uvolnění fokusu po minihře;
-8. workflow #508 je celé zelené, 100/100 unit, portrait a landscape důkaz.
+**Odstranit nebo definitivně odpojit:**
 
-### 6. Besednice vertical slice — rezervováno issue #51
+- `game.js`;
+- `runtime-stability.js`;
+- Canvas monolit a opravné vrstvy;
+- legacy save/import/export kód;
+- zastaralé testy a dokumentaci, které odkazují na pět levelů nebo starý runtime.
 
-Kanonický balík je issue #51.
+**Brána:** build a E2E musí prokázat, že produkční HTML importuje pouze kanonický bootstrap a žádný legacy modul.
 
-- **Vlastník:** Gameplay/data.
-- **Povinná větev:** `agent/besednice-vertical-slice`.
-- **Branch point:** přesně squash merge commit tohoto governance PR; větev nesmí vzniknout před jeho merge.
-- **Výstup:** jeden samostatný draft PR s úplným HANDOFFem.
-- **Zakázáno:** Slavia implementace, druhý renderer/kamera/loop/session/loader, ruční asset seznamy, persistence, inventář nebo změna dokončeného Chlum/Nesměň obsahu mimo nezbytný přechod.
+### Brána 5 — finální QA
 
-Kanonický průchod:
+**Vlastník:** A6.  
+**Povinná matice:**
 
-`dokončená Nesměň → briefing Besednice → objevit 3 stopy → odemknout ježkový profil → přesně tři zásahy → získat ježkový finding → aktivovat rivala Karla → získat ježek zpět → výsledek → level:complete(nextLevelId: "slavia")`
+- desktop Chromium;
+- iPhone portrait;
+- iPhone landscape;
+- titulní obrazovka a opakované PLAY;
+- kompletní průchod všech čtyř levelů;
+- přesně tři zásahy každého kopání;
+- přechody scén;
+- dialog open/close;
+- pause/resume;
+- background/foreground;
+- otočení zařízení;
+- ztráta focusu;
+- rychlé opakované vstupy;
+- neúspěšný asset load;
+- restart čisté session;
+- dvě po sobě jdoucí zelená spuštění stejného headu.
 
-Povinné výstupy:
+Žádný blocker nebo critical defect nesmí zůstat otevřený.
 
-1. produkční přechod z dokončené Nesměně bez debug URL;
-2. přesně tři dosažitelné stopy a každá započtená právě jednou;
-3. ježkový profil uzamčený do objevení všech tří stop;
-4. kopání vyžaduje literal tři úspěšné zásahy;
-5. ježkový finding používá stabilní `findingId`, zapíše se právě jednou a zvýší session score;
-6. po získání nálezu se aktivuje kanonický rival Karel a recovery/boss fáze;
-7. dokončení vyžaduje `clues >= 3`, `hedgehog`, `bossStarted` a `bossDefeated`;
-8. manifest-driven preload přes `assetGroups: ["common", "level:besednice"]`;
-9. všechny assety mají ID, typ, relativní URL, preload, budget a dispose vlastníka;
-10. `level:complete` emituje `nextLevelId: "slavia"`, ale Slavia se neimplementuje ani neregistruje;
-11. unit, validátor a skutečný mobilní E2E pokrývají celý tok Chlum → Nesměň → Besednice, portrait/landscape, pause/resume, background návrat a input release;
-12. PR obsahuje asset budget tabulku, testy, vizuální důkaz a potvrzení rozsahových zákazů.
+### Brána 6 — produkční release
 
-## Aktivační pravidlo dalšího levelu
+**Vlastník:** A7, schvaluje A0.  
+**Výstup:** jeden release z `main`.
 
-Implementace issue #51 smí začít teprve po:
+**Povinné kroky:**
 
-1. merge tohoto governance PR;
-2. vytvoření `agent/besednice-vertical-slice` přesně z výsledného merge commitu;
-3. zapsání konkrétního branch-point SHA do issue #51.
+1. zelené CI na release headu;
+2. produkční build z čistého checkoutu;
+3. GitHub Pages deploy;
+4. smoke test skutečné produkční URL na desktopu a mobilu;
+5. kontrola PWA metadat, ikon, relativních cest a service worker cache;
+6. licence a původ assetů;
+7. velikostní report;
+8. release notes a známá omezení;
+9. distribuční artefakt a SHA-256 manifest;
+10. tag/verze podle rozhodnutí A0.
 
-Slavia vertical slice smí být aktivován teprve po:
+## 5. Aktivní integrační pořadí
 
-1. merge issue #51 / Besednice PR;
-2. zeleném finálním workflow;
-3. koordinační aktualizaci tohoto dokumentu s novým branch pointem a samostatným issue/PR kontraktem.
+```text
+1. Review a merge PR #55 Besednice — dokončeno (`e137fe389bfd04b9402298b371df13e24fd38104`)
+2. Governance update issue #60 na nový main SHA — aktivní
+3. Slavia vertical slice issue #61 — rezervováno
+4. Vizuální/content polish
+5. Audio a výkonový hardening
+6. Legacy runtime cleanup
+7. Finální QA — dvě zelená spuštění
+8. Produkční GitHub Pages release
+```
+
+Žádný krok nesmí přeskočit přímou závislost.
+
+## 6. Pravidla aktivace odborného chatu
+
+A0 do zadání vždy uvede:
+
+```text
+Issue:
+Role:
+Base SHA:
+Větev:
+Povolené cesty:
+Zakázané cesty:
+Závislosti:
+Acceptance criteria:
+Povinné testy:
+Integrační pořadí:
+```
+
+Bez těchto údajů se odborný chat neaktivuje.
+
+## 7. Formát stavového hlášení
+
+```text
+Identifikátor úkolu:
+Role:
+Větev:
+Issue / PR:
+Base SHA / head SHA:
+Změněné soubory:
+Změněné kontrakty:
+Testy a výsledky:
+Mobilní důkaz:
+Známé problémy:
+Blokace:
+Doporučený další krok:
+```
+
+## 8. Kritéria dokončení celého projektu
+
+Projekt lze označit za dokončený pouze tehdy, když:
+
+- všechny čtyři levely tvoří jeden produkční průchod;
+- finále vyhodnotí session sbírku a umožní čistý restart;
+- neexistuje druhý runtime ani produkční import legacy save kódu;
+- desktop, iPhone portrait a landscape E2E jsou zelené;
+- stejný release head projde dvakrát po sobě;
+- GitHub Pages URL projde smoke testem;
+- nejsou otevřené blocker/critical chyby;
+- dokumentace odpovídá skutečnému `main`;
+- release vznikl z `main`, nikoli ze ZIPu, sandboxu nebo starého draft PR.
