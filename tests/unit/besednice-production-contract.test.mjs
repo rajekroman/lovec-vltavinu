@@ -129,8 +129,15 @@ test("canonical mobile smoke preserves the input-driven Chlum through Besednice 
   assert.doesNotMatch(mobileSmoke, /code: "KeyE"|page\.keyboard\.press\("Space"\)/);
 });
 
-test("Slavia smoke covers arrival, certification, final result and clean restart", () => {
-  assert.match(slaviaSmoke, /ensureSlaviaRegistered/);
+test("Slavia smoke covers the complete input-driven flow, evidence and clean restart", () => {
+  assert.match(slaviaSmoke, /input-driven Chlum → Nesměň → Besednice → Slavia flow/);
+  assert.match(slaviaSmoke, /startChlum/);
+  assert.match(slaviaSmoke, /completeChlum/);
+  assert.match(slaviaSmoke, /enterNesmen/);
+  assert.match(slaviaSmoke, /completeNesmen/);
+  assert.match(slaviaSmoke, /enterBesednice/);
+  assert.match(slaviaSmoke, /completeBesednice/);
+  assert.match(slaviaSmoke, /enterSlavia/);
   assert.match(slaviaSmoke, /slavia-arrival/);
   assert.match(slaviaSmoke, /slavia-certification/);
   assert.match(slaviaSmoke, /slavia-final-result/);
@@ -140,6 +147,8 @@ test("Slavia smoke covers arrival, certification, final result and clean restart
   assert.match(slaviaSmoke, /receive-certificate/);
   assert.match(slaviaSmoke, /enter-event/);
   assert.match(slaviaSmoke, /session\.findings\)\.toEqual\(\[\]\)/);
+  assert.match(slaviaSmoke, /session\.flags\)\.toEqual\(\{\}\)/);
   assert.match(slaviaSmoke, /localStorage\.length/);
+  assert.doesNotMatch(slaviaSmoke, /recordFinding|ensureSlaviaRegistered|changeScene\("slavia"\)|session\.reset\(\)/);
   assert.doesNotMatch(slaviaSmoke, /KeyE|keyboard\.press\("Space"\)|element\.click\(\)/);
 });
