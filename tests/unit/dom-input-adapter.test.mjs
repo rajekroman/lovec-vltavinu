@@ -170,12 +170,17 @@ test("mobile action remains owned by its first pointer and lifecycle resets clea
   assert.deepEqual(input.resets, ["window-blur", "dom-dispose"]);
 });
 
-test("keyboard movement aggregates simultaneous keys and releases them independently", () => {
+test("keyboard movement aggregates simultaneous keys, ignores repeat and releases independently", () => {
   const { adapter, window, input } = createAdapter();
 
   const right = window.dispatch("keydown", { code: "ArrowRight", repeat: false });
   assert.equal(right.defaultPrevented, true);
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 1, y: 0, length: 1 } });
+
+  const axisUpdates = input.axes.length;
+  const repeatedRight = window.dispatch("keydown", { code: "ArrowRight", repeat: true });
+  assert.equal(repeatedRight.defaultPrevented, true);
+  assert.equal(input.axes.length, axisUpdates);
 
   window.dispatch("keydown", { code: "ArrowUp", repeat: false });
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 1, y: 1, length: 1 } });
@@ -184,4 +189,4 @@ test("keyboard movement aggregates simultaneous keys and releases them independe
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 0, y: 1, length: 1 } });
 
   adapter.dispose();
-});
+}
