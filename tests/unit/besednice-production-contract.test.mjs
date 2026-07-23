@@ -7,6 +7,7 @@ const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
 const serviceWorker = read("sw.js");
+const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
 
 const expectedAssets = Object.freeze([
@@ -63,4 +64,14 @@ test("service worker includes Besednice production modules", () => {
     "./src/scenes/NesmenBesedniceBridgeScene.js",
     "./src/scenes/BesedniceScene.js"
   ]) assert.ok(serviceWorker.includes(path), `service worker missing ${path}`);
+});
+
+test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
+  assert.match(mobileSmoke, /Chlum → Nesměň → Besednice flow completes hedgehog recovery/);
+  assert.match(mobileSmoke, /enterBesedniceFromResult/);
+  assert.match(mobileSmoke, /verifyBesedniceLifecycle/);
+  assert.match(mobileSmoke, /waitForInteraction\(page, "recover", 15_000\)/);
+  assert.match(mobileSmoke, /nextLevelId: "slavia"/);
+  assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
+  assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
 });
