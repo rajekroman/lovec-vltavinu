@@ -162,7 +162,7 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await action.tap();
+  await action.tap({ force: true });
 }
 
 async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
