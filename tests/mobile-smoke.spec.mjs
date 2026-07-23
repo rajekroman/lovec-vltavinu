@@ -162,8 +162,10 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await action.evaluate(element => element.click());
+  await page.evaluate(() => document.activeElement?.blur?.());
+  await page.keyboard.down("e");
   await page.waitForTimeout(50);
+  await page.keyboard.up("e");
   await expectReleasedInput(page);
 }
 
