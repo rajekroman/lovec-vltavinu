@@ -352,7 +352,8 @@ async function completeBesednice(page) {
     await expectReleasedInput(page);
 
     const beforeDuplicate = (await snapshot(page)).besednice.runtime.clues;
-    await contextualAction(page);
+    await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "true");
+    await page.waitForTimeout(120);
     await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().besednice.runtime.clues)).toBe(beforeDuplicate);
 
     if (index < 2) {
