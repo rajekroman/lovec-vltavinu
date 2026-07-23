@@ -1,9 +1,5 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import {
-  BESEDNICE_ENTITY_DEFINITIONS,
-  BESEDNICE_TRACE_IDS,
-  createBesedniceFinding
-} from "../data/besednice.js";
+import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, createBesedniceFinding } from "../data/besednice.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
@@ -103,10 +99,10 @@ export class BesedniceScene {
     return texture;
   }
 
-  texture(id) {
+  async texture(id) {
     const entry = this.requireAsset(id);
     if (entry.type !== "texture" && entry.type !== "spritesheet") throw new Error(`Asset ${id} is not a texture.`);
-    const texture = this.app.assets.get(id, entry.type);
+    const texture = await this.app.assets.get(id, entry.type);
     if (!texture) throw new Error(`Texture is not loaded: ${id}`);
     return texture;
   }
@@ -144,19 +140,16 @@ export class BesedniceScene {
       this.texture("npc-rival-karel")
     ]);
     groundTexture.repeat.set(7.5, 5.5);
-
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
       new THREE.MeshBasicMaterial({ map: groundTexture, color: 0x8f7454 })
     );
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
     root.add(ground);
-
     const ambient = new THREE.HemisphereLight(0xf0d7af, 0x241d19, 1.65);
     const sun = new THREE.DirectionalLight(0xffefcf, 1.85);
     sun.position.set(-180, 420, 580);
     root.add(ambient, sun);
-
     for (const rock of [
       { x: 350, y: 260, scale: 65, rotationZ: 0.1 },
       { x: 720, y: 1060, scale: 52, rotationZ: -0.35 },
@@ -164,48 +157,27 @@ export class BesedniceScene {
       { x: 1510, y: 610, scale: 58, rotationZ: -0.2 },
       { x: 1320, y: 110, scale: 44, rotationZ: 0.4 }
     ]) this.addDecorModel(root, "model-besednice-rock", rock);
-
     this.visualRoot = root;
     this.renderer.add(root, "ground");
-
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     const player = this.renderer.createSprite(playerTexture, {
-      width: 72,
-      height: 82,
-      z: 12,
-      anchorX: 0.5,
-      anchorY: 0.16,
-      assetId: "player-hunter-walk"
+      width: 72, height: 82, z: 12, anchorX: 0.5, anchorY: 0.16, assetId: "player-hunter-walk"
     });
     const karel = this.renderer.createSprite(karelTexture, {
-      width: 82,
-      height: 116,
-      z: 12,
-      anchorX: 0.5,
-      anchorY: 0.08,
-      color: 0xff8f72,
-      assetId: "npc-rival-karel"
+      width: 82, height: 116, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
     });
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.karelEntity, karel, "actors");
-
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
-        assetId: "model-besednice-trace-marker",
-        rotationX: Math.PI / 2,
-        scale: 38,
-        z: 4
+        assetId: "model-besednice-trace-marker", rotationX: Math.PI / 2, scale: 38, z: 4
       });
       this.renderer.bindEntity(entity, marker, "props");
       this.traceVisuals.set(entity, marker);
     }
-
     const hedgehogMarker = this.modelFactory.clone(this.model("model-besednice-hedgehog-marker"), {
-      assetId: "model-besednice-hedgehog-marker",
-      rotationX: Math.PI / 2,
-      scale: 64,
-      z: 5
+      assetId: "model-besednice-hedgehog-marker", rotationX: Math.PI / 2, scale: 64, z: 5
     });
     hedgehogMarker.visible = false;
     this.renderer.bindEntity(this.hedgehogEntity, hedgehogMarker, "props");
@@ -273,10 +245,8 @@ export class BesedniceScene {
       return;
     }
     if (this.session.state.phase !== "playing" || this.modal || this.resultShown) return;
-
     const bossState = this.app.world.get(this.karelEntity, "boss");
     if (bossState?.started === true && bossState.defeated !== true) this.boss.update(this.app.world, this.karelEntity, this.playerEntity, dt);
-
     const available = this.interactions.update(this.app.world, this.playerEntity, input.actions.action?.pressed === true);
     this.availableInteraction = available;
     if (available?.performed) this.performInteraction(available);
@@ -361,7 +331,6 @@ export class BesedniceScene {
       info: result.hit ? `Zásah ${result.hits}/${DIG_REQUIRED_HITS}` : "Mimo rytmus — zkus to znovu."
     });
     if (!result.complete) return;
-
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot");
     const interaction = this.app.world.get(this.hedgehogEntity, "interaction");
     this.dig.finish();
@@ -369,8 +338,7 @@ export class BesedniceScene {
     interaction.enabled = false;
     const marker = this.renderer.objectByEntity.get(this.hedgehogEntity);
     if (marker) marker.visible = false;
-    this.spawnFinding(spot.findingId);
-
+    void this.spawnFinding(spot.findingId);
     this.modal = null;
     this.session.setPhase("playing");
     this.availableInteraction = null;
@@ -380,7 +348,7 @@ export class BesedniceScene {
     this.emitHud(true);
   }
 
-  spawnFinding(findingId) {
+  async spawnFinding(findingId) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(this.hedgehogEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
@@ -389,13 +357,8 @@ export class BesedniceScene {
       interaction: { kind: "collect", label: "SEBRAT JEŽEK", action: "action", range: 76, priority: 95, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
-    const sprite = this.renderer.createSprite(this.texture("finding-vltavin-besednice-hedgehog"), {
-      width: 58,
-      height: 58,
-      z: 15,
-      anchorX: 0.5,
-      anchorY: 0.2,
-      color: 0xb6ff8b,
+    const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
+      width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
       assetId: "finding-vltavin-besednice-hedgehog"
     });
     this.renderer.bindEntity(this.findingEntity, sprite, "effects");
@@ -466,8 +429,8 @@ export class BesedniceScene {
         { label: "JEŽEK", value: this.hasHedgehog() ? "ANO" : "NE" },
         { label: "KAREL", value: this.app.world.get(this.karelEntity, "boss")?.defeated ? "PORAŽEN" : "AKTIVNÍ" }
       ],
-      buttonLabel: "ZPĚT DO MENU",
-      onContinue: () => this.app.changeScene("title").catch(error => console.error("Scene transition:", error))
+      buttonLabel: "POKRAČOVAT DO SLAVIE",
+      onContinue: () => this.app.changeScene("slavia").catch(error => console.error("Scene transition:", error))
     });
   }
 
@@ -517,12 +480,9 @@ export class BesedniceScene {
       hint,
       actionReady: Boolean(available && !this.modal && this.session.state.phase === "playing"),
       actionLabel: available?.interaction.label ?? "AKCE",
-      actionIcon: available?.interaction.kind === "discover"
-        ? "⌕"
-        : available?.interaction.kind === "dig"
-          ? "⛏"
-          : available?.interaction.kind === "collect"
-            ? "◆"
+      actionIcon: available?.interaction.kind === "discover" ? "⌕"
+        : available?.interaction.kind === "dig" ? "⛏"
+          : available?.interaction.kind === "collect" ? "◆"
             : available?.interaction.kind === "recover" ? "✦" : "◉"
     };
   }
@@ -556,12 +516,7 @@ export class BesedniceScene {
         traces: this.traceEntities.map(entity => {
           const clue = this.app.world.get(entity, "clue");
           const transform = this.app.world.get(entity, "transform");
-          return {
-            id: this.externalIdByEntity.get(entity),
-            x: transform.x,
-            y: transform.y,
-            discovered: clue?.discovered === true
-          };
+          return { id: this.externalIdByEntity.get(entity), x: transform.x, y: transform.y, discovered: clue?.discovered === true };
         }),
         hedgehog: {
           dug: this.app.world.get(this.hedgehogEntity, "digSpot")?.dug === true,
