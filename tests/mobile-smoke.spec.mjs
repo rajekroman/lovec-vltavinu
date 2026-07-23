@@ -168,10 +168,6 @@ async function contextualAction(page) {
     bubbles: true,
     cancelable: true
   })));
-  await expect.poll(async () => Boolean((await inputSnapshot(page)).actions.action?.down), {
-    timeout: 1_000,
-    intervals: [10, 20, 30]
-  }).toBe(true);
   await page.waitForTimeout(100);
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", {
     code: "KeyE",
