@@ -110,6 +110,13 @@ async function performAction(page) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
+async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
+  await expect.poll(async () => {
+    const tractorX = (await runtimeSnapshot(page)).chlum?.runtime?.tractor?.x;
+    return typeof tractorX === "number" && tractorX <= maxX;
+  }, { timeout, intervals: [100, 180, 250] }).toBe(true);
+}
+
 async function successfulDigHit(page, expectedTotal) {
   await expect.poll(() => page.evaluate(total => {
     const state = window.__lovecRuntime.snapshot();
@@ -147,6 +154,9 @@ async function completeChlum(page) {
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await page.locator("#dialogButton").tap();
 
+  await moveAxisTo(page, "x", 1020);
+  await moveAxisTo(page, "y", 410);
+  await waitForTractorLeftOf(page);
   await moveTo(page, 1020, 720, "dig", 20_000);
   await performAction(page);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
