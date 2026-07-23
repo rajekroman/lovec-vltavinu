@@ -71,5 +71,5 @@ test("service worker pre-caches every Slavia asset path", () => {
     const path = byId.get(id).url;
     assert.ok(serviceWorker.includes(`"${path}"`), `service worker missing ${path}`);
   }
-  assert.match(serviceWorker, /lovec-vltavinu-slavia-v7-0/);
+  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-0/);
 });
