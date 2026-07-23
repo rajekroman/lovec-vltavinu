@@ -8,55 +8,9 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-besednice-test-fix:
-    name: Apply consumed action edge correction
-    if: github.event_name == 'push' && github.ref_name == 'agent/besednice-vertical-slice'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 2
-      - name: Patch test and restore workflow
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          mobile = Path("tests/mobile-smoke.spec.mjs")
-          text = mobile.read_text(encoding="utf-8")
-          before = '''  await expect.poll(async () => Boolean((await inputSnapshot(page)).actions.action?.down), {
-            timeout: 1_000,
-            intervals: [10, 20, 30]
-          }).toBe(true);
-          await page.waitForTimeout(100);'''
-          after = '''  await page.waitForTimeout(100);'''
-          if before not in text:
-            raise SystemExit("transient action assertion not found")
-          mobile.write_text(text.replace(before, after, 1), encoding="utf-8")
-
-          unit = Path("tests/unit/besednice-production-contract.test.mjs")
-          contract = unit.read_text(encoding="utf-8")
-          contract = contract.replace('  assert.match(mobileSmoke, /actions\\.action\\?\\.down/);\n', '')
-          unit.write_text(contract, encoding="utf-8")
-
-          Path(".github/workflows/patch-besednice-action-transient.yml").unlink(missing_ok=True)
-          PY
-          git show HEAD^:.github/workflows/validate.yml > .github/workflows/validate.yml
-          node --check tests/mobile-smoke.spec.mjs
-          node --check tests/unit/besednice-production-contract.test.mjs
-      - name: Commit final test correction
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/mobile-smoke.spec.mjs tests/unit/besednice-production-contract.test.mjs .github/workflows/validate.yml .github/workflows/patch-besednice-action-transient.yml
-          git commit -m "test(besednice): allow immediate action consumption"
-          git push origin HEAD:agent/besednice-vertical-slice
-
   validate:
     name: Static and unit validation
     runs-on: ubuntu-latest
@@ -90,6 +44,12 @@ jobs:
 
       - name: Test Nesměň objective contract
         run: node --test --test-reporter=spec tests/unit/nesmen-objective-system.test.mjs
+
+      - name: Test Besednice data and QA contracts
+        run: node --test --test-reporter=spec tests/unit/besednice-data.test.mjs tests/unit/besednice-qa-contract.test.mjs
+
+      - name: Test Besednice objective, boss and production contracts
+        run: node --test --test-reporter=spec tests/unit/besednice-objective-system.test.mjs tests/unit/boss-system.test.mjs tests/unit/besednice-production-contract.test.mjs
 
       - name: Test modular core
         run: |
