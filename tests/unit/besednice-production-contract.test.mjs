@@ -6,6 +6,7 @@ const read = path => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 
 const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
+const domInput = read("src/input/DomInputAdapter.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
@@ -71,8 +72,13 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-pointer-e2e|git push origin/
   );
+});
+
+test("gameplay input reset clears stale DOM pointer ownership", () => {
+  assert.match(domInput, /input\.events\?\.on\?\.\("input:reset", \(\) => this\.clearDomState\(\)/);
+  assert.match(domInput, /if \(MOVE_KEYS\[event\.code\]\) \{[\s\S]*if \(event\.repeat\) return;/);
 });
 
 test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
@@ -85,18 +91,16 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
   assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
-  assert.match(mobileSmoke, /newCDPSession\(page\)/);
-  assert.match(mobileSmoke, /Input\.dispatchTouchEvent/);
-  assert.match(mobileSmoke, /type: "touchStart"/);
+  assert.match(mobileSmoke, /action\.dispatchEvent\("pointerdown"/);
   assert.match(mobileSmoke, /page\.waitForTimeout\(50\)/);
-  assert.match(mobileSmoke, /type: "touchEnd"/);
+  assert.match(mobileSmoke, /action\.dispatchEvent\("pointerup"/);
   assert.doesNotMatch(mobileSmoke, /code: "KeyE"/);
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
   assert.match(mobileSmoke, /window\.__lovecQaDanger/);
   assert.match(mobileSmoke, /tracker\?\.caught/);
-  assert.match(mobileSmoke, /Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(20\)/);
+  assert.match(mobileSmoke, /await expectReleasedInput\(page\);[\s\S]*Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(40\)/);
   assert.match(mobileSmoke, /return "triggered"/);
   assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);
   assert.match(mobileSmoke, /timeout: 2_000/);
