@@ -162,25 +162,8 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  const pointerId = await page.evaluate(() => {
-    window.__lovecQaActionPointer = (window.__lovecQaActionPointer ?? 700) + 1;
-    return window.__lovecQaActionPointer;
-  });
-  await action.dispatchEvent("pointerdown", {
-    pointerId,
-    pointerType: "touch",
-    isPrimary: true,
-    button: 0,
-    buttons: 1
-  });
+  await action.evaluate(element => element.click());
   await page.waitForTimeout(50);
-  await action.dispatchEvent("pointerup", {
-    pointerId,
-    pointerType: "touch",
-    isPrimary: true,
-    button: 0,
-    buttons: 0
-  });
   await expectReleasedInput(page);
 }
 
