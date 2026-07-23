@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const sharedProjectUse = {
+  browserName: "chromium"
+};
+
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
@@ -17,7 +21,32 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure"
   },
-  projects: [{ name: "mobile-chromium", use: { ...devices["iPhone 13"], browserName: "chromium", viewport: { width: 390, height: 844 } } }],
+  projects: [
+    {
+      name: "desktop-chromium",
+      use: {
+        ...sharedProjectUse,
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 }
+      }
+    },
+    {
+      name: "iphone-portrait",
+      use: {
+        ...sharedProjectUse,
+        ...devices["iPhone 13"],
+        viewport: { width: 390, height: 844 }
+      }
+    },
+    {
+      name: "iphone-landscape",
+      use: {
+        ...sharedProjectUse,
+        ...devices["iPhone 13 landscape"],
+        viewport: { width: 844, height: 390 }
+      }
+    }
+  ],
   webServer: {
     command: "python3 -m http.server 4173 --bind 127.0.0.1",
     url: "http://127.0.0.1:4173/index.html",
