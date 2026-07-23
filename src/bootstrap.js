@@ -12,8 +12,8 @@ import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
 import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
-import { BesedniceSlaviaBridgeScene } from "./scenes/BesedniceSlaviaBridgeScene.js";
-import { ProductionSlaviaScene } from "./scenes/ProductionSlaviaScene.js";
+import { BesedniceScene } from "./scenes/BesedniceScene.js";
+import { SlaviaScene } from "./scenes/SlaviaScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -87,7 +87,7 @@ const nesmen = new NesmenBesedniceBridgeScene({
   screens,
   session
 });
-const slavia = new ProductionSlaviaScene({
+const besednice = new BesedniceScene({
   app,
   events,
   renderer,
@@ -95,28 +95,25 @@ const slavia = new ProductionSlaviaScene({
   screens,
   session
 });
-function ensureSlaviaRegistered() {
-  if (!app.scenes.has("slavia")) app.scenes.register("slavia", slavia);
-  return slavia;
-}
-const besednice = new BesedniceSlaviaBridgeScene({
+const slavia = new SlaviaScene({
   app,
   events,
   renderer,
   three: THREE,
   screens,
-  session,
-  ensureSlaviaRegistered
+  session
 });
 const title = new TitleScene({
   document: documentRef,
   screens,
   onStart: () => startNewRun().catch(showFatalError)
 });
+
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
 app.scenes.register("nesmen", nesmen);
 app.scenes.register("besednice", besednice);
+app.scenes.register("slavia", slavia);
 
 async function startNewRun() {
   session.reset();
@@ -186,16 +183,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export {
-  app,
-  events,
-  renderer,
-  session,
-  title,
-  chlum,
-  nesmen,
-  besednice,
-  slavia,
-  ensureSlaviaRegistered,
-  startNewRun
-};
+export { app, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun };
