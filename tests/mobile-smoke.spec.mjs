@@ -162,7 +162,26 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await action.tap({ force: true });
+  const pointerId = await page.evaluate(() => {
+    window.__lovecQaActionPointer = (window.__lovecQaActionPointer ?? 700) + 1;
+    return window.__lovecQaActionPointer;
+  });
+  await action.dispatchEvent("pointerdown", {
+    pointerId,
+    pointerType: "touch",
+    isPrimary: true,
+    button: 0,
+    buttons: 1
+  });
+  await page.waitForTimeout(50);
+  await action.dispatchEvent("pointerup", {
+    pointerId,
+    pointerType: "touch",
+    isPrimary: true,
+    button: 0,
+    buttons: 0
+  });
+  await expectReleasedInput(page);
 }
 
 async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
@@ -478,8 +497,10 @@ test("tractor collision raises danger, returns player to spawn and does not free
   await enterChlum(page);
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
-  expect(state.chlum.runtime.player.x).toBeLessThan(190);
-  expect(state.chlum.runtime.player.y).toBeLessThan(450);
+  expect(Math.hypot(
+    state.chlum.runtime.player.x - 120,
+    state.chlum.runtime.player.y - 380
+  )).toBeLessThan(110);
   expect(state.running).toBe(true);
   await page.locator("#pauseButton").click();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
