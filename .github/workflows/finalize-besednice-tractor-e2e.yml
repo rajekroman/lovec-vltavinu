@@ -1,0 +1,63 @@
+name: Finalize Besednice tractor E2E
+
+on:
+  push:
+    branches:
+      - agent/besednice-vertical-slice
+    paths:
+      - .github/workflows/finalize-besednice-tractor-e2e.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/besednice-vertical-slice
+          fetch-depth: 0
+
+      - name: Remove the frame-level tractor diagnostic tracker
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("tests/mobile-smoke.spec.mjs")
+          text = path.read_text(encoding="utf-8")
+          start = text.index('async function chaseTractorUntilDanger(page) {')
+          end = text.index('\nconst compactTransform', start)
+          replacement = '''async function chaseTractorUntilDanger(page) {
+            for (let step = 0; step < 140; step++) {
+              const state = await snapshot(page);
+              if (state.session.danger > 0) return state;
+              const player = state.chlum?.runtime?.player;
+              const tractor = state.chlum?.runtime?.tractor;
+              if (!player || !tractor) throw new Error("Chlum tractor chase data is unavailable.");
+              const dx = tractor.x - player.x;
+              const dy = tractor.y - player.y;
+              const keys = [];
+              if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
+              if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
+              if (!keys.length) keys.push("ArrowRight");
+              await holdKeys(page, keys, 100);
+            }
+            throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
+          }
+          '''
+          path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+          Path(".github/workflows/finalize-besednice-tractor-e2e.yml").unlink()
+          PY
+
+          node --check tests/mobile-smoke.spec.mjs
+
+      - name: Commit deterministic tractor E2E correction
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/mobile-smoke.spec.mjs .github/workflows/finalize-besednice-tractor-e2e.yml
+          git commit -m "test(chlum): simplify tractor danger observation"
+          git push origin HEAD:agent/besednice-vertical-slice
