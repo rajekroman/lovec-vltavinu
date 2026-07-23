@@ -113,6 +113,8 @@ test("BossSystem owns the recovery interaction lifecycle", () => {
 
   assert.equal(boss.start(world, karel), true);
   assert.equal(world.get(karel, "interaction").enabled, false);
+  assert.equal(boss.update(world, karel, player, 0).state, "chasing");
+  assert.equal(world.get(karel, "interaction").enabled, false);
   assert.equal(boss.update(world, karel, player, 1).state, "recoverable");
   assert.equal(world.get(karel, "interaction").enabled, true);
   assert.equal(boss.defeat(world, karel), true);
