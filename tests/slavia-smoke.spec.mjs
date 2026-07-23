@@ -58,7 +58,55 @@ async function moveTo(page, x, y, kind, timeout = 10_000) {
 async function performAction(page) {
   const button = page.locator("#actionButton");
   await expect(button).toHaveAttribute("aria-disabled", "false");
-  await button.tap();
+  const box = await button.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) throw new Error("Action button has no touch target.");
+
+  const expectedKind = await page.evaluate(() => {
+    const state = window.__lovecRuntime.snapshot();
+    return state[state.scene]?.runtime?.available?.kind ?? null;
+  });
+  expect(expectedKind).not.toBeNull();
+
+  await page.evaluate(async expected => {
+    const { events } = await import("./src/bootstrap.js");
+    window.__slaviaQaInteractionOff?.();
+    window.__slaviaQaInteraction = { expected, performed: null };
+    window.__slaviaQaInteractionOff = events.once("interaction:performed", payload => {
+      window.__slaviaQaInteraction.performed = payload.kind;
+    });
+  }, expectedKind);
+
+  const client = await page.context().newCDPSession(page);
+  const x = Math.round(box.x + box.width / 2);
+  const y = Math.round(box.y + box.height / 2);
+  let touchStarted = false;
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
+    });
+    touchStarted = true;
+    await expect.poll(() => page.evaluate(() => window.__slaviaQaInteraction?.performed ?? null), {
+      timeout: 2_000,
+      intervals: [10, 20, 30, 50]
+    }).toBe(expectedKind);
+  } finally {
+    if (touchStarted) {
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
+    }
+    await client.detach();
+    await page.evaluate(() => {
+      window.__slaviaQaInteractionOff?.();
+      delete window.__slaviaQaInteractionOff;
+      delete window.__slaviaQaInteraction;
+    });
+  }
+
+  await expect.poll(() => page.evaluate(async () => {
+    const { app } = await import("./src/bootstrap.js");
+    return app.input.snapshot().actions.action?.down === true;
+  })).toBe(false);
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
