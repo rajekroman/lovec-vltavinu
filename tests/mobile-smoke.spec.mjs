@@ -359,47 +359,7 @@ async function chaseTractorUntilDanger(page) {
     if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
     if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
     if (!keys.length) keys.push("ArrowRight");
-
-    await page.evaluate(({ codes, timeoutMs }) => {
-      const tracker = { done: false, caught: false };
-      window.__lovecQaDanger = tracker;
-      const startedAt = performance.now();
-      const release = () => {
-        for (const code of codes) window.dispatchEvent(new KeyboardEvent("keyup", {
-          code,
-          key: code,
-          bubbles: true,
-          cancelable: true
-        }));
-      };
-      const monitor = () => {
-        const danger = window.__lovecRuntime?.snapshot?.().session?.danger ?? 0;
-        if (danger > 0) {
-          tracker.caught = true;
-          tracker.done = true;
-          release();
-          return;
-        }
-        if (performance.now() - startedAt >= timeoutMs) {
-          tracker.done = true;
-          release();
-          return;
-        }
-        requestAnimationFrame(monitor);
-      };
-      requestAnimationFrame(monitor);
-    }, { codes: keys, timeoutMs: 160 });
-
-    for (const key of keys) await page.keyboard.down(key);
-    let tracker = null;
-    try {
-      await page.waitForFunction(() => window.__lovecQaDanger?.done === true, null, { timeout: 1_000 });
-      tracker = await page.evaluate(() => ({ ...window.__lovecQaDanger }));
-    } finally {
-      for (const key of [...keys].reverse()) await page.keyboard.up(key);
-      await page.evaluate(() => { delete window.__lovecQaDanger; });
-    }
-    if (tracker?.caught) return snapshot(page);
+    await holdKeys(page, keys, 100);
   }
   throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
 }
