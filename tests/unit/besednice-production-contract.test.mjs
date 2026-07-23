@@ -75,6 +75,6 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
   assert.match(mobileSmoke, /const action = page\.locator\("#actionButton"\)/);
-  assert.match(mobileSmoke, /await action\.tap\(\)/);
+  assert.match(mobileSmoke, /await action\.tap\(\{ force: true \}\)/);
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
 });
