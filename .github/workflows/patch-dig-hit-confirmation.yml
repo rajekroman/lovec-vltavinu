@@ -1,0 +1,78 @@
+name: Patch dig hit confirmation
+
+on:
+  push:
+    branches:
+      - agent/besednice-vertical-slice
+    paths:
+      - .github/workflows/patch-dig-hit-confirmation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/besednice-vertical-slice
+          fetch-depth: 0
+      - name: Separate sweet-zone trigger from fixed-step confirmation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          target = Path("tests/mobile-smoke.spec.mjs")
+          text = target.read_text(encoding="utf-8")
+          before = '''async function successfulDigHit(page, expectedTotal) {
+            await withPhaseSnapshot(page, `dig hit ${expectedTotal}`, () => expect.poll(() => page.evaluate(total => {
+              const state = window.__lovecRuntime.snapshot();
+              const runtime = state[state.scene]?.runtime;
+              if (!runtime) return false;
+              const currentTotal = state.scene === "chlum" ? runtime.digHits : runtime.totalDigHits;
+              if (currentTotal === total) return true;
+              const position = runtime.dig?.position;
+              if (currentTotal !== total - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return false;
+              document.getElementById("digButton")?.click();
+              const after = window.__lovecRuntime.snapshot();
+              const afterRuntime = after[after.scene]?.runtime;
+              return (after.scene === "chlum" ? afterRuntime?.digHits : afterRuntime?.totalDigHits) === total;
+            }, expectedTotal), { timeout: 6_000, intervals: [20, 30, 50] }).toBe(true), { expectedTotal });
+          }'''
+          after = '''async function successfulDigHit(page, expectedTotal) {
+            await withPhaseSnapshot(page, `dig hit ${expectedTotal}`, async () => {
+              await expect.poll(() => page.evaluate(total => {
+                const state = window.__lovecRuntime.snapshot();
+                const runtime = state[state.scene]?.runtime;
+                if (!runtime) return "waiting";
+                const currentTotal = state.scene === "chlum" ? runtime.digHits : runtime.totalDigHits;
+                if (currentTotal >= total) return "complete";
+                const position = runtime.dig?.position;
+                if (currentTotal !== total - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return "waiting";
+                document.getElementById("digButton")?.click();
+                return "triggered";
+              }, expectedTotal), { timeout: 8_000, intervals: [20, 30, 50] }).not.toBe("waiting");
+
+              await expect.poll(() => page.evaluate(total => {
+                const state = window.__lovecRuntime.snapshot();
+                const runtime = state[state.scene]?.runtime;
+                const currentTotal = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
+                return Number(currentTotal) >= total;
+              }, expectedTotal), { timeout: 2_000, intervals: [20, 30, 50] }).toBe(true);
+            }, { expectedTotal });
+          }'''
+          if before not in text:
+            raise SystemExit("successfulDigHit block not found")
+          target.write_text(text.replace(before, after, 1), encoding="utf-8")
+          Path(".github/workflows/patch-dig-hit-confirmation.yml").unlink()
+          PY
+          node --check tests/mobile-smoke.spec.mjs
+      - name: Commit deterministic dig confirmation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/mobile-smoke.spec.mjs .github/workflows/patch-dig-hit-confirmation.yml
+          git commit -m "test(besednice): confirm dig hits after fixed update"
+          git push origin HEAD:agent/besednice-vertical-slice
