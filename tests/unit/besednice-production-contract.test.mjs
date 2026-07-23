@@ -6,6 +6,7 @@ const read = path => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 
 const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
+const hybridRenderer = read("src/render/HybridRenderer.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
@@ -44,6 +45,12 @@ test("Besednice scene uses manifest-driven preload and canonical objective phase
   assert.match(scene, /DIG_REQUIRED_HITS/);
 });
 
+test("sprite rendering resolves promised manifest textures before binding the material map", () => {
+  assert.match(hybridRenderer, /prepareSpriteTexture/);
+  assert.match(hybridRenderer, /textureSource\?\.then instanceof Function/);
+  assert.match(hybridRenderer, /sprite\.userData\.textureReady = Promise\.resolve\(textureSource\)\.then\(applyTexture\)/);
+});
+
 test("Besednice manifest pack has stable IDs, budgets and lifecycle owners", () => {
   const byId = new Map(manifest.map(entry => [entry.id, entry]));
   assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length);
@@ -71,7 +78,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|revert-besednice-known-regression|git push origin/
   );
 });
 
