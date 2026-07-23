@@ -162,19 +162,7 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", {
-    code: "KeyE",
-    key: "e",
-    bubbles: true,
-    cancelable: true
-  })));
-  await page.waitForTimeout(100);
-  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", {
-    code: "KeyE",
-    key: "e",
-    bubbles: true,
-    cancelable: true
-  })));
+  await action.tap();
   await expectReleasedInput(page);
 }
 
@@ -498,10 +486,11 @@ test("tractor collision raises danger, returns player to spawn and does not free
   await enterChlum(page);
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
-  expect(Math.hypot(
-    state.chlum.runtime.player.x - 120,
-    state.chlum.runtime.player.y - 380
-  )).toBeLessThan(110);
+  await expect.poll(async () => {
+    const current = await snapshot(page);
+    const player = current.chlum?.runtime?.player;
+    return player ? Math.hypot(player.x - 120, player.y - 380) : Number.POSITIVE_INFINITY;
+  }, { timeout: 2_000, intervals: [20, 40, 80] }).toBeLessThan(12);
   expect(state.running).toBe(true);
   await page.locator("#pauseButton").click();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
