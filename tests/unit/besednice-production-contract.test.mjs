@@ -71,7 +71,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|git push origin/
   );
 });
 
@@ -84,20 +84,17 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
-  assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
-  assert.match(mobileSmoke, /events\.once\("interaction:performed"/);
-  assert.match(mobileSmoke, /window\.__lovecQaInteraction\?\.performed/);
-  assert.match(mobileSmoke, /newCDPSession\(page\)/);
-  assert.match(mobileSmoke, /Input\.dispatchTouchEvent/);
-  assert.match(mobileSmoke, /type: "touchStart"/);
-  assert.match(mobileSmoke, /type: "touchEnd"/);
+  assert.match(mobileSmoke, /async function holdContextualActionUntil/);
+  assert.match(mobileSmoke, /page\.keyboard\.down\("e"\)/);
+  assert.match(mobileSmoke, /if \(await operation\(\)\) return "complete"/);
+  assert.match(mobileSmoke, /page\.keyboard\.up\("e"\)/);
+  assert.doesNotMatch(mobileSmoke, /Input\.dispatchTouchEvent/);
   assert.doesNotMatch(mobileSmoke, /code: "KeyE"/);
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
   assert.doesNotMatch(mobileSmoke, /window\.__lovecQaDanger|tracker\?\.caught/);
-  assert.match(mobileSmoke, /await holdKeys\(page, keys, 100\)/);
-  assert.match(mobileSmoke, /resetInput\("playwright-tractor-caught"\)/);
+  assert.match(mobileSmoke, /await holdKeys\(page, keys, 140\)/);
   assert.match(mobileSmoke, /Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(40\)/);
   assert.match(mobileSmoke, /return "triggered"/);
   assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);

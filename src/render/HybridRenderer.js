@@ -1,11 +1,3 @@
-export function prepareSpriteTexture(texture, cloneTexture = true) {
-  if (!texture) return null;
-  const spriteTexture = cloneTexture ? texture.clone?.() ?? texture : texture;
-  if (!Number.isInteger(spriteTexture.channel) || spriteTexture.channel < 0) spriteTexture.channel = 0;
-  if (spriteTexture !== texture) spriteTexture.needsUpdate = true;
-  return spriteTexture;
-}
-
 export class HybridRenderer {
   constructor(options = {}) {
     const THREE = options.three;
@@ -90,9 +82,11 @@ export class HybridRenderer {
     return true;
   }
 
-  createSprite(textureSource, options = {}) {
+  createSprite(texture, options = {}) {
+    const spriteTexture = options.cloneTexture === false ? texture : texture?.clone?.() ?? texture;
+    if (spriteTexture && spriteTexture !== texture) spriteTexture.needsUpdate = true;
     const material = new this.THREE.SpriteMaterial({
-      map: null,
+      map: spriteTexture,
       transparent: options.transparent !== false,
       alphaTest: options.alphaTest ?? 0.01,
       depthWrite: options.depthWrite ?? false,
@@ -105,18 +99,6 @@ export class HybridRenderer {
     sprite.center.set(options.anchorX ?? 0.5, options.anchorY ?? 0);
     sprite.userData.assetId = options.assetId ?? null;
     sprite.userData.baseScaleX = Math.abs(sprite.scale.x);
-
-    const applyTexture = texture => {
-      material.map = prepareSpriteTexture(texture, options.cloneTexture !== false);
-      material.needsUpdate = true;
-      return material.map;
-    };
-    if (textureSource?.then instanceof Function) {
-      sprite.userData.textureReady = Promise.resolve(textureSource).then(applyTexture);
-    } else {
-      applyTexture(textureSource);
-      sprite.userData.textureReady = Promise.resolve(material.map);
-    }
     return sprite;
   }
 
