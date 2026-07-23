@@ -51,6 +51,7 @@ const entities = [
     id,
     components: {
       transform: { ...documentPositions[index], rotation: 0, scale: 1 },
+      model: { assetId: "model-slavia-document-folder", layer: "props" },
       interaction: {
         kind: "collect-document",
         label: "VYZVEDNOUT",
@@ -86,7 +87,7 @@ const entities = [
     id: "thief-franta",
     components: {
       transform: { ...thiefPosition, rotation: 0, scale: 1 },
-      sprite: { assetId: "npc-rival-franta", layer: "actors", frame: 0, flipX: false },
+      sprite: { assetId: "npc-thief-franta", layer: "actors", frame: 0, flipX: false },
       collider: { shape: "circle", radius: 24, layer: "boss", mask: [] },
       interaction: {
         kind: "recover-best-finding",
