@@ -68,6 +68,7 @@ test("BossSystem reset and validation preserve deterministic serializable state"
     x: 200,
     y: 0
   });
+  assert.equal(system.start(world, boss), true);
   assert.throws(() => system.update(world, boss, 999, 0.1), /transforms/);
   assert.throws(() => system.update(world, boss, boss, -1), /non-negative finite number/);
   const plain = world.createEntity({ transform: { x: 0, y: 0 } });
