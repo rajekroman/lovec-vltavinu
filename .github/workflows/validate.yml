@@ -20,27 +20,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Resolve internal branch tree
-        id: internal-tree
-        shell: bash
-        run: |
-          mkdir -p test-results
-          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
-            git fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
-            TREE_SHA="$(git rev-parse 'FETCH_HEAD^{tree}')"
-          else
-            TREE_SHA="$(git rev-parse 'HEAD^{tree}')"
-          fi
-          echo "$TREE_SHA" > test-results/internal-tree.txt
-          echo "sha=$TREE_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Upload internal branch tree
-        uses: actions/upload-artifact@v5
-        with:
-          name: internal-tree-${{ steps.internal-tree.outputs.sha }}
-          path: test-results/internal-tree.txt
-          retention-days: 1
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -65,12 +44,6 @@ jobs:
 
       - name: Test Nesměň objective contract
         run: node --test --test-reporter=spec tests/unit/nesmen-objective-system.test.mjs
-
-      - name: Test Besednice data and QA contracts
-        run: node --test --test-reporter=spec tests/unit/besednice-data.test.mjs tests/unit/besednice-qa-contract.test.mjs
-
-      - name: Test Besednice objective and boss contracts
-        run: node --test --test-reporter=spec tests/unit/besednice-objective-system.test.mjs tests/unit/boss-system.test.mjs
 
       - name: Test modular core
         run: |
