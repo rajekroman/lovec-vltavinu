@@ -2,7 +2,8 @@ import fs from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const read = path => fs.readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
+const rootUrl = new URL("../../", import.meta.url);
+const read = path => fs.readFileSync(new URL(path, rootUrl), "utf8");
 const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
@@ -11,6 +12,14 @@ const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
+
+const forbiddenWorkflowFiles = Object.freeze([
+  ".github/workflows/patch-besednice-action-transient.yml",
+  ".github/workflows/revert-besednice-known-regression.yml",
+  ".github/workflows/finalize-besednice-mobile-e2e.yml",
+  ".github/workflows/finalize-besednice-touch-hold.yml",
+  ".github/workflows/finalize-besednice-tractor-e2e.yml"
+]);
 
 const expectedAssets = Object.freeze([
   "npc-rival-karel",
@@ -74,12 +83,15 @@ test("service worker includes Besednice production modules", () => {
   ]) assert.ok(serviceWorker.includes(path), `service worker missing ${path}`);
 });
 
-test("validation remains read-only and contains no branch diagnostics", () => {
+test("validation remains read-only and temporary write workflows do not exist", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
     /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|revert-besednice-known-regression|git push origin/
   );
+  for (const path of forbiddenWorkflowFiles) {
+    assert.equal(fs.existsSync(new URL(path, rootUrl)), false, `temporary workflow must not exist: ${path}`);
+  }
 });
 
 test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
