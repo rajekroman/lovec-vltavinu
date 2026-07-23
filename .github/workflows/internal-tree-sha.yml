@@ -1,0 +1,19 @@
+name: Internal tree SHA
+
+on:
+  push:
+    branches:
+      - agent/besednice-vertical-slice
+
+permissions:
+  contents: read
+
+jobs:
+  tree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Print tree SHA
+        run: git rev-parse 'HEAD^{tree}'
