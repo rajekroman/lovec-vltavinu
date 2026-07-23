@@ -71,7 +71,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|git push origin/
   );
 });
 
@@ -85,7 +85,11 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
   assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
-  assert.match(mobileSmoke, /await page\.touchscreen\.tap\(/);
+  assert.match(mobileSmoke, /newCDPSession\(page\)/);
+  assert.match(mobileSmoke, /Input\.dispatchTouchEvent/);
+  assert.match(mobileSmoke, /type: "touchStart"/);
+  assert.match(mobileSmoke, /page\.waitForTimeout\(50\)/);
+  assert.match(mobileSmoke, /type: "touchEnd"/);
   assert.doesNotMatch(mobileSmoke, /code: "KeyE"/);
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
