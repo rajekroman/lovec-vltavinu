@@ -1,26 +1,44 @@
 # PROJECT_CONTROL.md — dokončovací plán a integrační stav
 
-Revize: **2.3 · 23. 7. 2026**  
+Revize: **2.4 · 23. 7. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
-## 1. Aktuální ověřená realita
+## 1. Význam evidovaných SHA
 
-- Aktuální `main` je `92c13c78f602c80e6625adfaa839b077b8d0d356`, merge governance PR #68.
+Governance PR mění SHA větve `main` už samotným sloučením. Tento dokument proto nepředstírá budoucí merge SHA. Eviduje:
+
+- **poslední ověřený governance checkpoint** — existující merge commit ověřený před vznikem této revize;
+- **branch point této revize** — commit, ze kterého vznikla její pracovní větev;
+- **feature head** — konkrétní SHA implementačního PR při A0 review.
+
+Aktuální špička větve `main` se vždy ověřuje přímo přes GitHub. Nesmí se odvozovat pouze z historického čísla zapsaného v tomto souboru.
+
+## 2. Aktuální ověřená realita
+
+- Poslední ověřený governance checkpoint je merge PR #70: `fd15079969074529578d7e01f1f1225990c79a8b`.
+- Branch point revize 2.4 je `main@e8a1c25f14c874712afc3615bbfea63f946762e3`.
+- Issue #69 je uzavřeno jako dokončené merge PR #70.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`.
 - Aktivní runtime používá Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop a jednu `GameSession`.
 - Kanonické levely jsou `chlum`, `nesmen`, `besednice`, `slavia`.
 - Chlum, Nesměň a Besednice jsou sloučené a regresně chráněné.
 - Slavia / KD Slavia je aktivní v issue #61 a draft PR #63 na větvi `agent/slavia-vertical-slice`.
-- Aktuální Slavia head je `547369cce50b6237df6cd0283b57aee138133e09`; workflow `Validate game` #811 je zelené.
+- Ověřený Slavia feature head při A0 review je `547369cce50b6237df6cd0283b57aee138133e09`; workflow `Validate game` #811 je zelené.
 - Zelené workflow #811 zatím není důkaz kompletního vertical slice: Slavia není registrovaná v produkčním bootstrapu, Besednice stále vrací hráče do titulního menu a PR neobsahuje input-driven E2E průchod Slavie.
-- Větev PR #63 je vůči `main` `ahead_by: 34`, `behind_by: 1`; před finálním review musí bezpečně převzít aktuální `main` bez force-push.
+- Větev PR #63 byla při kontrole vůči `main@fd15079969074529578d7e01f1f1225990c79a8b` `ahead_by: 34`, `behind_by: 2`; před finálním review musí bezpečně převzít aktuální `main` bez force-push.
 - A6 připravuje pouze QA infrastrukturu v draft PR #66 na headu `14b5412a02a6d5b6efe8b3c29a73f53b1f9ca5ec`; workflow #752 je zelené, ale certifikace nebyla zahájena a započtené běhy jsou 0.
 - Předčasné PR #58 a PR #59 jsou uzavřené bez merge. Jejich větve nejsou integračním základem.
 - Starý draft PR #20 je nekanonický snapshot a nesmí být sloučen ani použit jako nový základ.
 
-## 2. Neměnná rozhodnutí
+## 3. Governance incident 23. 7. 2026
+
+Při přípravě revize 2.4 vznikl omylem soubor `docs/.governance-placeholder` přímo na `main` v commitu `b8efe3eea686d94475c97fa6afdd1b7f4a7e205c`. Soubor byl okamžitě odstraněn commitem `e8a1c25f14c874712afc3615bbfea63f946762e3`.
+
+Výsledný strom je beze změny. Tyto dva commity nejsou implementačním výstupem a nesmí být vzorem pro další práci. Všechny následující změny musí opět probíhat výhradně přes issue, samostatnou větev a PR.
+
+## 4. Neměnná rozhodnutí
 
 | Oblast | Závazné rozhodnutí |
 |---|---|
@@ -39,11 +57,11 @@ Tento dokument je jediný autoritativní stavový registr projektu. Technické i
 | Assety | manifest-driven preload, lokální GLTFLoader r185 |
 | Nasazení | relativní cesty, GitHub Pages, release pouze z `main` |
 
-## 3. Stav pracovních proudů
+## 5. Stav pracovních proudů
 
 | Role / balík | Stav | Přijímaný výstup | Integrační brána |
 |---|---|---|---|
-| A0 koordinace #69 | **ACTIVE** | governance-only záznam A0 review | pouze `docs/PROJECT_CONTROL.md` |
+| A0 koordinace | **ACTIVE** | review PR #63 a governance pouze podle skutečného stavu | bez produkční implementace |
 | A1 architektura | **STANDBY** | pouze samostatný hardening nebo pozdější legacy cleanup | bez změny architektury během Slavie |
 | A2 Slavia #61 / PR #63 | **RUNNING / DRAFT / CHANGES REQUIRED** | produkční registrace, přechod, finále a restart | celý tok Besednice → Slavia → výsledek → restart |
 | A3 Slavia asset pack #61 / PR #63 | **ACTIVE SUPPORT** | KD Slavia assety, manifest, rozpočty a vizuální důkaz | bez gameplay a UI změn |
@@ -54,7 +72,7 @@ Tento dokument je jediný autoritativní stavový registr projektu. Technické i
 | Brána 2 vizuální polish | **BLOCKED** | samostatný A3 balík | aktivovat až po merge Slavie |
 | Legacy cleanup | **BLOCKED** | odstranění starého runtime | až po zeleném čtyřlevelovém průchodu |
 
-## 4. Integrační brány
+## 6. Integrační brány
 
 ### Brána 0 — Besednice — DOKONČENO
 
@@ -68,8 +86,7 @@ Tento dokument je jediný autoritativní stavový registr projektu. Technické i
 - Issue: #61.
 - Draft PR: #63.
 - Původní branch point: `36e75a97725481a2c4f296a3ea46ca22dd75dbbf`.
-- Aktuální `main`: `92c13c78f602c80e6625adfaa839b077b8d0d356`.
-- Aktuální head: `547369cce50b6237df6cd0283b57aee138133e09`.
+- Ověřený feature head: `547369cce50b6237df6cd0283b57aee138133e09`.
 - Větev: `agent/slavia-vertical-slice`.
 - Vlastník: A2.
 - Podpora: A3 assety/manifest, A4 UI adaptér, A6 testy.
@@ -105,7 +122,7 @@ dokončená Besednice
 4. chybí produkční `app.changeScene("slavia")` podle již zavedeného vzoru Nesměň → Besednice;
 5. chybí input-driven E2E průchod Slavie na desktopu, iPhone portrait a iPhone landscape;
 6. chybí důkaz finálního výsledku, čistého restartu a uvolněného vstupu po overlayi, orientaci a background/foreground;
-7. větev je o jeden commit za aktuálním `main`;
+7. větev musí převzít všechny aktuální governance commity z `main`;
 8. hlavní popis PR neodpovídá aktuálnímu headu a nemá úplný finální HANDOFF.
 
 #### Povinná oprava v PR #63
@@ -138,12 +155,12 @@ Vlastník A6. PR #66 zatím pouze připravuje infrastrukturu. Certifikace začne
 
 Vlastník A7, schvaluje A0. Release pouze z `main` po zeleném finálním QA a smoke skutečné GitHub Pages URL.
 
-## 5. Aktivní integrační pořadí
+## 7. Aktivní integrační pořadí
 
 ```text
 1. Brána 0 / Besednice — dokončeno
-2. Governance PR #68 — dokončeno (`main@92c13c78f602c80e6625adfaa839b077b8d0d356`)
-3. A0 governance issue #69 — aktivní
+2. Governance PR #70 — dokončeno (`fd15079969074529578d7e01f1f1225990c79a8b`)
+3. Revize 2.4 / issue #71 — normalizace řídicího checkpointu
 4. Brána 1 / Slavia issue #61, PR #63 — changes required
 5. Brána 2 / A3 celoproduktový polish — blokováno
 6. Brána 3 / A5 audio a výkon — blokováno
@@ -154,10 +171,10 @@ Vlastník A7, schvaluje A0. Release pouze z `main` po zeleném finálním QA a s
 
 Žádná brána nesmí přeskočit přímou závislost.
 
-## 6. Pravidla aktivace odborného chatu
+## 8. Pravidla aktivace odborného chatu
 
 A0 vždy uvede issue, roli, base SHA, větev, povolené a zakázané cesty, závislosti, acceptance criteria, povinné testy a integrační pořadí. Bez těchto údajů smí odborný chat pouze analyzovat.
 
-## 7. Kritéria dokončení projektu
+## 9. Kritéria dokončení projektu
 
-Projekt je dokončen pouze tehdy, když všechny čtyři levely tvoří jeden produkční průchod, finále vyhodnotí session a umožní čistý restart, neexistuje druhý runtime ani gameplay persistence, tři cílové profily projdou E2E, stejný release head projde dvakrát po sobě po nezapočítaném warm-upu, GitHub Pages projde produkčním smoke testem a dokumentace odpovídá skutečnému `main`.
+Projekt je dokončen pouze tehdy, když všechny čtyři levely tvoří jeden produkční průchod, finále vyhodnotí session a umožní čistý restart, neexistuje druhý runtime ani gameplay persistence, tři cílové profily projdou E2E, stejný release head projde dvakrát po sobě po nezapočítaném warm-upu, GitHub Pages projde produkčním smoke testem a dokumentace odpovídá skutečnému stavu ověřenému přímo přes GitHub.
