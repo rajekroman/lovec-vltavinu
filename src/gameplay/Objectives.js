@@ -24,14 +24,26 @@ function nesmen(runtime) {
   const permit = runtime.permit === true;
   const dug = count(runtime.dug);
   const filled = count(runtime.filled);
+  const findings = count(runtime.findings);
   return {
     text: !permit
       ? "Získej souhlas lesníka"
-      : dug < 3 ? `Profily ${dug}/3` : filled < 3 ? `Zahrabáno ${filled}/3` : "Les je uklizený",
-    complete: permit && dug >= 3 && filled >= 3,
-    progress: clamp01((permit ? 0.1 : 0) + clamp01(dug / 3) * 0.45 + clamp01(filled / 3) * 0.45),
-    current: { permit, dug, filled },
-    target: { permit: true, dug: 3, filled: 3 }
+      : filled < dug
+        ? "Zasyp otevřenou díru"
+        : dug < 3
+          ? `Profily ${dug}/3`
+          : filled < 3
+            ? `Zasypáno ${filled}/3`
+            : findings < 1 ? "Vyzvedni nalezený vltavín" : "Les je uklizený",
+    complete: permit && dug >= 3 && filled >= 3 && findings >= 1,
+    progress: clamp01(
+      (permit ? 0.1 : 0) +
+      clamp01(dug / 3) * 0.35 +
+      clamp01(filled / 3) * 0.35 +
+      clamp01(findings) * 0.2
+    ),
+    current: { permit, dug, filled, findings },
+    target: { permit: true, dug: 3, filled: 3, findings: 1 }
   };
 }
 

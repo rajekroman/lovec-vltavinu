@@ -9,8 +9,8 @@ const scenarios = {
     premature: { permit: true, digHits: 2, findings: 1 }
   },
   nesmen: {
-    complete: { permit: true, dug: 3, filled: 3 },
-    premature: { permit: true, dug: 3, filled: 2 }
+    complete: { permit: true, dug: 3, filled: 3, findings: 1 },
+    premature: { permit: true, dug: 3, filled: 3, findings: 0 }
   },
   besednice: {
     complete: { clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true },

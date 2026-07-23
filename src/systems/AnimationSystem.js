@@ -12,9 +12,19 @@ export function createAnimation(options = {}) {
     index: Math.max(0, Math.min(frames.length - 1, options.index ?? 0)),
     elapsed: Math.max(0, options.elapsed ?? 0),
     completed: false,
-    frame: frames[Math.max(0, Math.min(frames.length - 1, options.index ?? 0))]
+    frame: frames[Math.max(0, Math.min(frames.length - 1, options.index ?? 0))],
+    motionDriven: options.motionDriven === true,
+    motionThreshold: Math.max(0, Number(options.motionThreshold) || 0.001),
+    resetOnIdle: options.resetOnIdle !== false
   };
 }
+
+const resetAnimation = animation => {
+  animation.index = 0;
+  animation.elapsed = 0;
+  animation.completed = false;
+  animation.frame = animation.frames[0];
+};
 
 export class AnimationSystem {
   constructor(options = {}) {
@@ -23,19 +33,32 @@ export class AnimationSystem {
 
   play(animation, options = {}) {
     if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
-    if (options.restart) {
-      animation.index = 0;
-      animation.elapsed = 0;
-      animation.frame = animation.frames[0];
-    }
+    if (options.restart) resetAnimation(animation);
     animation.completed = false;
     animation.playing = true;
     return animation;
   }
 
-  pause(animation) {
+  pause(animation, options = {}) {
+    if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
     animation.playing = false;
+    if (options.reset === true) resetAnimation(animation);
     return animation;
+  }
+
+  setMotion(animation, sprite, move, options = {}) {
+    if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
+    if (!sprite || typeof sprite !== "object") throw new TypeError("Animation motion binding requires a sprite component.");
+    const x = Number(move?.x) || 0;
+    const y = Number(move?.y) || 0;
+    const threshold = Math.max(0, Number(options.threshold) || 0.001);
+    const moving = Math.hypot(x, y) >= threshold;
+
+    if (Math.abs(x) >= threshold) sprite.flipX = x < 0;
+    if (moving) this.play(animation);
+    else this.pause(animation, { reset: options.resetOnIdle !== false });
+    sprite.frame = animation.frame;
+    return moving;
   }
 
   updateAnimation(animation, dt, entity = null) {
@@ -72,7 +95,21 @@ export class AnimationSystem {
   update(world, dt) {
     let changed = 0;
     for (const [entity, animation] of world.query("animation")) {
-      if (this.updateAnimation(animation, dt, entity)) changed++;
+      const sprite = world.get(entity, "sprite");
+      if (animation.motionDriven === true && sprite) {
+        const transform = world.get(entity, "transform");
+        const previous = world.get(entity, "previousTransform") ?? transform;
+        this.setMotion(animation, sprite, {
+          x: (transform?.x ?? 0) - (previous?.x ?? transform?.x ?? 0),
+          y: (transform?.y ?? 0) - (previous?.y ?? transform?.y ?? 0)
+        }, {
+          threshold: animation.motionThreshold,
+          resetOnIdle: animation.resetOnIdle
+        });
+      }
+      const frameChanged = this.updateAnimation(animation, dt, entity);
+      if (sprite && sprite.frame !== animation.frame) sprite.frame = animation.frame;
+      if (frameChanged) changed++;
     }
     return changed;
   }

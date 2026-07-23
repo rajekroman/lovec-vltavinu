@@ -10,7 +10,8 @@ import { ScreenController } from "./ui/ScreenController.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
-import { ChlumScene } from "./scenes/ChlumScene.js";
+import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
+import { NesmenRestorationScene } from "./scenes/NesmenRestorationScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -68,7 +69,15 @@ app.assets.register("texture", loadTexture, disposeTexture);
 app.assets.register("spritesheet", loadTexture, disposeTexture);
 app.assets.register("gltf", entry => gltfLoader.load(entry), disposeObject3D);
 
-const chlum = new ChlumScene({
+const chlum = new ChlumNesmenBridgeScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const nesmen = new NesmenRestorationScene({
   app,
   events,
   renderer,
@@ -83,6 +92,7 @@ const title = new TitleScene({
 });
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
+app.scenes.register("nesmen", nesmen);
 
 async function startNewRun() {
   session.reset();
@@ -129,7 +139,8 @@ function installDebugApi() {
         type: "three-webgl-orthographic"
       },
       session: session.state,
-      chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null
+      chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
+      nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null
     }),
     resetInput: reason => inputAdapter.reset(reason),
     resize
@@ -149,4 +160,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum, startNewRun };
+export { app, events, renderer, session, title, chlum, nesmen, startNewRun };

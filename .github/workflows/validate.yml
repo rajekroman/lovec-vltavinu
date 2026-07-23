@@ -39,15 +39,26 @@ jobs:
           set -o pipefail
           node tools/validate.mjs 2>&1 | tee test-results/static-validation.log
 
+      - name: Test Nesměň data contract
+        run: node --test --test-reporter=spec tests/unit/nesmen-data.test.mjs
+
+      - name: Test Nesměň objective contract
+        run: node --test --test-reporter=spec tests/unit/nesmen-objective-system.test.mjs
+
       - name: Test modular core
-        run: npm run test:unit
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          npm run test:unit 2>&1 | tee test-results/unit-validation.log
 
       - name: Upload static validation report
         if: ${{ always() }}
         uses: actions/upload-artifact@v5
         with:
           name: static-validation-report
-          path: test-results/static-validation.log
+          path: |
+            test-results/static-validation.log
+            test-results/unit-validation.log
           if-no-files-found: ignore
           retention-days: 14
 

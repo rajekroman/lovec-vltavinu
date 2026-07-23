@@ -27,7 +27,8 @@ test("all Chlum transforms are reachable inside canonical level bounds", () => {
 });
 
 test("Chlum permission dialogue and three immutable finding variants are complete", () => {
-  assert.equal(DIALOGUE_DEFINITIONS.length, 1);
+  const dialogueIds = DIALOGUE_DEFINITIONS.map(entry => entry.id);
+  assert.equal(new Set(dialogueIds).size, dialogueIds.length, "dialogue IDs must remain unique across levels");
   const dialogue = getDialogueDefinition("chlum-permission");
   assert.equal(dialogue.speaker.entityId, "farmer-vaclav");
   assert.equal(dialogue.grantsFlag, "chlumPermission");

@@ -83,8 +83,10 @@ export class HybridRenderer {
   }
 
   createSprite(texture, options = {}) {
+    const spriteTexture = options.cloneTexture === false ? texture : texture?.clone?.() ?? texture;
+    if (spriteTexture && spriteTexture !== texture) spriteTexture.needsUpdate = true;
     const material = new this.THREE.SpriteMaterial({
-      map: texture,
+      map: spriteTexture,
       transparent: options.transparent !== false,
       alphaTest: options.alphaTest ?? 0.01,
       depthWrite: options.depthWrite ?? false,
@@ -96,6 +98,7 @@ export class HybridRenderer {
     sprite.scale.set(options.width ?? 64, options.height ?? 64, 1);
     sprite.center.set(options.anchorX ?? 0.5, options.anchorY ?? 0);
     sprite.userData.assetId = options.assetId ?? null;
+    sprite.userData.baseScaleX = Math.abs(sprite.scale.x);
     return sprite;
   }
 
