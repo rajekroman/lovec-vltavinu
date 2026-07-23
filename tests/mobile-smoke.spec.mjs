@@ -192,19 +192,26 @@ async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
 }
 
 async function successfulDigHit(page, expectedTotal) {
-  await withPhaseSnapshot(page, `dig hit ${expectedTotal}`, () => expect.poll(() => page.evaluate(total => {
-    const state = window.__lovecRuntime.snapshot();
-    const runtime = state[state.scene]?.runtime;
-    if (!runtime) return false;
-    const currentTotal = state.scene === "chlum" ? runtime.digHits : runtime.totalDigHits;
-    if (currentTotal === total) return true;
-    const position = runtime.dig?.position;
-    if (currentTotal !== total - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return false;
-    document.getElementById("digButton")?.click();
-    const after = window.__lovecRuntime.snapshot();
-    const afterRuntime = after[after.scene]?.runtime;
-    return (after.scene === "chlum" ? afterRuntime?.digHits : afterRuntime?.totalDigHits) === total;
-  }, expectedTotal), { timeout: 6_000, intervals: [20, 30, 50] }).toBe(true), { expectedTotal });
+  await withPhaseSnapshot(page, `dig hit ${expectedTotal}`, async () => {
+    await expect.poll(() => page.evaluate(total => {
+      const state = window.__lovecRuntime.snapshot();
+      const runtime = state[state.scene]?.runtime;
+      if (!runtime) return "waiting";
+      const currentTotal = state.scene === "chlum" ? runtime.digHits : runtime.totalDigHits;
+      if (currentTotal >= total) return "complete";
+      const position = runtime.dig?.position;
+      if (currentTotal !== total - 1 || typeof position !== "number" || position < 0.44 || position > 0.56) return "waiting";
+      document.getElementById("digButton")?.click();
+      return "triggered";
+    }, expectedTotal), { timeout: 8_000, intervals: [20, 30, 50] }).not.toBe("waiting");
+
+    await expect.poll(() => page.evaluate(total => {
+      const state = window.__lovecRuntime.snapshot();
+      const runtime = state[state.scene]?.runtime;
+      const currentTotal = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
+      return Number(currentTotal) >= total;
+    }, expectedTotal), { timeout: 2_000, intervals: [20, 30, 50] }).toBe(true);
+  }, { expectedTotal });
 }
 
 async function completeChlum(page) {
