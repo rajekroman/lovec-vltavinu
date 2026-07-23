@@ -8,6 +8,7 @@ const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
+const validationWorkflow = read(".github/workflows/validate.yml");
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
 
 const expectedAssets = Object.freeze([
@@ -64,6 +65,14 @@ test("service worker includes Besednice production modules", () => {
     "./src/scenes/NesmenBesedniceBridgeScene.js",
     "./src/scenes/BesedniceScene.js"
   ]) assert.ok(serviceWorker.includes(path), `service worker missing ${path}`);
+});
+
+test("validation remains read-only and contains no branch diagnostics", () => {
+  assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
+  assert.doesNotMatch(
+    validationWorkflow,
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|git push origin/
+  );
 });
 
 test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
