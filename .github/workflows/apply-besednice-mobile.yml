@@ -1,0 +1,48 @@
+name: Apply Besednice mobile flow
+
+on:
+  push:
+    branches:
+      - agent/besednice-vertical-slice
+    paths:
+      - tests/besednice-flow.fragment.mjs
+      - .github/workflows/apply-besednice-mobile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/besednice-vertical-slice
+          fetch-depth: 0
+      - name: Replace canonical mobile flow
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          target = Path("tests/mobile-smoke.spec.mjs")
+          fragment = Path("tests/besednice-flow.fragment.mjs")
+          text = target.read_text(encoding="utf-8")
+          start_marker = 'test("canonical input-driven Chlum → Nesměň flow completes three restored profiles"'
+          end_marker = 'test("tractor collision raises danger'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          replacement = fragment.read_text(encoding="utf-8").rstrip() + "\n\n"
+          target.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+          fragment.unlink()
+          Path(".github/workflows/apply-besednice-mobile.yml").unlink()
+          PY
+          node --check tests/mobile-smoke.spec.mjs
+      - name: Commit generated test update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/mobile-smoke.spec.mjs tests/besednice-flow.fragment.mjs .github/workflows/apply-besednice-mobile.yml
+          git commit -m "test(besednice): extend canonical mobile flow"
+          git push origin HEAD:agent/besednice-vertical-slice
