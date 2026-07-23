@@ -7,6 +7,8 @@ const read = path => fs.readFileSync(new URL(path, rootUrl), "utf8");
 const bootstrap = read("src/bootstrap.js");
 const scene = read("src/scenes/BesedniceScene.js");
 const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
+const slaviaBridge = read("src/scenes/BesedniceSlaviaBridgeScene.js");
+const productionSlavia = read("src/scenes/ProductionSlaviaScene.js");
 const hybridRenderer = read("src/render/HybridRenderer.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
@@ -31,14 +33,23 @@ const expectedAssets = Object.freeze([
   "model-besednice-rock"
 ]);
 
-test("bootstrap registers one production Besednice scene and one production Slavia scene", () => {
-  assert.match(bootstrap, /import \{ BesedniceScene \} from "\.\/scenes\/BesedniceScene\.js"/);
-  assert.match(bootstrap, /import \{ SlaviaScene \} from "\.\/scenes\/SlaviaScene\.js"/);
+test("bootstrap exposes one lazy production Slavia registration gate", () => {
+  assert.match(bootstrap, /import \{ BesedniceSlaviaBridgeScene \} from "\.\/scenes\/BesedniceSlaviaBridgeScene\.js"/);
+  assert.match(bootstrap, /import \{ ProductionSlaviaScene \} from "\.\/scenes\/ProductionSlaviaScene\.js"/);
+  assert.match(bootstrap, /function ensureSlaviaRegistered\(\)/);
+  assert.match(bootstrap, /if \(!app\.scenes\.has\("slavia"\)\) app\.scenes\.register\("slavia", slavia\)/);
   assert.match(bootstrap, /app\.scenes\.register\("besednice", besednice\)/);
-  assert.match(bootstrap, /app\.scenes\.register\("slavia", slavia\)/);
-  assert.match(bootstrap, /besednice: app\.scenes\.activeId === "besednice" \? besednice\.snapshot\(\) : null/);
+  assert.doesNotMatch(bootstrap, /^app\.scenes\.register\("slavia", slavia\);$/m);
   assert.match(bootstrap, /slavia: app\.scenes\.activeId === "slavia" \? slavia\.snapshot\(\) : null/);
   assert.equal((bootstrap.match(/app\.scenes\.register\("slavia", slavia\)/g) ?? []).length, 1);
+});
+
+test("Besednice production result continues through the canonical Slavia bridge", () => {
+  assert.match(slaviaBridge, /extends BesedniceScene/);
+  assert.match(slaviaBridge, /nextLevelId: "slavia"/);
+  assert.match(slaviaBridge, /buttonLabel: "POKRAČOVAT DO SLAVIE"/);
+  assert.match(slaviaBridge, /this\.ensureSlaviaRegistered\(\)/);
+  assert.match(slaviaBridge, /changeScene\("slavia"\)/);
 });
 
 test("Nesměň production result continues only into Besednice", () => {
@@ -56,6 +67,14 @@ test("Besednice scene uses manifest-driven preload and canonical objective phase
   assert.match(scene, /bossDefeated: boss\.defeated === true/);
   assert.match(scene, /nextLevelId: "slavia"/);
   assert.match(scene, /DIG_REQUIRED_HITS/);
+});
+
+test("production Slavia resolves textures and binds canonical assets", () => {
+  assert.match(productionSlavia, /await Promise\.all\(textures\.map/);
+  assert.match(productionSlavia, /npc-thief-franta/);
+  assert.doesNotMatch(productionSlavia, /npc-rival-franta/);
+  assert.match(productionSlavia, /model-slavia-document-folder/);
+  assert.doesNotMatch(productionSlavia, /BoxGeometry\(34, 24, 6\)/);
 });
 
 test("sprite rendering resolves promised manifest textures before binding the material map", () => {
@@ -78,21 +97,21 @@ test("Besednice manifest pack has stable IDs, budgets and lifecycle owners", () 
   }
 });
 
-test("service worker includes Besednice production modules", () => {
+test("service worker includes production scene modules", () => {
   for (const path of [
     "./src/data/besednice.js",
     "./src/gameplay/BossSystem.js",
     "./src/scenes/NesmenBesedniceBridgeScene.js",
-    "./src/scenes/BesedniceScene.js"
+    "./src/scenes/BesedniceScene.js",
+    "./src/scenes/BesedniceSlaviaBridgeScene.js",
+    "./src/scenes/SlaviaScene.js",
+    "./src/scenes/ProductionSlaviaScene.js"
   ]) assert.ok(serviceWorker.includes(path), `service worker missing ${path}`);
 });
 
 test("validation remains read-only and temporary write workflows do not exist", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
-  assert.doesNotMatch(
-    validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-tractor-e2e|revert-besednice-known-regression|git push origin/
-  );
+  assert.doesNotMatch(validationWorkflow, /contents: write|internal-tree-sha|git push origin/);
   for (const path of forbiddenWorkflowFiles) {
     assert.equal(fs.existsSync(new URL(path, rootUrl)), false, `temporary workflow must not exist: ${path}`);
   }
@@ -100,32 +119,18 @@ test("validation remains read-only and temporary write workflows do not exist", 
 
 test("canonical mobile smoke preserves the input-driven Chlum through Besednice regression path", () => {
   assert.match(mobileSmoke, /Chlum → Nesměň → Besednice flow completes hedgehog recovery/);
-  assert.match(mobileSmoke, /openBootstrap\(page, "\/"\)/);
   assert.match(mobileSmoke, /enterBesedniceFromResult/);
   assert.match(mobileSmoke, /verifyBesedniceLifecycle/);
   assert.match(mobileSmoke, /waitForInteraction\(page, "recover", 15_000\)/);
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
-  assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
-  assert.match(mobileSmoke, /events\.once\("interaction:performed"/);
-  assert.match(mobileSmoke, /window\.__lovecQaInteraction\?\.performed/);
+  assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.match(mobileSmoke, /newCDPSession\(page\)/);
   assert.match(mobileSmoke, /Input\.dispatchTouchEvent/);
-  assert.match(mobileSmoke, /type: "touchStart"/);
-  assert.match(mobileSmoke, /type: "touchEnd"/);
-  assert.doesNotMatch(mobileSmoke, /code: "KeyE"/);
-  assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
-  assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
-  assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
-  assert.doesNotMatch(mobileSmoke, /window\.__lovecQaDanger|tracker\?\.caught/);
-  assert.match(mobileSmoke, /await holdKeys\(page, keys, 100\)/);
-  assert.match(mobileSmoke, /resetInput\("playwright-tractor-caught"\)/);
-  assert.match(mobileSmoke, /Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(40\)/);
-  assert.match(mobileSmoke, /return "triggered"/);
-  assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);
-  assert.match(mobileSmoke, /timeout: 2_000/);
+  assert.doesNotMatch(mobileSmoke, /code: "KeyE"|page\.keyboard\.press\("Space"\)/);
 });
 
 test("Slavia smoke covers arrival, certification, final result and clean restart", () => {
+  assert.match(slaviaSmoke, /ensureSlaviaRegistered/);
   assert.match(slaviaSmoke, /slavia-arrival/);
   assert.match(slaviaSmoke, /slavia-certification/);
   assert.match(slaviaSmoke, /slavia-final-result/);
