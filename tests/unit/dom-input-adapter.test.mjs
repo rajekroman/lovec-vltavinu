@@ -189,4 +189,4 @@ test("keyboard movement aggregates simultaneous keys, ignores repeat and release
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 0, y: 1, length: 1 } });
 
   adapter.dispose();
-}
+});
