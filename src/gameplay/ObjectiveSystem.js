@@ -13,12 +13,12 @@ export class ObjectiveSystem {
     this.permissionFlag = options.permissionFlag ?? PERMISSION_FLAGS[this.levelId] ?? null;
     if (!this.session?.state || !this.session?.setFlag || !this.session?.recordFinding) throw new TypeError("ObjectiveSystem requires a GameSession.");
     if (!this.level) throw new Error(`Unknown level: ${this.levelId}`);
-    if (!this.permissionFlag) throw new Error(`ObjectiveSystem has no permission contract for level: ${this.levelId}`);
     this.lastProgress = null;
     this.completed = this.session.state.objective.complete === true;
   }
 
   grantPermission() {
+    if (!this.permissionFlag) return false;
     if (this.session.state.flags[this.permissionFlag] === true) return false;
     this.session.setFlag(this.permissionFlag, true);
     return true;
@@ -35,7 +35,7 @@ export class ObjectiveSystem {
   snapshot(runtime = {}) {
     return evaluateObjective(this.levelId, {
       ...runtime,
-      permit: this.session.state.flags[this.permissionFlag] === true,
+      ...(this.permissionFlag ? { permit: this.session.state.flags[this.permissionFlag] === true } : {}),
       findings: this.session.state.findings.filter(entry => entry.locality === this.levelId).length
     });
   }
