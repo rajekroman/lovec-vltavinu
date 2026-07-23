@@ -72,7 +72,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-pointer-e2e|finalize-besednice-input-e2e|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-pointer-e2e|finalize-besednice-input-e2e|finalize-besednice-collect-e2e|git push origin/
   );
 });
 
@@ -90,9 +90,12 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
+  assert.match(mobileSmoke, /page\.evaluate\(\(\) => document\.activeElement\?\.blur\?\.\(\)\)/);
   assert.match(mobileSmoke, /page\.keyboard\.down\("e"\)/);
-  assert.match(mobileSmoke, /page\.waitForTimeout\(50\)/);
   assert.match(mobileSmoke, /page\.keyboard\.up\("e"\)/);
+  assert.match(mobileSmoke, /holdContextualActionUntil/);
+  assert.match(mobileSmoke, /input\.actions\.action\?\.down \? "waiting" : "not-pressed"/);
+  assert.match(mobileSmoke, /finding && state\.besednice\.runtime\.boss\.started === true/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
   assert.doesNotMatch(mobileSmoke, /window\.__lovecQaDanger|tracker\?\.caught/);
