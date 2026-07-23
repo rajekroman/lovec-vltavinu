@@ -72,7 +72,7 @@ test("validation remains read-only and contains no branch diagnostics", () => {
   assert.match(validationWorkflow, /permissions:\s*\n\s*contents: read/);
   assert.doesNotMatch(
     validationWorkflow,
-    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-pointer-e2e|git push origin/
+    /contents: write|internal-tree-sha|Resolve internal branch tree|apply-besednice-test-fix|finalize-besednice-mobile-e2e|finalize-besednice-touch-hold|finalize-besednice-pointer-e2e|finalize-besednice-input-e2e|git push origin/
   );
 });
 
@@ -90,16 +90,13 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
-  assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
-  assert.match(mobileSmoke, /action\.dispatchEvent\("pointerdown"/);
+  assert.match(mobileSmoke, /page\.keyboard\.down\("e"\)/);
   assert.match(mobileSmoke, /page\.waitForTimeout\(50\)/);
-  assert.match(mobileSmoke, /action\.dispatchEvent\("pointerup"/);
-  assert.doesNotMatch(mobileSmoke, /code: "KeyE"/);
-  assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
+  assert.match(mobileSmoke, /page\.keyboard\.up\("e"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
-  assert.match(mobileSmoke, /window\.__lovecQaDanger/);
-  assert.match(mobileSmoke, /tracker\?\.caught/);
+  assert.doesNotMatch(mobileSmoke, /window\.__lovecQaDanger|tracker\?\.caught/);
+  assert.match(mobileSmoke, /await holdKeys\(page, keys, 140\)/);
   assert.match(mobileSmoke, /await expectReleasedInput\(page\);[\s\S]*Math\.hypot\(player\.x - 120, player\.y - 380\)[\s\S]*toBeLessThan\(40\)/);
   assert.match(mobileSmoke, /return "triggered"/);
   assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);
