@@ -44,6 +44,7 @@ export class SlaviaScene {
     this.flow?.reset?.();
     this.assetEntries = new Map();
     this.loadedModels = new Map();
+    this.loadedTextures = new Map();
     this.entityByExternalId = new Map();
     this.externalIdByEntity = new Map();
     this.visualRoot = null;
@@ -65,8 +66,9 @@ export class SlaviaScene {
     const loaded = await this.app.assets.loadAll(selected);
     for (const [id, asset] of loaded) {
       const entry = this.requireAsset(id);
-      if (entry.type === "texture" || entry.type === "spritesheet") this.configureTexture(entry, asset);
-      else if (entry.type === "gltf") {
+      if (entry.type === "texture" || entry.type === "spritesheet") {
+        this.loadedTextures.set(id, this.configureTexture(entry, asset));
+      } else if (entry.type === "gltf") {
         asset.userData.assetId = id;
         this.loadedModels.set(id, asset);
       }
@@ -79,15 +81,14 @@ export class SlaviaScene {
     return entry;
   }
 
-  configureTexture(entry, texture) {
+  configureTexture(_entry, texture) {
     texture.colorSpace = this.THREE.SRGBColorSpace;
     texture.needsUpdate = true;
     return texture;
   }
 
   texture(id) {
-    const entry = this.requireAsset(id);
-    const texture = this.app.assets.get(id, entry.type);
+    const texture = this.loadedTextures.get(id);
     if (!texture) throw new Error(`Texture is not loaded: ${id}`);
     return texture;
   }
@@ -134,25 +135,36 @@ export class SlaviaScene {
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     this.renderer.bindEntity(this.playerEntity, this.renderer.createSprite(playerTexture, {
-      width: 72, height: 82, z: 12, anchorX: 0.5, anchorY: 0.16, assetId: "player-hunter-walk"
+      width: 72,
+      height: 82,
+      z: 12,
+      anchorX: 0.5,
+      anchorY: 0.16,
+      assetId: "player-hunter-walk"
     }), "actors");
 
-    for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-rival-franta"]]) {
+    for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-thief-franta"]]) {
       const entity = this.entityByExternalId.get(entityId);
       const sprite = this.renderer.createSprite(this.texture(assetId), {
-        width: 76, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId
+        width: 76,
+        height: 108,
+        z: 12,
+        anchorX: 0.5,
+        anchorY: 0.08,
+        assetId
       });
       this.renderer.bindEntity(entity, sprite, "actors");
     }
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
       const entity = this.entityByExternalId.get(documentId);
-      const marker = new THREE.Mesh(
-        new THREE.BoxGeometry(34, 24, 6),
-        new THREE.MeshBasicMaterial({ color: 0xd9c28d })
-      );
-      marker.position.z = 5;
-      this.renderer.bindEntity(entity, marker, "props");
+      const folder = this.modelFactory.clone(this.model("model-slavia-document-folder"), {
+        assetId: "model-slavia-document-folder",
+        rotationX: Math.PI / 2,
+        scale: 18,
+        z: 5
+      });
+      this.renderer.bindEntity(entity, folder, "props");
     }
 
     this.visualRoot = root;
@@ -413,6 +425,7 @@ export class SlaviaScene {
   }
 
   snapshot() {
+    const player = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
     return {
       level: "slavia",
       session: this.session.state,
@@ -421,6 +434,7 @@ export class SlaviaScene {
       runtime: {
         modal: this.modal,
         resultShown: this.resultShown,
+        player: player ? { x: player.x, y: player.y } : null,
         available: this.availableInteraction ? {
           entity: this.externalIdByEntity.get(this.availableInteraction.entity),
           kind: this.availableInteraction.interaction.kind
@@ -443,6 +457,7 @@ export class SlaviaScene {
   unloadAssets() {
     for (const entry of this.assetEntries.values()) this.app.assets.unload(entry.id, entry.type);
     this.loadedModels.clear();
+    this.loadedTextures.clear();
     this.app.assets.unload(MANIFEST_ENTRY.id, MANIFEST_ENTRY.type);
   }
 
