@@ -11,7 +11,8 @@ import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
-import { NesmenRestorationScene } from "./scenes/NesmenRestorationScene.js";
+import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
+import { BesedniceScene } from "./scenes/BesedniceScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -77,7 +78,15 @@ const chlum = new ChlumNesmenBridgeScene({
   screens,
   session
 });
-const nesmen = new NesmenRestorationScene({
+const nesmen = new NesmenBesedniceBridgeScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const besednice = new BesedniceScene({
   app,
   events,
   renderer,
@@ -93,6 +102,7 @@ const title = new TitleScene({
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
 app.scenes.register("nesmen", nesmen);
+app.scenes.register("besednice", besednice);
 
 async function startNewRun() {
   session.reset();
@@ -140,7 +150,8 @@ function installDebugApi() {
       },
       session: session.state,
       chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
-      nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null
+      nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null,
+      besednice: app.scenes.activeId === "besednice" ? besednice.snapshot() : null
     }),
     resetInput: reason => inputAdapter.reset(reason),
     resize
@@ -160,4 +171,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum, nesmen, startNewRun };
+export { app, events, renderer, session, title, chlum, nesmen, besednice, startNewRun };
