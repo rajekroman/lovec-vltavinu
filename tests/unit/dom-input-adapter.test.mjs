@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { EventBus } from "../../src/core/EventBus.js";
 import { DomInputAdapter } from "../../src/input/DomInputAdapter.js";
 
 class FakeClassList {
@@ -58,6 +59,10 @@ class FakeElement extends FakeTarget {
     this.capturedPointer = pointerId;
   }
 
+  releasePointerCapture(pointerId) {
+    if (this.capturedPointer === pointerId) this.capturedPointer = null;
+  }
+
   getBoundingClientRect() {
     return { left: 0, top: 0, width: 100, height: 100 };
   }
@@ -89,6 +94,7 @@ class FakeWindow extends FakeTarget {
 
 class FakeInput {
   constructor() {
+    this.events = new EventBus();
     this.presses = [];
     this.releases = [];
     this.resets = [];
@@ -113,6 +119,7 @@ class FakeInput {
 
   reset(reason) {
     this.resets.push(reason);
+    this.events.emit("input:reset", { reason });
   }
 }
 
@@ -170,18 +177,49 @@ test("mobile action remains owned by its first pointer and lifecycle resets clea
   assert.deepEqual(input.resets, ["window-blur", "dom-dispose"]);
 });
 
-test("keyboard movement aggregates simultaneous keys and releases them independently", () => {
+test("external gameplay reset clears stale action pointer ownership", () => {
+  const { adapter, document, input } = createAdapter();
+  const action = document.getElementById("actionButton");
+
+  action.dispatch("pointerdown", { pointerId: 71 });
+  assert.equal(adapter.actionPointer, 71);
+  assert.equal(action.classList.contains("active"), true);
+
+  input.reset("besednice-dig-finish");
+  assert.equal(adapter.actionPointer, null);
+  assert.equal(action.capturedPointer, null);
+  assert.equal(action.classList.contains("active"), false);
+
+  action.dispatch("pointerdown", { pointerId: 72 });
+  assert.deepEqual(input.presses, ["action", "action"]);
+  action.dispatch("pointerup", { pointerId: 72 });
+  assert.deepEqual(input.releases, ["action"]);
+
+  adapter.dispose();
+});
+
+test("keyboard movement aggregates simultaneous keys, ignores repeat and releases independently", () => {
   const { adapter, window, input } = createAdapter();
 
   const right = window.dispatch("keydown", { code: "ArrowRight", repeat: false });
   assert.equal(right.defaultPrevented, true);
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 1, y: 0, length: 1 } });
 
+  const axisUpdates = input.axes.length;
+  const repeatedRight = window.dispatch("keydown", { code: "ArrowRight", repeat: true });
+  assert.equal(repeatedRight.defaultPrevented, true);
+  assert.equal(input.axes.length, axisUpdates);
+
   window.dispatch("keydown", { code: "ArrowUp", repeat: false });
   assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 1, y: 1, length: 1 } });
 
+  input.reset("tractor-caught");
+  const updatesAfterReset = input.axes.length;
+  window.dispatch("keydown", { code: "ArrowRight", repeat: true });
+  assert.equal(input.axes.length, updatesAfterReset);
+
   window.dispatch("keyup", { code: "ArrowRight" });
-  assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 0, y: 1, length: 1 } });
+  assert.deepEqual(input.axes.at(-1), { name: "move", value: { x: 0, y: 0, length: 0 } });
 
   adapter.dispose();
 });
