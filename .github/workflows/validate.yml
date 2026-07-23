@@ -45,6 +45,12 @@ jobs:
       - name: Test Nesměň objective contract
         run: node --test --test-reporter=spec tests/unit/nesmen-objective-system.test.mjs
 
+      - name: Test Besednice data and QA contracts
+        run: node --test --test-reporter=spec tests/unit/besednice-data.test.mjs tests/unit/besednice-qa-contract.test.mjs
+
+      - name: Test Besednice objective and boss contracts
+        run: node --test --test-reporter=spec tests/unit/besednice-objective-system.test.mjs tests/unit/boss-system.test.mjs
+
       - name: Test modular core
         run: |
           mkdir -p test-results
