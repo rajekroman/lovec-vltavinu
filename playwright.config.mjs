@@ -24,6 +24,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
+      testMatch: /desktop-smoke\.spec\.mjs/,
       use: {
         ...sharedProjectUse,
         ...devices["Desktop Chrome"],
@@ -32,6 +33,7 @@ export default defineConfig({
     },
     {
       name: "iphone-portrait",
+      testMatch: /mobile-smoke\.spec\.mjs/,
       use: {
         ...sharedProjectUse,
         ...devices["iPhone 13"],
@@ -40,6 +42,7 @@ export default defineConfig({
     },
     {
       name: "iphone-landscape",
+      testMatch: /landscape-smoke\.spec\.mjs/,
       use: {
         ...sharedProjectUse,
         ...devices["iPhone 13 landscape"],
