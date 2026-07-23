@@ -165,7 +165,20 @@ async function contextualAction(page) {
   const box = await action.boundingBox();
   expect(box).not.toBeNull();
   if (!box) throw new Error("Action button has no touch target.");
-  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+
+  const x = Math.round(box.x + box.width / 2);
+  const y = Math.round(box.y + box.height / 2);
+  const client = await page.context().newCDPSession(page);
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
+    });
+    await page.waitForTimeout(50);
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  } finally {
+    await client.detach();
+  }
   await expectReleasedInput(page);
 }
 
