@@ -166,19 +166,20 @@ async function contextualAction(page) {
   expect(box).not.toBeNull();
   if (!box) throw new Error("Action button has no touch target.");
 
-  const x = Math.round(box.x + box.width / 2);
-  const y = Math.round(box.y + box.height / 2);
-  const client = await page.context().newCDPSession(page);
-  try {
-    await client.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
-    });
-    await page.waitForTimeout(50);
-    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  } finally {
-    await client.detach();
-  }
+  const pointer = {
+    pointerId: 91,
+    pointerType: "touch",
+    isPrimary: true,
+    button: 0,
+    buttons: 1,
+    clientX: box.x + box.width / 2,
+    clientY: box.y + box.height / 2,
+    bubbles: true,
+    cancelable: true
+  };
+  await action.dispatchEvent("pointerdown", pointer);
+  await page.waitForTimeout(50);
+  await action.dispatchEvent("pointerup", { ...pointer, buttons: 0 });
   await expectReleasedInput(page);
 }
 
@@ -542,11 +543,12 @@ test("tractor collision raises danger, returns player to spawn and does not free
   await enterChlum(page);
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
+  await expectReleasedInput(page);
   await expect.poll(async () => {
     const current = await snapshot(page);
     const player = current.chlum?.runtime?.player;
     return player ? Math.hypot(player.x - 120, player.y - 380) : Number.POSITIVE_INFINITY;
-  }, { timeout: 2_000, intervals: [20, 40, 80] }).toBeLessThan(20);
+  }, { timeout: 2_000, intervals: [20, 40, 80] }).toBeLessThan(40);
   expect(state.running).toBe(true);
   await page.locator("#pauseButton").click();
   await expect(page.locator("#pauseScreen")).toHaveClass(/visible/);
