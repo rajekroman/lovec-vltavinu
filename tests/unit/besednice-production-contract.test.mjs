@@ -78,4 +78,7 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
   assert.match(mobileSmoke, /Math\.hypot\([\s\S]*player\.x - 120[\s\S]*player\.y - 380[\s\S]*toBeLessThan\(110\)/);
+  assert.match(mobileSmoke, /return "triggered"/);
+  assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);
+  assert.match(mobileSmoke, /timeout: 2_000/);
 });
