@@ -10,6 +10,7 @@ const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
 const hybridRenderer = read("src/render/HybridRenderer.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
+const slaviaSmoke = read("tests/slavia-smoke.spec.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
 
@@ -30,11 +31,14 @@ const expectedAssets = Object.freeze([
   "model-besednice-rock"
 ]);
 
-test("bootstrap registers one production Besednice scene without registering Slavia", () => {
+test("bootstrap registers one production Besednice scene and one production Slavia scene", () => {
   assert.match(bootstrap, /import \{ BesedniceScene \} from "\.\/scenes\/BesedniceScene\.js"/);
+  assert.match(bootstrap, /import \{ SlaviaScene \} from "\.\/scenes\/SlaviaScene\.js"/);
   assert.match(bootstrap, /app\.scenes\.register\("besednice", besednice\)/);
+  assert.match(bootstrap, /app\.scenes\.register\("slavia", slavia\)/);
   assert.match(bootstrap, /besednice: app\.scenes\.activeId === "besednice" \? besednice\.snapshot\(\) : null/);
-  assert.doesNotMatch(bootstrap, /app\.scenes\.register\("slavia"/);
+  assert.match(bootstrap, /slavia: app\.scenes\.activeId === "slavia" \? slavia\.snapshot\(\) : null/);
+  assert.equal((bootstrap.match(/app\.scenes\.register\("slavia", slavia\)/g) ?? []).length, 1);
 });
 
 test("Nesměň production result continues only into Besednice", () => {
@@ -94,15 +98,13 @@ test("validation remains read-only and temporary write workflows do not exist", 
   }
 });
 
-test("canonical mobile smoke reaches Besednice without a parallel Slavia scene", () => {
+test("canonical mobile smoke preserves the input-driven Chlum through Besednice regression path", () => {
   assert.match(mobileSmoke, /Chlum → Nesměň → Besednice flow completes hedgehog recovery/);
   assert.match(mobileSmoke, /openBootstrap\(page, "\/"\)/);
   assert.match(mobileSmoke, /enterBesedniceFromResult/);
   assert.match(mobileSmoke, /verifyBesedniceLifecycle/);
   assert.match(mobileSmoke, /waitForInteraction\(page, "recover", 15_000\)/);
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
-  assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
-  assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
   assert.match(mobileSmoke, /const box = await action\.boundingBox\(\)/);
   assert.match(mobileSmoke, /events\.once\("interaction:performed"/);
   assert.match(mobileSmoke, /window\.__lovecQaInteraction\?\.performed/);
@@ -121,4 +123,18 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /return "triggered"/);
   assert.match(mobileSmoke, /Number\(currentTotal\) >= total/);
   assert.match(mobileSmoke, /timeout: 2_000/);
+});
+
+test("Slavia smoke covers arrival, certification, final result and clean restart", () => {
+  assert.match(slaviaSmoke, /slavia-arrival/);
+  assert.match(slaviaSmoke, /slavia-certification/);
+  assert.match(slaviaSmoke, /slavia-final-result/);
+  assert.match(slaviaSmoke, /collect-document/);
+  assert.match(slaviaSmoke, /register-collection/);
+  assert.match(slaviaSmoke, /recover-best-finding/);
+  assert.match(slaviaSmoke, /receive-certificate/);
+  assert.match(slaviaSmoke, /enter-event/);
+  assert.match(slaviaSmoke, /session\.findings\)\.toEqual\(\[\]\)/);
+  assert.match(slaviaSmoke, /localStorage\.length/);
+  assert.doesNotMatch(slaviaSmoke, /KeyE|keyboard\.press\("Space"\)|element\.click\(\)/);
 });
