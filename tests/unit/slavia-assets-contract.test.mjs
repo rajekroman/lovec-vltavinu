@@ -124,5 +124,5 @@ test("service worker pre-caches production Slavia modules and unique asset paths
 
   assert.doesNotMatch(serviceWorker, /assets\/(?:sprites|textures)\/.*\.svg/);
   assert.doesNotMatch(serviceWorker, /assets\/models\/slavia\/kd-slavia\.gltf/);
-  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-1/);
+  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-0/);
 });
