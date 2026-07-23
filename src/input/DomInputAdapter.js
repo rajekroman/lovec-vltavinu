@@ -61,15 +61,10 @@ export class DomInputAdapter {
   bind() {
     const { moveZone, action, pause } = this.elements;
 
-    this.input.events?.on?.("input:reset", () => this.clearDomState(), {
-      signal: this.controller.signal
-    });
-
     this.listen(this.window, "keydown", event => {
       if (isInteractiveTarget(event.target)) return;
       if (MOVE_KEYS[event.code]) {
         event.preventDefault?.();
-        if (event.repeat) return;
         this.keys.add(event.code);
         this.updateKeyboardAxis();
       } else if (ACTION_KEYS.has(event.code) && !event.repeat) {
