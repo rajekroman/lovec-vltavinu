@@ -1,0 +1,76 @@
+name: Finalize Besednice touch hold
+
+on:
+  push:
+    branches:
+      - agent/besednice-vertical-slice
+    paths:
+      - .github/workflows/finalize-besednice-touch-hold.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/besednice-vertical-slice
+          fetch-depth: 0
+
+      - name: Hold trusted touch through one fixed update
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("tests/mobile-smoke.spec.mjs")
+          text = path.read_text(encoding="utf-8")
+          old = '''async function contextualAction(page) {
+            const action = page.locator("#actionButton");
+            await expect(action).toHaveAttribute("aria-disabled", "false");
+            const box = await action.boundingBox();
+            expect(box).not.toBeNull();
+            if (!box) throw new Error("Action button has no touch target.");
+            await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+            await expectReleasedInput(page);
+          }'''
+          new = '''async function contextualAction(page) {
+            const action = page.locator("#actionButton");
+            await expect(action).toHaveAttribute("aria-disabled", "false");
+            const box = await action.boundingBox();
+            expect(box).not.toBeNull();
+            if (!box) throw new Error("Action button has no touch target.");
+
+            const x = Math.round(box.x + box.width / 2);
+            const y = Math.round(box.y + box.height / 2);
+            const client = await page.context().newCDPSession(page);
+            try {
+              await client.send("Input.dispatchTouchEvent", {
+                type: "touchStart",
+                touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
+              });
+              await page.waitForTimeout(50);
+              await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            } finally {
+              await client.detach();
+            }
+            await expectReleasedInput(page);
+          }'''
+          if old not in text:
+            raise SystemExit("touchscreen action block not found")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          Path(".github/workflows/finalize-besednice-touch-hold.yml").unlink()
+          PY
+
+          node --check tests/mobile-smoke.spec.mjs
+
+      - name: Commit trusted touch hold
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/mobile-smoke.spec.mjs .github/workflows/finalize-besednice-touch-hold.yml
+          git commit -m "test(besednice): hold touch through fixed update"
+          git push origin HEAD:agent/besednice-vertical-slice
