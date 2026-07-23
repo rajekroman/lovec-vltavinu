@@ -75,10 +75,11 @@ test("canonical mobile smoke reaches Besednice without a parallel Slavia scene",
   assert.match(mobileSmoke, /nextLevelId: "slavia"/);
   assert.match(mobileSmoke, /app\.scenes\.has\("slavia"\)/);
   assert.doesNotMatch(mobileSmoke, /changeScene\("slavia"\)/);
-  assert.match(mobileSmoke, /document\.activeElement\?\.blur\?\.\(\)/);
-  assert.match(mobileSmoke, /page\.keyboard\.down\("e"\)/);
-  assert.match(mobileSmoke, /page\.keyboard\.up\("e"\)/);
-  assert.match(mobileSmoke, /page\.waitForTimeout\(50\)/);
+  assert.match(mobileSmoke, /window\.dispatchEvent\(new KeyboardEvent\("keydown"/);
+  assert.match(mobileSmoke, /code: "KeyE"/);
+  assert.match(mobileSmoke, /actions\.action\?\.down/);
+  assert.match(mobileSmoke, /page\.waitForTimeout\(100\)/);
+  assert.match(mobileSmoke, /window\.dispatchEvent\(new KeyboardEvent\("keyup"/);
   assert.doesNotMatch(mobileSmoke, /page\.keyboard\.press\("Space"\)/);
   assert.doesNotMatch(mobileSmoke, /action\.evaluate\(element => element\.click\(\)\)/);
   assert.match(mobileSmoke, /beforeDuplicate[\s\S]*aria-disabled", "true"[\s\S]*toBe\(beforeDuplicate\)/);
