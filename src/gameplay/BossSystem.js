@@ -11,12 +11,18 @@ const requireBoss = (world, entity) => {
   return boss;
 };
 
+const setRecoveryInteraction = (world, entity, enabled) => {
+  const interaction = world?.get?.(entity, "interaction");
+  if (interaction?.kind === "recover") interaction.enabled = enabled === true;
+};
+
 export class BossSystem {
   start(world, entity) {
     const boss = requireBoss(world, entity);
     if (boss.defeated === true || boss.started === true) return false;
     boss.started = true;
     boss.state = "chasing";
+    setRecoveryInteraction(world, entity, false);
     return true;
   }
 
@@ -35,8 +41,15 @@ export class BossSystem {
     const stopRange = finiteNonNegative(Number(boss.stopRange) || 0, "Boss stopRange");
     const speed = finiteNonNegative(Number(boss.speed) || 0, "Boss speed");
 
-    if (distance <= stopRange || distance === 0 || speed === 0 || dt === 0) {
+    if (dt === 0) {
+      boss.state = distance <= stopRange ? "recoverable" : "chasing";
+      setRecoveryInteraction(world, entity, boss.state === "recoverable");
+      return this.snapshot(world, entity);
+    }
+
+    if (distance <= stopRange || distance === 0 || speed === 0) {
       boss.state = "recoverable";
+      setRecoveryInteraction(world, entity, true);
       return this.snapshot(world, entity);
     }
 
@@ -45,6 +58,7 @@ export class BossSystem {
     transform.y += dy / distance * travel;
     transform.rotation = Math.atan2(dy, dx);
     boss.state = distance - travel <= stopRange ? "recoverable" : "chasing";
+    setRecoveryInteraction(world, entity, boss.state === "recoverable");
 
     const sprite = world.get(entity, "sprite");
     if (sprite && Math.abs(dx) > 0.001) sprite.flipX = dx < 0;
@@ -56,8 +70,7 @@ export class BossSystem {
     if (boss.started !== true || boss.defeated === true) return false;
     boss.defeated = true;
     boss.state = "defeated";
-    const interaction = world.get(entity, "interaction");
-    if (interaction) interaction.enabled = false;
+    setRecoveryInteraction(world, entity, false);
     return true;
   }
 
@@ -66,6 +79,7 @@ export class BossSystem {
     boss.started = false;
     boss.defeated = false;
     boss.state = "inactive";
+    setRecoveryInteraction(world, entity, false);
     return this.snapshot(world, entity);
   }
 
