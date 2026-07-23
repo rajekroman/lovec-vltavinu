@@ -1,84 +1,76 @@
-# AGENTS.md — závazné řízení projektu
+# AGENTS.md — agentní operační systém projektu Zelená vlna
 
-Platí pro celý repozitář. Cílem je zabránit tomu, aby paralelní AI chaty vytvářely další neslučitelné „finální“ verze.
+Revize: **2.1 · 23. 7. 2026**
 
-## Pořadí autority
+## Autorita
 
 1. Aktuální výslovné zadání Romana.
-2. Tento soubor.
+2. `AGENTS.md`.
 3. `docs/ARCHITECTURE_CONTRACT.md`.
-4. `docs/PROJECT_CONTROL.md` a příslušný GitHub issue.
-5. Starší README, roadmapy, build reporty a ZIP balíčky.
+4. `docs/PROJECT_CONTROL.md`.
+5. Aktivní GitHub issue.
 
-Při rozporu se zastav a uveď rozpor v PR. Nevytvářej třetí variantu.
+Při rozporu se konfliktní změna neprovádí. Rozpor řeší A0.
 
 ## Jediný zdroj pravdy
 
-- `main` je jediná zveřejnitelná větev a musí zůstat hratelná.
-- Každý chat pracuje z aktuálního `main` ve větvi `agent/<jedno-tema>`.
-- Žádné přímé commity do `main`; změna končí draft PR s odkazem na issue.
-- ZIP, sandboxový odkaz ani tvrzení „hotovo“ nejsou předáním práce. Rozhodují soubory, commit, PR a testy v tomto repozitáři.
-- Staré větve a balíčky jsou pouze zdroj jednotlivých částí. Nesmějí se použít jako nový základ celého projektu.
+- Repozitář: `rajekroman/lovec-vltavinu`.
+- `main` je jediná zveřejnitelná větev.
+- Každý balík má jeden issue, přesný base SHA, jednu větev `agent/<téma>` a jeden draft PR.
+- Přímé commity do `main` a paralelní finální buildy jsou zakázané.
+- Hotovo znamená ověřitelný commit, PR, testy a HANDOFF.
 
-## Závazný produktový rozsah
+## Produktové invarianty
 
-- Browser hra pro desktop i mobil, nasaditelná jako statické soubory na GitHub Pages.
-- Cílový renderer: jeden Three.js `WebGLRenderer` s ortografickou kamerou.
-- 2D postavy a efekty: transparentní PNG nebo sprite sheets.
-- 3D rekvizity: optimalizované low-poly GLB.
-- HUD a obrazovky: HTML/CSS nad canvasem.
-- Moduly: `GameApp`, fixed-step `GameLoop`, `SceneManager`, `AssetLoader`, `InputManager`, ECS-lite, `CollisionSystem`, `AnimationSystem` a samostatné UI adaptéry.
-- Čtyři kanonické kapitoly: Chlum, Nesměň, Besednice a Malše/KD Slavia. Ločenice není samostatný pátý level v cílové verzi.
-- Pohyb plus jedno kontextové akční tlačítko. Dialog: přiblížit se a stisknout akci. Kopání: tři úspěšné zásahy do rytmu.
-- Bez inventářové obrazovky a bez správy předmětů. Nálezy se pouze započítají do session výsledku a finálního hodnocení.
-- Save systém se v cílové architektuře nevyvíjí. Nepřidávej localStorage, migrace save ani pokračování. Existující legacy save kód z verze 5.2 je zmrazený, nesmí být importován do nového bootstrapu a odstraní se spolu s legacy runtime.
-- Service worker může zůstat pouze jako distribuční cache; nesmí uchovávat gameplay stav.
+- Jeden Three.js `WebGLRenderer`, jedna ortografická kamera, jeden fixed-step loop, jeden loader a jedna `GameSession`.
+- Produkční vstup je pouze `src/bootstrap.js`.
+- Kanonické levely: `chlum`, `nesmen`, `besednice`, `slavia`.
+- Směrový vstup a jedno tlačítko `AKCE`.
+- Kopání vyžaduje přesně tři úspěšné zásahy.
+- Nálezy používají `findingId` a session score.
+- Žádný inventář, nový save systém, localStorage gameplay stav nebo migrace save.
+- Assety jsou manifest-driven, s relativní URL, rozpočtem, SHA-256 a dispose vlastníkem.
 
-## Hranice pracovních proudů
+## Role
 
-| Proud | Vlastní | Nesmí bez dohody měnit |
-|---|---|---|
-| Platforma/architektura | `src/core`, `src/ecs`, obecné systémy, bootstrap | obsah levelů, texty, assety |
-| Gameplay/data | `src/data`, `src/gameplay`, `src/scenes` | renderer, input internals, workflow |
-| Grafika/asset pipeline | `assets`, asset manifest, sprite/model factory | pravidla questů a stav hry |
-| UI/mobil | `src/ui`, `src/input`, CSS, safe-area | levelová data a renderer kontrakt |
-| Audio/výkon | `src/audio`, komprese, rozpočty, měření | cíle levelů |
-| QA/release | `tests`, `tools`, `.github`, release dokumentace | produkční logiku mimo diagnostický fix |
+- **A0:** koordinace, issue fronta, base SHA, větve, review, merge a aktivace dalších kroků.
+- **A1:** platforma a architektura. Stav `RESERVE`; aktivace pouze pro konkrétní architektonický hardening nebo legacy cleanup s novým issue, base SHA a větví.
+- **A2:** gameplay, data, scény a objective pravidla.
+- **A3:** grafika, asset pipeline, animace a manifest.
+- **A4:** UI, UX, safe-area a mobilní vstup.
+- **A5:** audio lifecycle a výkonové rozpočty.
+- **A6:** unit, validátor, desktop a mobilní E2E, regresní a finální QA.
+- **A7:** release dokumentace, GitHub Pages, PWA, licence a produkční smoke.
 
-Změna přes dvě hranice musí být rozdělena, nebo v PR vysvětlit proč ji nelze bezpečně oddělit.
+## Povinné úvodní hlášení
+
+Každý pracovní chat před změnou uvede:
+
+- identifikátor issue;
+- roli a přidělenou oblast;
+- načtené revize tří řídicích dokumentů;
+- base SHA a větev;
+- závislosti, povolené cesty a možné konflikty.
 
 ## Integrační pořadí
 
-1. Zelená validace a mobilní stabilita veřejného buildu.
-2. Závazné datové a eventové kontrakty.
-3. Modulární bootstrap bez změny vzhledu hry.
-4. Jeden kompletní Three.js vertical slice: Chlum.
-5. Převod Nesměně, Besednice a Malše/KD Slavia.
-6. Odstranění nepoužívaného Canvas monolitu, runtime opravné vrstvy a legacy save kódu.
-7. Finální mobilní QA a release.
+1. Besednice PR #55 — dokončeno.
+2. Governance PR #57.
+3. Slavia / KD Slavia vertical slice.
+4. Vizuální a obsahový polish.
+5. Audio a výkonový hardening.
+6. Legacy Canvas runtime a save cleanup — A1.
+7. Finální QA — dvě zelená spuštění stejného headu.
+8. Produkční GitHub Pages release.
 
-Nezačínej další stupeň, pokud jeho přímá závislost nemá sloučený PR a zelené testy.
-
-## Povinné předání každého chatu
-
-PR musí obsahovat:
-
-- cíl a navázaný issue;
-- přesný seznam změněných kontraktů a souborů;
-- testovací příkazy a jejich výsledek;
-- dopad na iPhone portrait/landscape;
-- výkonový dopad a nové assety v manifestu;
-- známá omezení;
-- potvrzení, že nevznikl save systém, inventář ani druhý renderer;
-- screenshot nebo video pouze tam, kde se mění vizuál či ovládání.
+Žádný krok nesmí přeskočit přímou závislost.
 
 ## Definition of Done
 
-Práce není hotová, dokud:
-
-- syntaxe, unit testy, validátor a relevantní browser smoke testy neprojdou;
-- hra je dosažitelná z titulní obrazovky bez ručního zásahu do URL nebo konzole;
-- změna neblokuje ovládání po dialogu, pauze, otočení telefonu ani návratu z pozadí;
-- všechny nové assety mají ID, typ, relativní URL, rozměr/rozpočet a vlastníka dispose;
-- event payloady odpovídají `docs/ARCHITECTURE_CONTRACT.md`;
-- PR je malý, kontrolovatelný a neobsahuje cizí či vygenerované náhradní soubory bez vazby na runtime.
+- produkční tok je dosažitelný bez debug URL nebo konzole;
+- syntaxe, validátor, unit, build a relevantní E2E jsou zelené;
+- desktop, iPhone portrait a landscape jsou ověřeny podle rozsahu;
+- dialog, pause, otočení, background/foreground a změna scény nezanechají zamrzlý input;
+- nevznikl druhý runtime, loader, session, inventář nebo save systém;
+- dokumentace popisuje skutečný stav;
+- HANDOFF uvádí změněné soubory, rozhodnutí, testy, známé problémy a další krok.
