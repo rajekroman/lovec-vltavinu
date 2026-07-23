@@ -162,26 +162,48 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
-  await page.evaluate(() => document.activeElement?.blur?.());
-  await page.keyboard.down("e");
-  await page.waitForTimeout(50);
-  await page.keyboard.up("e");
-  await expectReleasedInput(page);
-}
+  const box = await action.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) throw new Error("Action button has no touch target.");
 
-async function holdContextualActionUntil(page, operation, timeout = 8_000) {
-  const action = page.locator("#actionButton");
-  await expect(action).toHaveAttribute("aria-disabled", "false");
-  await page.evaluate(() => document.activeElement?.blur?.());
-  await page.keyboard.down("e");
+  const expectedKind = await page.evaluate(() => {
+    const state = window.__lovecRuntime.snapshot();
+    return state[state.scene]?.runtime?.available?.kind ?? null;
+  });
+  expect(expectedKind).not.toBeNull();
+  await page.evaluate(async expected => {
+    const { events } = await import("./src/bootstrap.js");
+    window.__lovecQaInteractionOff?.();
+    window.__lovecQaInteraction = { expected, performed: null };
+    window.__lovecQaInteractionOff = events.once("interaction:performed", payload => {
+      window.__lovecQaInteraction.performed = payload.kind;
+    });
+  }, expectedKind);
+
+  const x = Math.round(box.x + box.width / 2);
+  const y = Math.round(box.y + box.height / 2);
+  const client = await page.context().newCDPSession(page);
+  let touchStarted = false;
   try {
-    await expect.poll(async () => {
-      if (await operation()) return "complete";
-      const input = await inputSnapshot(page);
-      return input.actions.action?.down ? "waiting" : "not-pressed";
-    }, { timeout, intervals: [20, 40, 80] }).toBe("complete");
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
+    });
+    touchStarted = true;
+    await expect.poll(() => page.evaluate(() => window.__lovecQaInteraction?.performed ?? null), {
+      timeout: 2_000,
+      intervals: [10, 20, 30, 50]
+    }).toBe(expectedKind);
   } finally {
-    await page.keyboard.up("e");
+    if (touchStarted) {
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
+    }
+    await client.detach();
+    await page.evaluate(() => {
+      window.__lovecQaInteractionOff?.();
+      delete window.__lovecQaInteractionOff;
+      delete window.__lovecQaInteraction;
+    });
   }
   await expectReleasedInput(page);
 }
@@ -337,7 +359,7 @@ async function chaseTractorUntilDanger(page) {
     if (Math.abs(dx) > 18) keys.push(dx > 0 ? "ArrowRight" : "ArrowLeft");
     if (Math.abs(dy) > 18) keys.push(dy > 0 ? "ArrowUp" : "ArrowDown");
     if (!keys.length) keys.push("ArrowRight");
-    await holdKeys(page, keys, 140);
+    await holdKeys(page, keys, 100);
   }
   throw new Error("Tractor did not trigger danger during an actual input-driven chase.");
 }
@@ -398,11 +420,15 @@ async function completeBesednice(page) {
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await waitForInteraction(page, "collect");
-  await holdContextualActionUntil(page, () => page.evaluate(() => {
+  await contextualAction(page);
+
+  await expect.poll(() => page.evaluate(() => {
     const state = window.__lovecRuntime.snapshot();
-    const finding = state.session.findings.some(entry => entry.findingId === "besednice-hedgehog-1");
-    return finding && state.besednice.runtime.boss.started === true;
-  }));
+    return {
+      finding: state.session.findings.some(entry => entry.findingId === "besednice-hedgehog-1"),
+      started: state.besednice.runtime.boss.started
+    };
+  })).toEqual({ finding: true, started: true });
   await expect(page.locator("#objectiveLabel")).toHaveText("Dostaň ježek zpět");
 
   await waitForInteraction(page, "recover", 15_000);
@@ -502,6 +528,7 @@ test("tractor collision raises danger, returns player to spawn and does not free
   await enterChlum(page);
   const state = await chaseTractorUntilDanger(page);
   expect(state.session.danger).toBeGreaterThan(0);
+  await page.evaluate(() => window.__lovecRuntime.resetInput("playwright-tractor-caught"));
   await expectReleasedInput(page);
   await expect.poll(async () => {
     const current = await snapshot(page);
