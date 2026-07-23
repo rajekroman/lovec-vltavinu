@@ -54,10 +54,7 @@ async function performAction(page) {
   const button = page.locator("#actionButton");
   await expect(button).toHaveAttribute("aria-disabled", "false");
   await button.tap();
-  await expect.poll(() => page.evaluate(() => {
-    const input = window.__lovecRuntime.snapshot();
-    return input.running;
-  })).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
 async function prepareSlavia(page) {
@@ -66,11 +63,12 @@ async function prepareSlavia(page) {
   await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
 
   await page.evaluate(async () => {
-    const { app, session } = await import("./src/bootstrap.js");
+    const { app, session, ensureSlaviaRegistered } = await import("./src/bootstrap.js");
     session.reset();
     session.recordFinding({ findingId: "chlum-finding-1", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
     session.recordFinding({ findingId: "nesmen-finding-1", locality: "nesmen", rarity: "B", weight: 1.6, score: 120 });
     session.recordFinding({ findingId: "besednice-hedgehog-1", locality: "besednice", rarity: "A", weight: 2.8, score: 240 });
+    ensureSlaviaRegistered();
     await app.changeScene("slavia");
   });
 
