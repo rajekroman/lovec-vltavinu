@@ -162,9 +162,27 @@ async function moveToInteraction(page, x, y, kind) {
 async function contextualAction(page) {
   const action = page.locator("#actionButton");
   await expect(action).toHaveAttribute("aria-disabled", "false");
+  await page.evaluate(() => document.activeElement?.blur?.());
   await page.keyboard.down("e");
   await page.waitForTimeout(50);
   await page.keyboard.up("e");
+  await expectReleasedInput(page);
+}
+
+async function holdContextualActionUntil(page, operation, timeout = 8_000) {
+  const action = page.locator("#actionButton");
+  await expect(action).toHaveAttribute("aria-disabled", "false");
+  await page.evaluate(() => document.activeElement?.blur?.());
+  await page.keyboard.down("e");
+  try {
+    await expect.poll(async () => {
+      if (await operation()) return "complete";
+      const input = await inputSnapshot(page);
+      return input.actions.action?.down ? "waiting" : "not-pressed";
+    }, { timeout, intervals: [20, 40, 80] }).toBe("complete");
+  } finally {
+    await page.keyboard.up("e");
+  }
   await expectReleasedInput(page);
 }
 
@@ -380,15 +398,11 @@ async function completeBesednice(page) {
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
   await expect(page.locator("#app")).toHaveClass(/playing/);
   await waitForInteraction(page, "collect");
-  await contextualAction(page);
-
-  await expect.poll(() => page.evaluate(() => {
+  await holdContextualActionUntil(page, () => page.evaluate(() => {
     const state = window.__lovecRuntime.snapshot();
-    return {
-      finding: state.session.findings.some(entry => entry.findingId === "besednice-hedgehog-1"),
-      started: state.besednice.runtime.boss.started
-    };
-  })).toEqual({ finding: true, started: true });
+    const finding = state.session.findings.some(entry => entry.findingId === "besednice-hedgehog-1");
+    return finding && state.besednice.runtime.boss.started === true;
+  }));
   await expect(page.locator("#objectiveLabel")).toHaveText("Dostaň ježek zpět");
 
   await waitForInteraction(page, "recover", 15_000);
