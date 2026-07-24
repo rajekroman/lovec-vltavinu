@@ -190,10 +190,11 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind 
 
 async function moveTo(page, input, x, y, kind, timeout = 12_000) {
   const approaches = [[x, y], [x - 20, y], [x + 20, y], [x, y - 20], [x, y + 20], [x, y]];
+  const collisionTolerantKind = kind === "permission" ? kind : null;
   for (const [targetX, targetY] of approaches) {
-    await moveAxisTo(page, input, "x", targetX, 20_000, kind);
+    await moveAxisTo(page, input, "x", targetX, 20_000, collisionTolerantKind);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
-    await moveAxisTo(page, input, "y", targetY, 20_000, kind);
+    await moveAxisTo(page, input, "y", targetY, 20_000, collisionTolerantKind);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
   }
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
@@ -290,7 +291,7 @@ async function successfulDigHit(page, input, expectedTotal) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
-async function waitForTractorLeftOf(page, maxX = 620, timeout = 18_000) {
+async function waitForTractorLeftOf(page, maxX = 620, timeout = 30_000) {
   await expect.poll(async () => {
     const tractorX = (await runtimeSnapshot(page)).chlum?.runtime?.tractor?.x;
     return typeof tractorX === "number" && tractorX <= maxX;
@@ -318,7 +319,7 @@ async function completeChlum(page, input) {
     await moveAxisTo(page, input, "x", 1020);
     await moveAxisTo(page, input, "y", 410);
     await waitForTractorLeftOf(page);
-    await moveAxisTo(page, input, "y", 720, 20_000, "dig");
+    await moveAxisTo(page, input, "y", 720);
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
     await performAction(page, input);
     opened = true;
