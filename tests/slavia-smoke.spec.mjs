@@ -40,29 +40,72 @@ async function touchLocator(page, locator) {
 }
 
 async function moveAxisTo(page, axis, target, timeout = 20_000) {
-  const state = await runtimeSnapshot(page);
-  const player = activeRuntime(state)?.player;
-  if (!player) throw new Error(`${state.scene} player is unavailable.`);
+  const initial = await runtimeSnapshot(page);
+  const player = activeRuntime(initial)?.player;
+  if (!player) throw new Error(`${initial.scene} player is unavailable.`);
   const delta = target - player[axis];
-  if (Math.abs(delta) <= TARGET_TOLERANCE) return;
+  if (Math.abs(delta) <= TARGET_TOLERANCE) return initial;
 
   const positiveKey = axis === "x" ? "ArrowRight" : "ArrowUp";
   const negativeKey = axis === "x" ? "ArrowLeft" : "ArrowDown";
   const key = delta > 0 ? positiveKey : negativeKey;
   const direction = Math.sign(delta);
 
+  await page.evaluate(({ axisName, targetValue, tolerance, moveDirection, code, timeoutMs }) => {
+    window.__slaviaQaMovement = { done: false, error: null, current: null };
+    const startedAt = performance.now();
+    const release = () => window.dispatchEvent(new KeyboardEvent("keyup", {
+      code,
+      key: code,
+      bubbles: true,
+      cancelable: true
+    }));
+    const monitor = () => {
+      const state = window.__lovecRuntime?.snapshot?.();
+      const current = state?.[state.scene]?.runtime?.player?.[axisName];
+      window.__slaviaQaMovement.current = current;
+      const reached = typeof current === "number" && (
+        moveDirection > 0 ? current >= targetValue - tolerance : current <= targetValue + tolerance
+      );
+      if (reached) {
+        release();
+        window.__slaviaQaMovement.done = true;
+        return;
+      }
+      if (performance.now() - startedAt >= timeoutMs) {
+        release();
+        window.__slaviaQaMovement.error = `Timed out at ${axisName}=${current}; target ${targetValue}.`;
+        window.__slaviaQaMovement.done = true;
+        return;
+      }
+      requestAnimationFrame(monitor);
+    };
+    requestAnimationFrame(monitor);
+  }, {
+    axisName: axis,
+    targetValue: target,
+    tolerance: TARGET_TOLERANCE,
+    moveDirection: direction,
+    code: key,
+    timeoutMs: timeout
+  });
+
   await page.keyboard.down(key);
   try {
-    await expect.poll(async () => {
-      const current = activeRuntime(await runtimeSnapshot(page))?.player?.[axis];
-      if (typeof current !== "number") return false;
-      return direction > 0
-        ? current >= target - TARGET_TOLERANCE
-        : current <= target + TARGET_TOLERANCE;
-    }, { timeout, intervals: [20, 40, 70] }).toBe(true);
+    await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: timeout + 2_000 });
+    const movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
+    if (movement.error) throw new Error(movement.error);
   } finally {
     await page.keyboard.up(key);
+    await page.evaluate(() => { delete window.__slaviaQaMovement; });
   }
+
+  const final = await runtimeSnapshot(page);
+  const current = activeRuntime(final)?.player?.[axis];
+  if (typeof current !== "number" || Math.abs(target - current) > 32) {
+    throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
+  }
+  return final;
 }
 
 async function moveTo(page, x, y, kind, timeout = 12_000) {
