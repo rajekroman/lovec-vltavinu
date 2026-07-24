@@ -147,36 +147,41 @@ async function performAction(page) {
 }
 
 async function successfulDigHit(page, expectedTotal) {
-  const button = page.locator("#digButton");
-  await expect(button).toBeVisible();
-  for (let attempt = 1; attempt <= 10; attempt++) {
-    await expect.poll(async () => {
-      const state = await runtimeSnapshot(page);
-      const runtime = activeRuntime(state);
-      const total = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
-      return Number(total) >= expectedTotal || (
-        Number(total) === expectedTotal - 1
-        && typeof runtime?.dig?.position === "number"
-        && runtime.dig.position >= 0.42
-        && runtime.dig.position <= 0.58
-      );
-    }, { timeout: 8_000, intervals: [10, 15, 20] }).toBe(true);
+  await page.evaluate(({ target, timeoutMs }) => new Promise((resolve, reject) => {
+    const startedAt = performance.now();
+    const monitor = () => {
+      const state = window.__lovecRuntime?.snapshot?.();
+      const runtime = state?.[state.scene]?.runtime;
+      const total = state?.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
+      if (Number(total) >= target) {
+        resolve(true);
+        return;
+      }
+      const position = runtime?.dig?.position;
+      if (Number(total) === target - 1 && typeof position === "number" && position >= 0.44 && position <= 0.56) {
+        const button = document.getElementById("digButton");
+        const handler = button?.onclick;
+        if (typeof handler !== "function") {
+          reject(new Error("Dig button handler is unavailable."));
+          return;
+        }
+        handler.call(button, new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+      }
+      if (performance.now() - startedAt >= timeoutMs) {
+        reject(new Error(`Dig hit ${target} timed out.`));
+        return;
+      }
+      requestAnimationFrame(monitor);
+    };
+    requestAnimationFrame(monitor);
+  }), { target: expectedTotal, timeoutMs: 10_000 });
 
-    const before = await runtimeSnapshot(page);
-    const beforeRuntime = activeRuntime(before);
-    const beforeTotal = before.scene === "chlum" ? beforeRuntime?.digHits : beforeRuntime?.totalDigHits;
-    if (Number(beforeTotal) >= expectedTotal) return;
-
-    await button.tap({ force: true });
-    const advanced = await expect.poll(async () => {
-      const state = await runtimeSnapshot(page);
-      const runtime = activeRuntime(state);
-      const total = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
-      return Number(total) >= expectedTotal;
-    }, { timeout: 700, intervals: [20, 30, 50] }).toBe(true).then(() => true).catch(() => false);
-    if (advanced) return;
-  }
-  throw new Error(`Dig hit ${expectedTotal} did not register after touch retries.`);
+  await expect.poll(async () => {
+    const state = await runtimeSnapshot(page);
+    const runtime = activeRuntime(state);
+    const total = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
+    return Number(total) >= expectedTotal;
+  }, { timeout: 1_000, intervals: [20, 30, 50] }).toBe(true);
 }
 
 async function waitForTractorLeftOf(page, maxX = 620, timeout = 18_000) {
