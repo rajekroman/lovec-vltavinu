@@ -11,6 +11,7 @@ const bridge = read("src/scenes/NesmenBesedniceBridgeScene.js");
 const serviceWorker = read("sw.js");
 const mobileSmoke = read("tests/mobile-smoke.spec.mjs");
 const slaviaSmoke = read("tests/slavia-smoke.spec.mjs");
+const playwrightConfig = read("playwright.config.mjs");
 const validationWorkflow = read(".github/workflows/validate.yml");
 const manifest = JSON.parse(read("assets/manifests/assets.json"));
 
@@ -85,13 +86,27 @@ test("validation remains read-only", () => {
   assert.doesNotMatch(validationWorkflow, /contents: write|internal-tree-sha|git push origin/);
 });
 
-test("mobile and Slavia smoke use normalized touch input", () => {
-  for (const source of [mobileSmoke, slaviaSmoke]) {
-    assert.match(source, /newCDPSession\(page\)/);
-    assert.match(source, /Input\.dispatchTouchEvent/);
-    assert.doesNotMatch(source, /code: "KeyE"|keyboard\.press\("Space"\)|element\.click\(\)/);
+test("Playwright defines desktop, portrait and landscape projects", () => {
+  for (const project of ["desktop-chromium", "iphone-portrait", "iphone-landscape"]) {
+    assert.match(playwrightConfig, new RegExp(`name: "${project}"`));
   }
-  assert.match(slaviaSmoke, /input-driven Chlum → Nesměň → Besednice → Slavia flow/);
+  assert.match(playwrightConfig, /metadata: \{ inputMode: "desktop", orientation: "landscape" \}/);
+  assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 2);
+  assert.match(playwrightConfig, /viewport: \{ width: 390, height: 844 \}/);
+  assert.match(playwrightConfig, /viewport: \{ width: 844, height: 390 \}/);
+  assert.match(validationWorkflow, /Desktop and mobile Playwright matrix/);
+});
+
+test("desktop and mobile smoke use project-native normalized input", () => {
+  assert.match(mobileSmoke, /newCDPSession\(page\)/);
+  assert.match(mobileSmoke, /Input\.dispatchTouchEvent/);
+  assert.doesNotMatch(mobileSmoke, /page\.keyboard|page\.mouse|\.click\(\)|\.onclick|handler\.call/);
+
+  assert.match(slaviaSmoke, /metadata\?\.inputMode === "desktop"/);
+  assert.match(slaviaSmoke, /page\.keyboard\.press\("KeyE"\)/);
+  assert.match(slaviaSmoke, /newCDPSession\(page\)/);
+  assert.match(slaviaSmoke, /Input\.dispatchTouchEvent/);
+  assert.match(slaviaSmoke, /Chlum → Nesměň → Besednice → Slavia uses the project-native input/);
+  assert.doesNotMatch(slaviaSmoke, /\.onclick|handler\.call|element\.click\(\)|recordFinding|ensureSlaviaRegistered|changeScene\("slavia"\)|session\.reset\(\)/);
   for (const artifact of ["slavia-arrival", "slavia-certification", "slavia-final-result"]) assert.ok(slaviaSmoke.includes(artifact));
-  assert.doesNotMatch(slaviaSmoke, /recordFinding|ensureSlaviaRegistered|changeScene\("slavia"\)|session\.reset\(\)/);
 });
