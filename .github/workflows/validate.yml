@@ -32,6 +32,9 @@ jobs:
           node --check tools/validate.mjs
           find src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           find tests/unit -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+          node --check tests/mobile-smoke.spec.mjs
+          node --check tests/slavia-smoke.spec.mjs
+          node --check playwright.config.mjs
 
       - name: Validate static build
         run: |
@@ -63,9 +66,9 @@ jobs:
           retention-days: 14
 
   browser-smoke:
-    name: Mobile browser smoke
+    name: Desktop and mobile Playwright matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -82,7 +85,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run mobile smoke tests
+      - name: Run desktop, portrait and landscape projects
         run: npm run test:smoke
 
       - name: Upload Playwright report
