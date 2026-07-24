@@ -7,6 +7,13 @@ async function runtimeSnapshot(page) {
   return page.evaluate(() => window.__lovecRuntime.snapshot());
 }
 
+async function inputSnapshot(page) {
+  return page.evaluate(async () => {
+    const { app } = await import("./src/bootstrap.js");
+    return app.input.snapshot();
+  });
+}
+
 function activeRuntime(state) {
   return state[state.scene]?.runtime ?? null;
 }
@@ -14,6 +21,72 @@ function activeRuntime(state) {
 function digHitCount(state) {
   const runtime = activeRuntime(state);
   return Number(state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+}
+
+function createInputDriver(page, testInfo) {
+  const desktop = testInfo.project.metadata?.inputMode === "desktop";
+
+  async function activateUi(locator) {
+    await expect(locator).toBeVisible();
+    if (desktop) {
+      await locator.focus();
+      await page.keyboard.press("Enter");
+    } else {
+      await locator.tap();
+    }
+  }
+
+  async function contextualAction() {
+    if (desktop) await page.keyboard.press("KeyE");
+    else await page.locator("#actionButton").tap();
+  }
+
+  async function holdAxis(axis, direction) {
+    if (desktop) {
+      const key = axis === "x"
+        ? (direction > 0 ? "ArrowRight" : "ArrowLeft")
+        : (direction > 0 ? "ArrowUp" : "ArrowDown");
+      await page.keyboard.down(key);
+      return async () => page.keyboard.up(key);
+    }
+
+    const zone = page.locator("#moveZone");
+    await expect(zone).toBeVisible();
+    const box = await zone.boundingBox();
+    expect(box).not.toBeNull();
+    if (!box) throw new Error("Mobile joystick has no bounding box.");
+
+    const radius = Math.max(1, Math.min(box.width, box.height) / 2);
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+    const x = Math.round(centerX + (axis === "x" ? direction * radius * 0.78 : 0));
+    const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.78 : 0));
+    const client = await page.context().newCDPSession(page);
+    let active = true;
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 4, radiusY: 4, force: 1 }]
+    });
+    return async () => {
+      if (!active) return;
+      active = false;
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
+      await client.detach();
+    };
+  }
+
+  return Object.freeze({ desktop, activateUi, contextualAction, holdAxis });
+}
+
+async function expectReleasedInput(page) {
+  await expect.poll(async () => {
+    const input = await inputSnapshot(page);
+    return {
+      move: input.axes.move?.length ?? 0,
+      action: Boolean(input.actions.action?.down),
+      pause: Boolean(input.actions.pause?.down)
+    };
+  }).toEqual({ move: 0, action: false, pause: false });
 }
 
 async function captureEvidence(page, testInfo, name) {
@@ -24,60 +97,29 @@ async function captureEvidence(page, testInfo, name) {
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
 
-async function touchLocator(page, locator) {
-  await expect(locator).toBeVisible();
-  const box = await locator.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) throw new Error("Touch target has no bounding box.");
-
-  const client = await page.context().newCDPSession(page);
-  const x = Math.round(box.x + box.width / 2);
-  const y = Math.round(box.y + box.height / 2);
-  try {
-    await client.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: [{ x, y, radiusX: 2, radiusY: 2, force: 1 }]
-    });
-    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  } finally {
-    await client.detach();
-  }
-}
-
-async function moveAxisTo(page, axis, target, timeout = 20_000) {
+async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
   const initial = await runtimeSnapshot(page);
   const player = activeRuntime(initial)?.player;
   if (!player) throw new Error(`${initial.scene} player is unavailable.`);
   const delta = target - player[axis];
   if (Math.abs(delta) <= TARGET_TOLERANCE) return;
-
-  const positiveKey = axis === "x" ? "ArrowRight" : "ArrowUp";
-  const negativeKey = axis === "x" ? "ArrowLeft" : "ArrowDown";
-  const key = delta > 0 ? positiveKey : negativeKey;
   const direction = Math.sign(delta);
 
-  await page.evaluate(({ axisName, targetValue, tolerance, moveDirection, code, timeoutMs }) => {
-    window.__slaviaQaMovement = { done: false, error: null };
+  await page.evaluate(({ axisName, targetValue, tolerance, moveDirection, timeoutMs }) => {
+    window.__slaviaQaMovement = { done: false, error: null, current: null };
     const startedAt = performance.now();
-    const release = () => window.dispatchEvent(new KeyboardEvent("keyup", {
-      code,
-      key: code,
-      bubbles: true,
-      cancelable: true
-    }));
     const monitor = () => {
       const state = window.__lovecRuntime?.snapshot?.();
       const current = state?.[state.scene]?.runtime?.player?.[axisName];
+      window.__slaviaQaMovement.current = current;
       const reached = typeof current === "number" && (
         moveDirection > 0 ? current >= targetValue - tolerance : current <= targetValue + tolerance
       );
       if (reached) {
-        release();
         window.__slaviaQaMovement.done = true;
         return;
       }
       if (performance.now() - startedAt >= timeoutMs) {
-        release();
         window.__slaviaQaMovement.error = `Timed out at ${axisName}=${current}; target ${targetValue}.`;
         window.__slaviaQaMovement.done = true;
         return;
@@ -90,26 +132,32 @@ async function moveAxisTo(page, axis, target, timeout = 20_000) {
     targetValue: target,
     tolerance: TARGET_TOLERANCE,
     moveDirection: direction,
-    code: key,
     timeoutMs: timeout
   });
 
-  await page.keyboard.down(key);
+  const release = await input.holdAxis(axis, direction);
   try {
     await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: timeout + 2_000 });
     const movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
     if (movement.error) throw new Error(movement.error);
   } finally {
-    await page.keyboard.up(key);
+    await release();
     await page.evaluate(() => { delete window.__slaviaQaMovement; });
+  }
+
+  await expectReleasedInput(page);
+  const final = await runtimeSnapshot(page);
+  const current = activeRuntime(final)?.player?.[axis];
+  if (typeof current !== "number" || Math.abs(target - current) > 36) {
+    throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
   }
 }
 
-async function moveTo(page, x, y, kind, timeout = 12_000) {
+async function moveTo(page, input, x, y, kind, timeout = 12_000) {
   const approaches = [[x, y], [x - 20, y], [x + 20, y], [x, y - 20], [x, y + 20], [x, y]];
   for (const [targetX, targetY] of approaches) {
-    await moveAxisTo(page, "x", targetX);
-    await moveAxisTo(page, "y", targetY);
+    await moveAxisTo(page, input, "x", targetX);
+    await moveAxisTo(page, input, "y", targetY);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
   }
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
@@ -118,14 +166,13 @@ async function moveTo(page, x, y, kind, timeout = 12_000) {
   }).toBe(kind);
 }
 
-async function performAction(page) {
-  const button = page.locator("#actionButton");
-  await expect(button).toHaveAttribute("aria-disabled", "false");
+async function performAction(page, input) {
   const expectedKind = await page.evaluate(() => {
     const state = window.__lovecRuntime.snapshot();
     return state[state.scene]?.runtime?.available?.kind ?? null;
   });
   expect(expectedKind).not.toBeNull();
+  if (!input.desktop) await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "false");
 
   await page.evaluate(async () => {
     const { events } = await import("./src/bootstrap.js");
@@ -137,7 +184,7 @@ async function performAction(page) {
   });
 
   try {
-    await touchLocator(page, button);
+    await input.contextualAction();
     await expect.poll(() => page.evaluate(() => window.__slaviaQaInteraction?.performed ?? null), {
       timeout: 2_000,
       intervals: [10, 20, 30, 50]
@@ -149,6 +196,7 @@ async function performAction(page) {
       delete window.__slaviaQaInteraction;
     });
   }
+  await expectReleasedInput(page);
 }
 
 async function pauseLoopAtDigSweetSpot(page, expectedTotal, timeout = 10_000) {
@@ -182,7 +230,7 @@ async function pauseLoopAtDigSweetSpot(page, expectedTotal, timeout = 10_000) {
   }, { target: expectedTotal, timeoutMs: timeout });
 }
 
-async function successfulDigHit(page, expectedTotal) {
+async function successfulDigHit(page, input, expectedTotal) {
   await pauseLoopAtDigSweetSpot(page, expectedTotal);
   try {
     const stopped = await runtimeSnapshot(page);
@@ -191,7 +239,7 @@ async function successfulDigHit(page, expectedTotal) {
       const position = activeRuntime(stopped)?.dig?.position;
       expect(position).toBeGreaterThanOrEqual(0.4);
       expect(position).toBeLessThanOrEqual(0.6);
-      await page.locator("#digButton").tap();
+      await input.activateUi(page.locator("#digButton"));
     }
     await expect.poll(async () => digHitCount(await runtimeSnapshot(page)), {
       timeout: 2_000,
@@ -213,106 +261,107 @@ async function waitForTractorLeftOf(page, maxX = 620, timeout = 18_000) {
   }, { timeout, intervals: [100, 180, 250] }).toBe(true);
 }
 
-async function startChlum(page) {
+async function startChlum(page, input) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
   await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
-  await page.locator("#playButton").tap();
+  await input.activateUi(page.locator("#playButton"));
   await expect(page.locator("#briefKicker")).toHaveText("LOKALITA 1 / 4");
-  await page.locator("#briefButton").tap();
+  await input.activateUi(page.locator("#briefButton"));
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe("chlum");
 }
 
-async function completeChlum(page) {
-  await moveTo(page, 560, 410, "permission");
-  await performAction(page);
+async function completeChlum(page, input) {
+  await moveTo(page, input, 560, 410, "permission");
+  await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
-  await page.locator("#dialogButton").tap();
+  await input.activateUi(page.locator("#dialogButton"));
 
   let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
-    await moveAxisTo(page, "x", 1020);
-    await moveAxisTo(page, "y", 410);
+    await moveAxisTo(page, input, "x", 1020);
+    await moveAxisTo(page, input, "y", 410);
     await waitForTractorLeftOf(page);
-    await moveAxisTo(page, "y", 720);
+    await moveAxisTo(page, input, "y", 720);
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
-    await performAction(page);
+    await performAction(page, input);
     opened = true;
     break;
   }
   expect(opened).toBe(true);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
+  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
-  await performAction(page);
+  await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-async function enterLevel(page, buttonText, kicker, scene) {
+async function enterLevel(page, input, buttonText, kicker, scene) {
   await expect(page.locator("#againButton")).toHaveText(buttonText);
-  await page.locator("#againButton").tap();
+  await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#briefKicker")).toHaveText(kicker);
-  await page.locator("#briefButton").tap();
+  await input.activateUi(page.locator("#briefButton"));
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe(scene);
 }
 
-async function completeNesmen(page) {
-  await moveTo(page, 280, 240, "permission");
-  await performAction(page);
+async function completeNesmen(page, input) {
+  await moveTo(page, input, 280, 240, "permission");
+  await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("JAN");
-  await page.locator("#dialogButton").tap();
+  await input.activateUi(page.locator("#dialogButton"));
 
   const profiles = [{ x: 610, y: 430 }, { x: 930, y: 690 }, { x: 1210, y: 360 }];
   let totalHits = 0;
   for (let index = 0; index < profiles.length; index++) {
     const profile = profiles[index];
-    await moveTo(page, profile.x, profile.y, "dig");
-    await performAction(page);
+    await moveTo(page, input, profile.x, profile.y, "dig");
+    await performAction(page, input);
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-    for (let hit = 0; hit < 3; hit++) await successfulDigHit(page, ++totalHits);
+    for (let hit = 0; hit < 3; hit++) await successfulDigHit(page, input, ++totalHits);
     if (index === 0) {
       await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
-      await performAction(page);
+      await performAction(page, input);
     }
     await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("fill");
-    await performAction(page);
+    await performAction(page, input);
   }
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-async function completeBesednice(page) {
+async function completeBesednice(page, input) {
   for (const trace of [{ x: 470, y: 890 }, { x: 880, y: 620 }, { x: 1240, y: 420 }]) {
-    await moveTo(page, trace.x, trace.y, "discover", 15_000);
-    await performAction(page);
+    await moveTo(page, input, trace.x, trace.y, "discover", 15_000);
+    await performAction(page, input);
   }
-  await moveTo(page, 1430, 260, "dig");
-  await performAction(page);
+  await moveTo(page, input, 1430, 260, "dig");
+  await performAction(page, input);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
+  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
-  await performAction(page);
+  await performAction(page, input);
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
     timeout: 15_000,
     intervals: [50, 100, 200]
   }).toBe("recover");
-  await performAction(page);
+  await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-test("input-driven Chlum → Nesměň → Besednice → Slavia flow captures evidence and cleanly restarts", async ({ page }, testInfo) => {
+test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
   test.setTimeout(300_000);
+  const input = createInputDriver(page, testInfo);
   const pageErrors = [];
   const httpErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
   page.on("response", response => { if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`); });
 
-  await startChlum(page);
-  await completeChlum(page);
-  await enterLevel(page, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
-  await completeNesmen(page);
-  await enterLevel(page, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
-  await completeBesednice(page);
-  await enterLevel(page, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
+  await startChlum(page, input);
+  await completeChlum(page, input);
+  await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
+  await completeNesmen(page, input);
+  await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
+  await completeBesednice(page, input);
+  await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
   expect(arrived.session.findings).toHaveLength(3);
@@ -320,22 +369,22 @@ test("input-driven Chlum → Nesměň → Besednice → Slavia flow captures evi
   await captureEvidence(page, testInfo, "slavia-arrival");
 
   for (const document of [{ x: 410, y: 760 }, { x: 790, y: 460 }, { x: 1130, y: 780 }]) {
-    await moveTo(page, document.x, document.y, "collect-document");
-    await performAction(page);
+    await moveTo(page, input, document.x, document.y, "collect-document");
+    await performAction(page, input);
   }
-  await moveTo(page, 1450, 430, "register-collection");
-  await performAction(page);
+  await moveTo(page, input, 1450, 430, "register-collection");
+  await performAction(page, input);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
-  await page.locator("#dialogButton").tap();
-  await moveTo(page, 1020, 260, "recover-best-finding");
-  await performAction(page);
-  await moveTo(page, 1450, 430, "receive-certificate");
-  await performAction(page);
+  await input.activateUi(page.locator("#dialogButton"));
+  await moveTo(page, input, 1020, 260, "recover-best-finding");
+  await performAction(page, input);
+  await moveTo(page, input, 1450, 430, "receive-certificate");
+  await performAction(page, input);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await captureEvidence(page, testInfo, "slavia-certification");
-  await page.locator("#dialogButton").tap();
-  await moveTo(page, 1630, 520, "enter-event");
-  await performAction(page);
+  await input.activateUi(page.locator("#dialogButton"));
+  await moveTo(page, input, 1630, 520, "enter-event");
+  await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   await expect(page.locator("#resultKicker")).toHaveText("NA ZELENÉ VLNĚ — FINÁLE");
   await expect(page.locator("#againButton")).toHaveText("NOVÁ VÝPRAVA");
@@ -347,7 +396,7 @@ test("input-driven Chlum → Nesměň → Besednice → Slavia flow captures evi
   expect(completed.slavia.flow.complete).toBe(true);
   expect(completed.slavia.evaluation.findingCount).toBe(3);
 
-  await page.locator("#againButton").tap();
+  await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
   const restarted = await runtimeSnapshot(page);
   expect(restarted.scene).toBe("title");
@@ -357,6 +406,7 @@ test("input-driven Chlum → Nesměň → Besednice → Slavia flow captures evi
   expect(restarted.session.score).toBe(0);
   expect(restarted.session.flags).toEqual({});
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  await expectReleasedInput(page);
   expect(httpErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
