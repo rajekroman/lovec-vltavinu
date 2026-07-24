@@ -117,33 +117,38 @@ async function captureEvidence(page, testInfo, name) {
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
 
-async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
+async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind = null) {
   const initial = await runtimeSnapshot(page);
   const player = activeRuntime(initial)?.player;
   if (!player) throw new Error(`${initial.scene} player is unavailable.`);
+  if (stopKind && activeRuntime(initial)?.available?.kind === stopKind) return;
   const delta = target - player[axis];
   if (Math.abs(delta) <= TARGET_TOLERANCE) return;
   const direction = Math.sign(delta);
 
-  await page.evaluate(async ({ axisName, targetValue, tolerance, moveDirection, timeoutMs }) => {
+  await page.evaluate(async ({ axisName, targetValue, tolerance, moveDirection, timeoutMs, expectedKind }) => {
     const { app } = await import("./src/bootstrap.js");
-    window.__slaviaQaMovement = { done: false, error: null, current: null, paused: false };
+    window.__slaviaQaMovement = { done: false, error: null, current: null, paused: false, interaction: null };
     const startedAt = performance.now();
     const monitor = () => {
       const state = window.__lovecRuntime?.snapshot?.();
-      const current = state?.[state.scene]?.runtime?.player?.[axisName];
+      const runtime = state?.[state.scene]?.runtime;
+      const current = runtime?.player?.[axisName];
+      const availableKind = runtime?.available?.kind ?? null;
       window.__slaviaQaMovement.current = current;
       const reached = typeof current === "number" && (
         moveDirection > 0 ? current >= targetValue - tolerance : current <= targetValue + tolerance
       );
-      if (reached) {
+      const interactionReached = Boolean(expectedKind) && availableKind === expectedKind;
+      if (reached || interactionReached) {
         app.stop();
         window.__slaviaQaMovement.paused = true;
+        window.__slaviaQaMovement.interaction = interactionReached ? availableKind : null;
         window.__slaviaQaMovement.done = true;
         return;
       }
       if (performance.now() - startedAt >= timeoutMs) {
-        window.__slaviaQaMovement.error = `Timed out at ${axisName}=${current}; target ${targetValue}.`;
+        window.__slaviaQaMovement.error = `Timed out at ${axisName}=${current}; target ${targetValue}; interaction ${availableKind}.`;
         window.__slaviaQaMovement.done = true;
         return;
       }
@@ -155,7 +160,8 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
     targetValue: target,
     tolerance: TARGET_TOLERANCE,
     moveDirection: direction,
-    timeoutMs: timeout
+    timeoutMs: timeout,
+    expectedKind: stopKind
   });
 
   const release = await input.holdAxis(axis, direction);
@@ -175,6 +181,7 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
   if (movement?.error) throw new Error(movement.error);
   await expectReleasedInput(page);
   const final = await runtimeSnapshot(page);
+  if (stopKind && activeRuntime(final)?.available?.kind === stopKind) return;
   const current = activeRuntime(final)?.player?.[axis];
   if (typeof current !== "number" || Math.abs(target - current) > 36) {
     throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
@@ -184,8 +191,9 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
 async function moveTo(page, input, x, y, kind, timeout = 12_000) {
   const approaches = [[x, y], [x - 20, y], [x + 20, y], [x, y - 20], [x, y + 20], [x, y]];
   for (const [targetX, targetY] of approaches) {
-    await moveAxisTo(page, input, "x", targetX);
-    await moveAxisTo(page, input, "y", targetY);
+    await moveAxisTo(page, input, "x", targetX, 20_000, kind);
+    if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
+    await moveAxisTo(page, input, "y", targetY, 20_000, kind);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
   }
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
@@ -310,7 +318,7 @@ async function completeChlum(page, input) {
     await moveAxisTo(page, input, "x", 1020);
     await moveAxisTo(page, input, "y", 410);
     await waitForTractorLeftOf(page);
-    await moveAxisTo(page, input, "y", 720);
+    await moveAxisTo(page, input, "y", 720, 20_000, "dig");
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
     await performAction(page, input);
     opened = true;
