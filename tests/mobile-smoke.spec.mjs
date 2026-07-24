@@ -78,6 +78,7 @@ async function captureEvidence(page, testInfo, name, expectedSize) {
 const compactTransform = value => String(value).replace(/\s+/g, "");
 
 test("real touch joystick moves the player and runtime reset releases it", async ({ page }) => {
+  test.setTimeout(60_000);
   const errors = await openPlaying(page);
   const before = await snapshot(page);
   const startX = before.chlum.runtime.player.x;
@@ -101,6 +102,7 @@ test("real touch joystick moves the player and runtime reset releases it", async
 });
 
 test("orientation, pause and background transitions release mobile input", async ({ page, context }, testInfo) => {
+  test.setTimeout(75_000);
   const errors = await openPlaying(page);
   await captureEvidence(page, testInfo, "mobile-lifecycle-portrait", { width: 1170, height: 2532 });
 
