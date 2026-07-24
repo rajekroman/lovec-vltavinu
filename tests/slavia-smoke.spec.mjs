@@ -11,6 +11,11 @@ function activeRuntime(state) {
   return state[state.scene]?.runtime ?? null;
 }
 
+function digHitCount(state) {
+  const runtime = activeRuntime(state);
+  return Number(state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+}
+
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -146,42 +151,59 @@ async function performAction(page) {
   }
 }
 
-async function successfulDigHit(page, expectedTotal) {
-  await page.evaluate(({ target, timeoutMs }) => new Promise((resolve, reject) => {
-    const startedAt = performance.now();
-    const monitor = () => {
-      const state = window.__lovecRuntime?.snapshot?.();
-      const runtime = state?.[state.scene]?.runtime;
-      const total = state?.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
-      if (Number(total) >= target) {
-        resolve(true);
-        return;
-      }
-      const position = runtime?.dig?.position;
-      if (Number(total) === target - 1 && typeof position === "number" && position >= 0.44 && position <= 0.56) {
-        const button = document.getElementById("digButton");
-        const handler = button?.onclick;
-        if (typeof handler !== "function") {
-          reject(new Error("Dig button handler is unavailable."));
+async function pauseLoopAtDigSweetSpot(page, expectedTotal, timeout = 10_000) {
+  await page.evaluate(async ({ target, timeoutMs }) => {
+    const { app } = await import("./src/bootstrap.js");
+    await new Promise((resolve, reject) => {
+      const startedAt = performance.now();
+      const monitor = () => {
+        const state = window.__lovecRuntime?.snapshot?.();
+        const runtime = state?.[state.scene]?.runtime;
+        const total = Number(state?.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+        if (total >= target) {
+          app.stop();
+          resolve();
           return;
         }
-        handler.call(button, new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-      }
-      if (performance.now() - startedAt >= timeoutMs) {
-        reject(new Error(`Dig hit ${target} timed out.`));
-        return;
-      }
+        const position = runtime?.dig?.position;
+        if (total === target - 1 && typeof position === "number" && position >= 0.46 && position <= 0.54) {
+          app.stop();
+          resolve();
+          return;
+        }
+        if (performance.now() - startedAt >= timeoutMs) {
+          reject(new Error(`Dig hit ${target} did not enter the sweet spot.`));
+          return;
+        }
+        requestAnimationFrame(monitor);
+      };
       requestAnimationFrame(monitor);
-    };
-    requestAnimationFrame(monitor);
-  }), { target: expectedTotal, timeoutMs: 10_000 });
+    });
+  }, { target: expectedTotal, timeoutMs: timeout });
+}
 
-  await expect.poll(async () => {
-    const state = await runtimeSnapshot(page);
-    const runtime = activeRuntime(state);
-    const total = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
-    return Number(total) >= expectedTotal;
-  }, { timeout: 1_000, intervals: [20, 30, 50] }).toBe(true);
+async function successfulDigHit(page, expectedTotal) {
+  await pauseLoopAtDigSweetSpot(page, expectedTotal);
+  try {
+    const stopped = await runtimeSnapshot(page);
+    expect(stopped.running).toBe(false);
+    if (digHitCount(stopped) < expectedTotal) {
+      const position = activeRuntime(stopped)?.dig?.position;
+      expect(position).toBeGreaterThanOrEqual(0.4);
+      expect(position).toBeLessThanOrEqual(0.6);
+      await page.locator("#digButton").tap();
+    }
+    await expect.poll(async () => digHitCount(await runtimeSnapshot(page)), {
+      timeout: 2_000,
+      intervals: [20, 30, 50]
+    }).toBeGreaterThanOrEqual(expectedTotal);
+  } finally {
+    await page.evaluate(async () => {
+      const { app } = await import("./src/bootstrap.js");
+      app.start();
+    });
+  }
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
 async function waitForTractorLeftOf(page, maxX = 620, timeout = 18_000) {
@@ -206,6 +228,7 @@ async function completeChlum(page) {
   await performAction(page);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await page.locator("#dialogButton").tap();
+
   let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
     await moveAxisTo(page, "x", 1020);
@@ -238,6 +261,7 @@ async function completeNesmen(page) {
   await performAction(page);
   await expect(page.locator("#dialogName")).toHaveText("JAN");
   await page.locator("#dialogButton").tap();
+
   const profiles = [{ x: 610, y: 430 }, { x: 930, y: 690 }, { x: 1210, y: 360 }];
   let totalHits = 0;
   for (let index = 0; index < profiles.length; index++) {
