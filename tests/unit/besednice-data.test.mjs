@@ -39,7 +39,7 @@ test("Besednice data contains one player, exactly three clues, one locked dig si
   assert.deepEqual(karel.components.boss, {
     id: "crystal-karel",
     state: "inactive",
-    speed: 105,
+    speed: 150,
     stopRange: 58,
     started: false,
     defeated: false
