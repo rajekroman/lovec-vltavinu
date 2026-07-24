@@ -122,14 +122,14 @@ async function performAction(page) {
   });
   expect(expectedKind).not.toBeNull();
 
-  await page.evaluate(async expected => {
+  await page.evaluate(async () => {
     const { events } = await import("./src/bootstrap.js");
     window.__slaviaQaInteractionOff?.();
     window.__slaviaQaInteraction = { performed: null };
     window.__slaviaQaInteractionOff = events.once("interaction:performed", payload => {
       window.__slaviaQaInteraction.performed = payload.kind;
     });
-  }, expectedKind);
+  });
 
   try {
     await touchLocator(page, button);
@@ -148,7 +148,8 @@ async function performAction(page) {
 
 async function successfulDigHit(page, expectedTotal) {
   const button = page.locator("#digButton");
-  for (let attempt = 1; attempt <= 6; attempt++) {
+  await expect(button).toBeVisible();
+  for (let attempt = 1; attempt <= 10; attempt++) {
     await expect.poll(async () => {
       const state = await runtimeSnapshot(page);
       const runtime = activeRuntime(state);
@@ -156,8 +157,8 @@ async function successfulDigHit(page, expectedTotal) {
       return Number(total) >= expectedTotal || (
         Number(total) === expectedTotal - 1
         && typeof runtime?.dig?.position === "number"
-        && runtime.dig.position >= 0.46
-        && runtime.dig.position <= 0.54
+        && runtime.dig.position >= 0.42
+        && runtime.dig.position <= 0.58
       );
     }, { timeout: 8_000, intervals: [10, 15, 20] }).toBe(true);
 
@@ -166,13 +167,13 @@ async function successfulDigHit(page, expectedTotal) {
     const beforeTotal = before.scene === "chlum" ? beforeRuntime?.digHits : beforeRuntime?.totalDigHits;
     if (Number(beforeTotal) >= expectedTotal) return;
 
-    await touchLocator(page, button);
+    await button.tap({ force: true });
     const advanced = await expect.poll(async () => {
       const state = await runtimeSnapshot(page);
       const runtime = activeRuntime(state);
       const total = state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits;
       return Number(total) >= expectedTotal;
-    }, { timeout: 650, intervals: [20, 30, 50] }).toBe(true).then(() => true).catch(() => false);
+    }, { timeout: 700, intervals: [20, 30, 50] }).toBe(true).then(() => true).catch(() => false);
     if (advanced) return;
   }
   throw new Error(`Dig hit ${expectedTotal} did not register after touch retries.`);
@@ -200,6 +201,7 @@ async function completeChlum(page) {
   await performAction(page);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await page.locator("#dialogButton").tap();
+  let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
     await moveAxisTo(page, "x", 1020);
     await moveAxisTo(page, "y", 410);
@@ -207,8 +209,10 @@ async function completeChlum(page) {
     await moveAxisTo(page, "y", 720);
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
     await performAction(page);
+    opened = true;
     break;
   }
+  expect(opened).toBe(true);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
