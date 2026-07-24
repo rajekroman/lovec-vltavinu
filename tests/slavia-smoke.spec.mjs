@@ -117,6 +117,28 @@ async function waitForTractorLeftOf(page, maxX = 700, timeout = 18_000) {
   }, { timeout, intervals: [100, 180, 250] }).toBe(true);
 }
 
+async function openChlumDig(page) {
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    await moveAxisTo(page, "x", 1020);
+    await moveAxisTo(page, "y", 410);
+    await waitForTractorLeftOf(page, 620);
+    await moveAxisTo(page, "y", 720);
+
+    const kind = activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null;
+    if (kind !== "dig") continue;
+
+    try {
+      await performAction(page);
+      await expect(page.locator("#digScreen")).toHaveClass(/visible/);
+      return;
+    } catch (error) {
+      if (attempt === 4) throw error;
+    }
+  }
+  const state = await runtimeSnapshot(page);
+  throw new Error(`Chlum dig interaction remained unavailable after tractor-safe retries.\n${JSON.stringify(state, null, 2)}`);
+}
+
 async function successfulDigHit(page, expectedTotal) {
   await expect.poll(() => page.evaluate(total => {
     const state = window.__lovecRuntime.snapshot();
@@ -154,12 +176,7 @@ async function completeChlum(page) {
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await page.locator("#dialogButton").tap();
 
-  await moveAxisTo(page, "x", 1020);
-  await moveAxisTo(page, "y", 410);
-  await waitForTractorLeftOf(page);
-  await moveTo(page, 1020, 720, "dig", 20_000);
-  await performAction(page);
-  await expect(page.locator("#digScreen")).toHaveClass(/visible/);
+  await openChlumDig(page);
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, hit);
   await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
   await performAction(page);
