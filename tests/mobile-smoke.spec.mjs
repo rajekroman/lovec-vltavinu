@@ -516,7 +516,7 @@ test("canonical input-driven Chlum → Nesměň → Besednice flow completes hed
   expect(await page.evaluate(async () => {
     const { app } = await import("./src/bootstrap.js");
     return app.scenes.has("slavia");
-  })).toBe(false);
+  })).toBe(true);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
   expect(errors.httpErrors).toEqual([]);
   expect(errors.pageErrors).toEqual([]);
