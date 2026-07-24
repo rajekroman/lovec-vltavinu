@@ -23,6 +23,26 @@ function digHitCount(state) {
   return Number(state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
 }
 
+async function touchLocator(page, locator) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) throw new Error("Touch target has no bounding box.");
+
+  const client = await page.context().newCDPSession(page);
+  const x = Math.round(box.x + box.width / 2);
+  const y = Math.round(box.y + box.height / 2);
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 3, radiusY: 3, force: 1 }]
+    });
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  } finally {
+    await client.detach();
+  }
+}
+
 function createInputDriver(page, testInfo) {
   const desktop = testInfo.project.metadata?.inputMode === "desktop";
 
@@ -32,13 +52,13 @@ function createInputDriver(page, testInfo) {
       await locator.focus();
       await page.keyboard.press("Enter");
     } else {
-      await locator.tap();
+      await touchLocator(page, locator);
     }
   }
 
   async function contextualAction() {
     if (desktop) await page.keyboard.press("KeyE");
-    else await page.locator("#actionButton").tap();
+    else await touchLocator(page, page.locator("#actionButton"));
   }
 
   async function holdAxis(axis, direction) {
@@ -105,8 +125,9 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
   if (Math.abs(delta) <= TARGET_TOLERANCE) return;
   const direction = Math.sign(delta);
 
-  await page.evaluate(({ axisName, targetValue, tolerance, moveDirection, timeoutMs }) => {
-    window.__slaviaQaMovement = { done: false, error: null, current: null };
+  await page.evaluate(async ({ axisName, targetValue, tolerance, moveDirection, timeoutMs }) => {
+    const { app } = await import("./src/bootstrap.js");
+    window.__slaviaQaMovement = { done: false, error: null, current: null, paused: false };
     const startedAt = performance.now();
     const monitor = () => {
       const state = window.__lovecRuntime?.snapshot?.();
@@ -116,6 +137,8 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
         moveDirection > 0 ? current >= targetValue - tolerance : current <= targetValue + tolerance
       );
       if (reached) {
+        app.stop();
+        window.__slaviaQaMovement.paused = true;
         window.__slaviaQaMovement.done = true;
         return;
       }
@@ -136,15 +159,20 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000) {
   });
 
   const release = await input.holdAxis(axis, direction);
+  let movement = null;
   try {
     await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: timeout + 2_000 });
-    const movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
-    if (movement.error) throw new Error(movement.error);
+    movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
   } finally {
     await release();
-    await page.evaluate(() => { delete window.__slaviaQaMovement; });
+    await page.evaluate(async () => {
+      const { app } = await import("./src/bootstrap.js");
+      app.start();
+      delete window.__slaviaQaMovement;
+    });
   }
 
+  if (movement?.error) throw new Error(movement.error);
   await expectReleasedInput(page);
   const final = await runtimeSnapshot(page);
   const current = activeRuntime(final)?.player?.[axis];
