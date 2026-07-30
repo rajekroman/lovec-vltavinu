@@ -1,18 +1,20 @@
 # PROJECT_CONTROL.md — dokončovací plán, automatická orchestrace a integrační stav
 
-Revize: **2.6 · 30. 7. 2026**  
+Revize: **2.7 · 30. 7. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
 ## 1. Aktuální ověřený základ
 
-- Aktuální ověřená špička `main`: `a6621648dcec6cd6431820c07f2eee514490442b`.
+- Aktuální ověřený produkční základ `main`: `018ceee477be956a46490638f2fe239c8af5e975`.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`.
 - Aktivní runtime používá Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden loader, jeden input systém a jednu `GameSession`.
 - Kanonický průchod je `chlum → nesmen → besednice → slavia → finální výsledek → čistý restart`.
 - PR #63 byl sloučen merge commitem `2a75d78e5b30feb2d581cafe1597ad0642b5130e`; issue #61 je uzavřeno.
 - Governance PR #74 byl sloučen merge commitem `a6621648dcec6cd6431820c07f2eee514490442b`.
+- QA support PR #80 byl sloučen do větve Brány 2 merge commitem `5569c2006b383fedc859680233d27a94354e6818`; issue #79 je uzavřeno.
+- Brána 2 / PR #76 byla sloučena do `main` merge commitem `018ceee477be956a46490638f2fe239c8af5e975`; issue #75 je uzavřeno.
 - Historické nebo předčasné PR a větve nejsou integračním základem. Aktivní dokončovací frontu tvoří pouze explicitně uvedené issues a jejich větve.
 
 ## 2. Neměnná rozhodnutí
@@ -60,46 +62,61 @@ A0 při každém koordinačním běhu automaticky:
 
 | Role | Stav | Kanonický balík | Automatický spouštěč další akce |
 |---|---|---|---|
-| A0 koordinace | **ACTIVE** | issue #81, governance a integrační rozhodnutí | kontrola každého nového commitu, CI výsledku nebo HANDOFFu |
-| A1 architektura | **BLOCKED** | žádný aktivní implementační balík | aktivovat legacy cleanup až po merge Brány 2 a audio/výkon hardeningu |
+| A0 koordinace | **ACTIVE** | issue #81, governance a integrační rozhodnutí | dokončit governance zápis Brány 2 a poté aktivovat první odblokovaný balík |
+| A1 architektura | **BLOCKED** | žádný aktivní implementační balík | aktivovat legacy cleanup až po merge audio/výkon hardeningu |
 | A2 gameplay/data | **STANDBY** | bez samostatného balíku | aktivovat pouze při konkrétním gameplay/data nálezu z review nebo CI |
-| A3 grafika | **ACTIVE** | issue #75, PR #76, větev `agent/gate2-visual-polish` | po merge QA vrstvy dokončit Bránu 2 a dodat finální vizuální HANDOFF |
+| A3 grafika | **STANDBY — BRÁNA 2 DOKONČENA** | issue #75 a PR #76 uzavřeny | aktivovat pouze při konkrétní assetové regresi |
 | A4 UI/mobil | **STANDBY** | bez samostatného redesignu | aktivovat pouze při konkrétním UI/input nálezu schváleném A0 |
-| A5 audio/výkon | **BLOCKED** | Brána 3 zatím bez issue | vytvořit samostatné issue okamžitě po merge PR #76 |
-| A6 QA | **ACTIVE SUPPORT** | issue #79, PR #80, větev `agent/gate2-besednice-qa` | opravit portrait helper, získat screenshotovou matici 3/3 a zelené CI |
+| A5 audio/výkon | **NEXT — ČEKÁ NA AKTIVACI** | Brána 3 zatím bez issue | po sloučení této governance revize vytvořit issue, base SHA, větev a acceptance criteria |
+| A6 QA | **STANDBY SUPPORT** | issue #79 a PR #80 uzavřeny | v Bráně 3 ověřit portrait časovou stabilitu bez gameplay shortcutu a bez zvýšení globálního timeoutu |
 | A7 release | **BLOCKED** | žádný release balík | aktivovat až po finálním QA na potvrzeném release SHA |
 
-## 5. Aktivní Brána 2
+## 5. Dokončená Brána 2
 
 ### A3 — issue #75 / PR #76
 
-- Cíl: celoproduktový vizuální polish bez změny gameplay, architektury nebo UI/input kontraktů.
-- Aktuální head po cache integraci: `3e5a756ff57b8b34ce7fb7e60cbf1507b17d03bf`.
-- Produkční změna zavádí samostatnou manifestovou identitu Karla pro Besednici.
-- A3 assety, manifest a `sw.js` jsou během A6 QA vrstvy zmrazené.
-- PR #76 zůstává `Draft / CHANGES REQUIRED`, dokud není přijata QA vrstva a screenshotová matice.
+- Produkční změna zavedla samostatný manifestový asset `npc-rival-karel` pro Besednici.
+- Poškozený PNG byl korektně vyrastrován z kanonického SVG; úplný decode, alpha bounds, budget a SHA-256 kontrakt prošly.
+- `sw.js` obsahuje pouze distribuční cache položku nového assetu; nevznikl gameplay stav ani persistence.
+- A3 head před integrací QA: `3e2c9ce1a3d2cfbe338967400c559529f70bb4fe`.
 
 ### A6 support — issue #79 / PR #80
 
-- Base: `agent/gate2-visual-polish@3e5a756ff57b8b34ce7fb7e60cbf1507b17d03bf`.
-- Aktuální head: `646ce0c0a02900514a97af709cc41bcf83872011`.
-- Změny jsou povoleny pouze v `tests/**`.
-- Workflow #955: statická a unit validace zelená; browser matice `4 passed / 1 failed`.
-- Desktop a iPhone landscape vytvořily `besednice-karel`; iPhone portrait selhal již v Chlumu.
-- Potvrzená kořenová příčina: pohybový monitor používá toleranci `18`, zatímco závěrečné usazení připouští `36`; portrait skončil s odchylkou přibližně `32,33` a byl chybně označen za timeout.
-- A6 musí sjednotit toleranci, znovu spustit celý workflow a dodat třetí skutečný portrait screenshot. Pouhé další zvýšení timeoutu není přijatelná oprava.
+- A6 změnil pouze `tests/mobile-smoke.spec.mjs` a `tests/slavia-smoke.spec.mjs`.
+- QA head: `32e0730e4a3d21ee2136499ad52bc220aa2e01d0`.
+- PR #80 byl sloučen do větve PR #76 merge commitem `5569c2006b383fedc859680233d27a94354e6818`.
+
+### Konsolidované ověření a merge
+
+- Workflow #1015 / run `30544355160` na headu `5569c2006b383fedc859680233d27a94354e6818`: **SUCCESS**.
+- Static and unit validation: **SUCCESS**.
+- Desktop and mobile Playwright matrix: **SUCCESS**.
+- Desktop Chromium, iPhone portrait a iPhone landscape dokončily plný čtyřlevelový průchod, finální výsledek a čistý restart.
+- Playwright artifact: `8760291164`; digest `sha256:ca79b0a69da6b2e1d3faf86cf241a5bedf8fa72784a3c0dea654055b51565d41`.
+- Přímá obrazová kontrola `besednice-karel.png`: 3/3 PASS; hráč a celý Karel jsou rozlišitelní.
+- PR #76 byl sloučen do `main` merge commitem `018ceee477be956a46490638f2fe239c8af5e975`.
+
+### Známé post-merge QA riziko
+
+- Governance PR #83 mění pouze tento dokument, ale workflow #1019 na jeho merge refu zopakovalo celý browserový full-flow.
+- Statická a unit validace prošla v obou pokusech.
+- Browserová matice v obou pokusech skončila `4 passed / 1 failed`; iPhone portrait překročil globální limit `480000 ms` až ve Slavia části.
+- První pokus vytvořil `besednice-karel`, `slavia-arrival`, `slavia-certification` i `slavia-final-result`; druhý pokus vytvořil důkazy minimálně po `slavia-certification` a skončil při dalším `contextualAction` po zavření stránky timeoutem.
+- Desktop a iPhone landscape prošly; log neukazuje nový assetový decode problém ani produkční HTTP chybu.
+- Jde o explicitní časovou nestabilitu testovacího průchodu na nezměněném produkčním kódu. Nevrací Bránu 2 do aktivního assetového vývoje, ale je povinným výkonovým/QA rizikem Brány 3.
+- A5 a support A6 nesmí problém obejít zvýšením globálního timeoutu, zkrácením full-flow ani gameplay shortcutem; musí dodat měření a stabilní průchod.
 
 ## 6. Automatické integrační spouštěče
 
 ```text
 T1. PR #80: zelené CI + besednice-karel 3/3 + přímá obrazová kontrola
-    → A0 review a merge PR #80 do agent/gate2-visual-polish.
+    → SPLNĚNO; PR #80 sloučen do větve Brány 2.
 
 T2. PR #76: zelené CI na nezměněném headu + úplný A3 HANDOFF
-    → A0 převede PR #76 na Ready, provede finální review a merge Brány 2.
+    → SPLNĚNO; PR #76 sloučen do main jako 018ceee477be956a46490638f2fe239c8af5e975.
 
 T3. Merge Brány 2 do main
-    → A0 automaticky vytvoří A5 issue, base SHA, větev a acceptance criteria pro Bránu 3.
+    → AKTIVNÍ; po sloučení této governance revize A0 vytvoří A5 issue, base SHA, větev a acceptance criteria pro Bránu 3.
 
 T4. Merge A5 audio/výkon hardeningu
     → A0 automaticky vytvoří A1 issue pro Bránu 4 — legacy runtime cleanup.
@@ -122,10 +139,10 @@ T7. Konkrétní gameplay/data nebo UI/input regrese
 |---|---|---|---|
 | 0 — Besednice | A2/A3/A6 | **DOKONČENO** | PR #55 sloučen |
 | 1 — Slavia | A2/A3/A4/A6 | **DOKONČENO** | PR #63 sloučen, workflow #899 zelený |
-| 2 — vizuální polish | A3, support A6/A7 | **ACTIVE** | PR #80 → PR #76, CI zelené, screenshoty 3/3 |
-| 3 — audio/výkon | A5, support A1/A6 | **BLOCKED** | aktivace po merge Brány 2 |
+| 2 — vizuální polish | A3, support A6/A7 | **DOKONČENO** | PR #80 → PR #76; merge `018ceee477be956a46490638f2fe239c8af5e975` |
+| 3 — audio/výkon | A5, support A1/A6 | **NEXT — ČEKÁ NA AKTIVACI** | A5 issue a větev po merge této governance revize; stabilní portrait full-flow bez zvýšení timeoutu |
 | 4 — legacy cleanup | A1, ověření A6 | **BLOCKED** | aktivace po merge Brány 3 |
-| 5 — finální QA | A6 | **BLOCKED** | warm-up + 2× zelený stejný release SHA |
+| 5 — finální QA | A6 | **BLOCKED** | aktivace po merge Brány 4; warm-up + 2× zelený stejný release SHA |
 | 6 — release | A7, schvaluje A0 | **BLOCKED** | GitHub Pages produkční smoke a release evidence |
 
 ## 8. Povinný formát každého automatického přidělení
