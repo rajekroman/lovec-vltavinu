@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile, stat } from "node:fs/promises";
 import { AudioRegistry } from "../../src/audio/AudioRegistry.js";
 
 function entry(overrides = {}) {
@@ -11,7 +13,7 @@ function entry(overrides = {}) {
     role: "music",
     loop: true,
     volume: 0.34,
-    metrics: { bytes: 4354 },
+    metrics: { bytes: 4353 },
     budget: { bytes: 8192 },
     sha256: "79bbca2ade8875a767cbcca1baec2e66384aa3c75e4c8887066dc531bab21d04",
     disposeOwner: "AudioEngine",
@@ -62,4 +64,19 @@ test("AudioRegistry groups entries by preload and role", () => {
   ]);
   assert.deepEqual(registry.byPreload("audio:gesture").map(item => item.id), ["audio-music-journey", "audio-sfx-dig-hit"]);
   assert.deepEqual(registry.byRole("music").map(item => item.id), ["audio-music-journey"]);
+});
+
+test("committed audio files match manifest bytes and SHA-256", async () => {
+  const manifest = JSON.parse(await readFile(new URL("../../assets/manifests/assets.json", import.meta.url), "utf8"));
+  const audioEntries = manifest.filter(item => item.type === "audio");
+  assert.equal(audioEntries.length, 4);
+
+  for (const item of audioEntries) {
+    const fileUrl = new URL(`../../${item.url.slice(2)}`, import.meta.url);
+    const file = await readFile(fileUrl);
+    const fileStat = await stat(fileUrl);
+    const actualSha256 = createHash("sha256").update(file).digest("hex");
+    assert.equal(fileStat.size, item.metrics.bytes, `${item.id} byte size`);
+    assert.equal(actualSha256, item.sha256, `${item.id} SHA-256`);
+  }
 });
