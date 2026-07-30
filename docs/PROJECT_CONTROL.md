@@ -1,13 +1,13 @@
 # PROJECT_CONTROL.md — dokončovací plán, automatická orchestrace a integrační stav
 
-Revize: **2.8 · 30. 7. 2026**  
+Revize: **2.8.1 · 30. 7. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
 ## 1. Aktuální ověřený základ
 
-- Aktuální governance špička `main`: `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
+- Governance base použitý pro aktivaci Brány 3: `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
 - Aktuální ověřený produkční merge Brány 2: `018ceee477be956a46490638f2fe239c8af5e975`.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`.
 - Aktivní runtime používá Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden loader, jeden input systém a jednu `GameSession`.
@@ -17,6 +17,7 @@ Tento dokument je jediný autoritativní stavový registr projektu. Technické i
 - QA support PR #80 byl sloučen do větve Brány 2 merge commitem `5569c2006b383fedc859680233d27a94354e6818`; issue #79 je uzavřeno.
 - Brána 2 / PR #76 byla sloučena do `main` merge commitem `018ceee477be956a46490638f2fe239c8af5e975`; issue #75 je uzavřeno.
 - Governance PR #83 byl sloučen merge commitem `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
+- Governance PR #85 aktivoval Bránu 3 merge commitem `ee6f2c872cf5af5f6a0daab25c9a5bd0e4119605`.
 - Historické nebo předčasné PR a větve nejsou integračním základem. Aktivní dokončovací frontu tvoří pouze explicitně uvedené issues a jejich větve.
 
 ## 2. Neměnná rozhodnutí
