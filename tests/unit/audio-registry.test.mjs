@@ -15,7 +15,7 @@ function entry(overrides = {}) {
     volume: 0.34,
     metrics: { bytes: 4353 },
     budget: { bytes: 8192 },
-    sha256: "79bbca2ade8875a767cbcca1baec2e66384aa3c75e4c8887066dc531bab21d04",
+    sha256: "58e6b38769998ecfc281f8a7d8fce4b55b648a7e2fabf7e09cfdc6f2a36e03d4",
     disposeOwner: "AudioEngine",
     license: {
       spdx: "CC0-1.0",
