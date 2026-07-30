@@ -1,7 +1,7 @@
 const CACHE = "lovec-vltavinu-slavia-v6-0";
 const CORE = [
   "./", "./index.html", "./style.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
-  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js",
+  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js",
   "./src/core/EventBus.js", "./src/core/GameEvents.js", "./src/core/GameApp.js", "./src/core/GameLoop.js", "./src/core/SceneManager.js", "./src/core/InputManager.js", "./src/core/AssetLoader.js",
   "./src/ecs/World.js", "./src/systems/CollisionSystem.js", "./src/systems/AnimationSystem.js",
   "./src/data/levels.js", "./src/data/chlum.js", "./src/data/nesmen.js", "./src/data/besednice.js", "./src/data/slavia.js", "./src/data/dialogues.js",
