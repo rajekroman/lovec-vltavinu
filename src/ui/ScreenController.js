@@ -138,9 +138,6 @@ export class ScreenController {
     const button = this.element("againButton");
     button.textContent = buttonLabel;
     bindOnce(button, onContinue);
-    const recordsButton = this.element("resultRecordsButton");
-    recordsButton.classList.add("hidden");
-    recordsButton.setAttribute("aria-hidden", "true");
     resultScreen.setAttribute("aria-busy", "false");
     return this.show("resultScreen", { playing: false });
   }
