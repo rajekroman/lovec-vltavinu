@@ -124,7 +124,7 @@ test("mute, visibility suspend and dispose are idempotent", async () => {
   assert.equal(engine.snapshot().state, "disposed");
 });
 
-test("background return never resumes without a new gesture", async () => {
+test("background return resumes only after a new gesture", async () => {
   const { engine, document, context } = createHarness();
   engine.start();
   await document.dispatch("pointerdown");
@@ -137,8 +137,6 @@ test("background return never resumes without a new gesture", async () => {
   assert.equal(engine.snapshot().state, "suspended");
 
   await document.dispatch("pointerdown");
-  assert.equal(context.resumeCalls, 1, "ordinary gesture handler only unlocks initial locked state");
-  await engine.resumeFromGesture();
   assert.equal(context.resumeCalls, 2);
   assert.equal(engine.snapshot().state, "ready");
 });
