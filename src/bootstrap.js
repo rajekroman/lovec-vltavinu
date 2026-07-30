@@ -44,6 +44,7 @@ const screens = new ScreenController(documentRef);
 const hud = new HudController({ document: documentRef, events });
 const audio = new AudioEngine({
   events,
+  assets: app.assets,
   document: documentRef,
   window: windowRef,
   button: documentRef.getElementById("soundButton")
@@ -76,6 +77,7 @@ app.assets.register("json", loadJson);
 app.assets.register("texture", loadTexture, disposeTexture);
 app.assets.register("spritesheet", loadTexture, disposeTexture);
 app.assets.register("gltf", entry => gltfLoader.load(entry), disposeObject3D);
+app.assets.register("audio", entry => audio.load(entry));
 
 const chlum = new ChlumNesmenBridgeScene({
   app,

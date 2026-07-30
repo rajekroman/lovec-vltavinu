@@ -1,3 +1,5 @@
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+
 function assertString(value, label) {
   if (typeof value !== "string" || value.length === 0) throw new TypeError(`${label} must be a non-empty string.`);
   return value;
@@ -7,6 +9,18 @@ function assertRelativeUrl(value) {
   const url = assertString(value, "Audio URL");
   if (!url.startsWith("./")) throw new TypeError("Audio URL must be relative to the deployed root.");
   return url;
+}
+
+function normalizeLicense(entry) {
+  const license = entry.license;
+  if (!license || typeof license !== "object" || Array.isArray(license)) {
+    throw new TypeError(`Audio asset ${entry.id ?? "unknown"} requires license metadata.`);
+  }
+  return Object.freeze({
+    spdx: assertString(license.spdx, `Audio asset ${entry.id ?? "unknown"} license.spdx`),
+    source: assertString(license.source, `Audio asset ${entry.id ?? "unknown"} license.source`),
+    notice: assertString(license.notice, `Audio asset ${entry.id ?? "unknown"} license.notice`)
+  });
 }
 
 function normalizeEntry(entry) {
@@ -20,7 +34,8 @@ function normalizeEntry(entry) {
   if (!Number.isFinite(budgetBytes) || budgetBytes < bytes) {
     throw new TypeError(`Audio asset ${entry.id ?? "unknown"} exceeds or lacks budget.bytes.`);
   }
-  assertString(entry.sha256, `Audio asset ${entry.id ?? "unknown"} sha256`);
+  const sha256 = assertString(entry.sha256, `Audio asset ${entry.id ?? "unknown"} sha256`).toLowerCase();
+  if (!SHA256_PATTERN.test(sha256)) throw new TypeError(`Audio asset ${entry.id ?? "unknown"} sha256 must be 64 lowercase hex characters.`);
   assertString(entry.disposeOwner, `Audio asset ${entry.id ?? "unknown"} disposeOwner`);
 
   return Object.freeze({
@@ -33,9 +48,9 @@ function normalizeEntry(entry) {
     volume: Number.isFinite(Number(entry.volume)) ? Math.min(1, Math.max(0, Number(entry.volume))) : 1,
     metrics: Object.freeze({ bytes }),
     budget: Object.freeze({ bytes: budgetBytes }),
-    sha256: entry.sha256,
+    sha256,
     disposeOwner: entry.disposeOwner,
-    license: entry.license ? Object.freeze({ ...entry.license }) : null
+    license: normalizeLicense(entry)
   });
 }
 
