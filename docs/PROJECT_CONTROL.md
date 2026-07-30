@@ -1,13 +1,14 @@
 # PROJECT_CONTROL.md — dokončovací plán, automatická orchestrace a integrační stav
 
-Revize: **2.7 · 30. 7. 2026**  
+Revize: **2.8 · 30. 7. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
 ## 1. Aktuální ověřený základ
 
-- Aktuální ověřený produkční základ `main`: `018ceee477be956a46490638f2fe239c8af5e975`.
+- Aktuální governance špička `main`: `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
+- Aktuální ověřený produkční merge Brány 2: `018ceee477be956a46490638f2fe239c8af5e975`.
 - Produkční `index.html` spouští jediný modulární `src/bootstrap.js`.
 - Aktivní runtime používá Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden loader, jeden input systém a jednu `GameSession`.
 - Kanonický průchod je `chlum → nesmen → besednice → slavia → finální výsledek → čistý restart`.
@@ -15,6 +16,7 @@ Tento dokument je jediný autoritativní stavový registr projektu. Technické i
 - Governance PR #74 byl sloučen merge commitem `a6621648dcec6cd6431820c07f2eee514490442b`.
 - QA support PR #80 byl sloučen do větve Brány 2 merge commitem `5569c2006b383fedc859680233d27a94354e6818`; issue #79 je uzavřeno.
 - Brána 2 / PR #76 byla sloučena do `main` merge commitem `018ceee477be956a46490638f2fe239c8af5e975`; issue #75 je uzavřeno.
+- Governance PR #83 byl sloučen merge commitem `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
 - Historické nebo předčasné PR a větve nejsou integračním základem. Aktivní dokončovací frontu tvoří pouze explicitně uvedené issues a jejich větve.
 
 ## 2. Neměnná rozhodnutí
@@ -62,13 +64,13 @@ A0 při každém koordinačním běhu automaticky:
 
 | Role | Stav | Kanonický balík | Automatický spouštěč další akce |
 |---|---|---|---|
-| A0 koordinace | **ACTIVE** | issue #81, governance a integrační rozhodnutí | dokončit governance zápis Brány 2 a poté aktivovat první odblokovaný balík |
-| A1 architektura | **BLOCKED** | žádný aktivní implementační balík | aktivovat legacy cleanup až po merge audio/výkon hardeningu |
+| A0 koordinace | **ACTIVE** | issue #81, governance a integrační rozhodnutí | kontrola A5 commitu, scope, CI a HANDOFFu |
+| A1 architektura | **BLOCKED** | žádný aktivní implementační balík | aktivovat legacy cleanup až po merge issue #84 |
 | A2 gameplay/data | **STANDBY** | bez samostatného balíku | aktivovat pouze při konkrétním gameplay/data nálezu z review nebo CI |
 | A3 grafika | **STANDBY — BRÁNA 2 DOKONČENA** | issue #75 a PR #76 uzavřeny | aktivovat pouze při konkrétní assetové regresi |
 | A4 UI/mobil | **STANDBY** | bez samostatného redesignu | aktivovat pouze při konkrétním UI/input nálezu schváleném A0 |
-| A5 audio/výkon | **NEXT — ČEKÁ NA AKTIVACI** | Brána 3 zatím bez issue | po sloučení této governance revize vytvořit issue, base SHA, větev a acceptance criteria |
-| A6 QA | **STANDBY SUPPORT** | issue #79 a PR #80 uzavřeny | v Bráně 3 ověřit portrait časovou stabilitu bez gameplay shortcutu a bez zvýšení globálního timeoutu |
+| A5 audio/výkon | **ACTIVE** | issue #84, větev `agent/audio-performance-hardening` | dodat jeden draft PR, AudioEngine, výkonové měření a zelený full-flow |
+| A6 QA | **STANDBY SUPPORT** | support pro issue #84 pouze na výslovné A0 zadání | test-only vrstvený PR jen při prokázaném helper problému; bez zvýšení timeoutu |
 | A7 release | **BLOCKED** | žádný release balík | aktivovat až po finálním QA na potvrzeném release SHA |
 
 ## 5. Dokončená Brána 2
@@ -98,15 +100,29 @@ A0 při každém koordinačním běhu automaticky:
 
 ### Známé post-merge QA riziko
 
-- Governance PR #83 mění pouze tento dokument, ale workflow #1019 na jeho merge refu zopakovalo celý browserový full-flow.
+- Governance PR #83 měnil pouze tento dokument, ale workflow #1019 na jeho merge refu zopakovalo celý browserový full-flow.
 - Statická a unit validace prošla v obou pokusech.
-- Browserová matice v obou pokusech skončila `4 passed / 1 failed`; iPhone portrait překročil globální limit `480000 ms` až ve Slavia části.
-- První pokus vytvořil `besednice-karel`, `slavia-arrival`, `slavia-certification` i `slavia-final-result`; druhý pokus vytvořil důkazy minimálně po `slavia-certification` a skončil při dalším `contextualAction` po zavření stránky timeoutem.
+- Browserová matice v obou pokusech skončila `4 passed / 1 failed`; iPhone portrait překročil globální limit `480000 ms` ve Slavia části.
 - Desktop a iPhone landscape prošly; log neukazuje nový assetový decode problém ani produkční HTTP chybu.
 - Jde o explicitní časovou nestabilitu testovacího průchodu na nezměněném produkčním kódu. Nevrací Bránu 2 do aktivního assetového vývoje, ale je povinným výkonovým/QA rizikem Brány 3.
 - A5 a support A6 nesmí problém obejít zvýšením globálního timeoutu, zkrácením full-flow ani gameplay shortcutem; musí dodat měření a stabilní průchod.
 
-## 6. Automatické integrační spouštěče
+## 6. Aktivní Brána 3
+
+### A5 — issue #84
+
+- Base SHA: `dd714b5cc7da3601b0c30bb9439b6086ee10741e`.
+- Větev: `agent/audio-performance-hardening`.
+- Integrační cíl: jeden draft PR do `main`.
+- Cíl: jeden kanonický `AudioEngine`, bezpečný gesture/lifecycle kontrakt, manifestové audio assety a měřený mobilní výkonový profil.
+- Výchozí stav: `AudioEngine.js` neexistuje, manifest nemá audio položky, `#soundButton` existuje, ale bootstrap jej skrývá; `audio:state` event už je definován.
+- Renderer zachovává DPR cap `2` a limit `1_800_000` interních pixelů; změna limitů vyžaduje měření.
+- Povinný výkonový výstup: baseline a výsledky desktop, iPhone portrait a iPhone landscape včetně DPR, interního rozlišení, asset load, frame-time p50/p95 a délky full-flow.
+- Portrait musí dokončit plný průchod v existujícím limitu `480000 ms`; globální timeout se nesmí zvýšit.
+- Zakázáno: scény, gameplay/data/input, nový UI systém, nový renderer/loop/runtime, save, localStorage, inventář, workflow, legacy cleanup a release práce.
+- A6 support smí vzniknout pouze jako samostatný test-only vrstvený PR, pokud měření prokáže problém helperu.
+
+## 7. Automatické integrační spouštěče
 
 ```text
 T1. PR #80: zelené CI + besednice-karel 3/3 + přímá obrazová kontrola
@@ -116,7 +132,7 @@ T2. PR #76: zelené CI na nezměněném headu + úplný A3 HANDOFF
     → SPLNĚNO; PR #76 sloučen do main jako 018ceee477be956a46490638f2fe239c8af5e975.
 
 T3. Merge Brány 2 do main
-    → AKTIVNÍ; po sloučení této governance revize A0 vytvoří A5 issue, base SHA, větev a acceptance criteria pro Bránu 3.
+    → SPLNĚNO; vytvořeno issue #84 a větev agent/audio-performance-hardening z dd714b5cc7da3601b0c30bb9439b6086ee10741e.
 
 T4. Merge A5 audio/výkon hardeningu
     → A0 automaticky vytvoří A1 issue pro Bránu 4 — legacy runtime cleanup.
@@ -133,19 +149,19 @@ T7. Konkrétní gameplay/data nebo UI/input regrese
 
 Žádný spouštěč nesmí přeskočit přímou závislost.
 
-## 7. Integrační brány
+## 8. Integrační brány
 
 | Brána | Vlastník | Stav | Podmínka dokončení |
 |---|---|---|---|
 | 0 — Besednice | A2/A3/A6 | **DOKONČENO** | PR #55 sloučen |
 | 1 — Slavia | A2/A3/A4/A6 | **DOKONČENO** | PR #63 sloučen, workflow #899 zelený |
 | 2 — vizuální polish | A3, support A6/A7 | **DOKONČENO** | PR #80 → PR #76; merge `018ceee477be956a46490638f2fe239c8af5e975` |
-| 3 — audio/výkon | A5, support A1/A6 | **NEXT — ČEKÁ NA AKTIVACI** | A5 issue a větev po merge této governance revize; stabilní portrait full-flow bez zvýšení timeoutu |
+| 3 — audio/výkon | A5, support A1/A6 | **ACTIVE** | issue #84; AudioEngine, měření, stabilní portrait full-flow a zelený CI |
 | 4 — legacy cleanup | A1, ověření A6 | **BLOCKED** | aktivace po merge Brány 3 |
 | 5 — finální QA | A6 | **BLOCKED** | aktivace po merge Brány 4; warm-up + 2× zelený stejný release SHA |
 | 6 — release | A7, schvaluje A0 | **BLOCKED** | GitHub Pages produkční smoke a release evidence |
 
-## 8. Povinný formát každého automatického přidělení
+## 9. Povinný formát každého automatického přidělení
 
 ```text
 Identifikátor úkolu: #<issue>
@@ -164,7 +180,7 @@ HANDOFF: změny, rozhodnutí, testy, problémy, další krok
 
 Bez těchto údajů smí odborný chat pouze analyzovat.
 
-## 9. Kritéria dokončení projektu
+## 10. Kritéria dokončení projektu
 
 Projekt je dokončen pouze tehdy, když:
 
