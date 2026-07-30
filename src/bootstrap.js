@@ -1,4 +1,5 @@
 import * as THREE from "../vendor/three.module.min.js";
+import { AudioEngine } from "./audio/AudioEngine.js";
 import { EventBus } from "./core/EventBus.js";
 import { EVENT_CONTRACTS, validateEventPayload } from "./core/GameEvents.js";
 import { GameApp } from "./core/GameApp.js";
@@ -22,7 +23,6 @@ if (!canvas) throw new Error("Missing #game canvas.");
 if (String(THREE.REVISION) !== GLTF_LOADER_REVISION) {
   throw new Error(`Three.js revision ${THREE.REVISION} does not match GLTFLoader revision ${GLTF_LOADER_REVISION}.`);
 }
-documentRef.getElementById("soundButton")?.classList.add("hidden");
 
 const events = new EventBus({
   contracts: EVENT_CONTRACTS,
@@ -42,6 +42,12 @@ const app = new GameApp({ events, renderer });
 const session = createGameSession();
 const screens = new ScreenController(documentRef);
 const hud = new HudController({ document: documentRef, events });
+const audio = new AudioEngine({
+  events,
+  document: documentRef,
+  window: windowRef,
+  button: documentRef.getElementById("soundButton")
+});
 const lifecycle = new AbortController();
 
 function resize() {
@@ -142,6 +148,7 @@ function installLifecycleHandlers() {
     inputAdapter.dispose();
     hud.dispose();
     screens.dispose();
+    void audio.dispose();
     void app.dispose();
   }, { signal });
 }
@@ -159,6 +166,7 @@ function installDebugApi() {
         pixelRatio: renderer.pixelRatio,
         type: "three-webgl-orthographic"
       },
+      audio: audio.snapshot(),
       session: session.state,
       chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
       nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null,
@@ -174,6 +182,7 @@ async function boot() {
   resize();
   installLifecycleHandlers();
   installDebugApi();
+  audio.start();
   await app.boot("title");
   app.start();
   if ("serviceWorker" in navigator && !windowRef.location.search.includes("debug")) {
@@ -183,4 +192,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun };
+export { app, audio, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun };
