@@ -78,6 +78,7 @@ export class AudioEngine {
     if (!context) return false;
 
     if (context.state !== "running") await context.resume?.();
+    this.resumeAfterVisibility = false;
     this.state = this.muted ? "muted" : "ready";
     this.updateButton();
     this.emitState();
@@ -86,11 +87,13 @@ export class AudioEngine {
 
   async handleGesture() {
     if (this.state === "locked") await this.unlock();
+    else if (this.state === "suspended" && this.resumeAfterVisibility) await this.resumeFromGesture();
   }
 
   async handleButton(event) {
     event?.preventDefault?.();
     if (this.state === "locked") await this.unlock();
+    else if (this.state === "suspended" && this.resumeAfterVisibility) await this.resumeFromGesture();
     this.setMuted(!this.muted);
   }
 
@@ -100,7 +103,7 @@ export class AudioEngine {
     if (next === this.muted) return false;
     this.muted = next;
     this.applyGain();
-    if (this.state !== "locked" && this.state !== "unavailable") {
+    if (this.state !== "locked" && this.state !== "unavailable" && this.state !== "suspended") {
       this.state = this.muted ? "muted" : "ready";
     }
     this.updateButton();
@@ -127,7 +130,7 @@ export class AudioEngine {
 
   async suspend(reason = "manual") {
     if (!this.context || this.disposed) return false;
-    this.resumeAfterVisibility = this.context.state === "running";
+    this.resumeAfterVisibility = this.context.state === "running" || this.resumeAfterVisibility;
     if (this.context.state === "running") await this.context.suspend?.();
     this.state = "suspended";
     this.updateButton();
