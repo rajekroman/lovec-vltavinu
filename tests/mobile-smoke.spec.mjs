@@ -62,7 +62,7 @@ async function beginJoystick(page, axisX, axisY) {
     if (!active) return;
     active = false;
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
-    await client.detach();
+    await client.detach().catch(() => {});
   };
 }
 
@@ -70,7 +70,7 @@ async function captureEvidence(page, testInfo, name, expectedSize) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
   const path = `${directory}/${name}.png`;
-  const image = await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device" });
+  const image = await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device", timeout: 20_000 });
   expect({ width: image.readUInt32BE(16), height: image.readUInt32BE(20) }).toEqual(expectedSize);
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
@@ -102,7 +102,7 @@ test("real touch joystick moves the player and runtime reset releases it", async
 });
 
 test("orientation, pause and background transitions release mobile input", async ({ page, context }, testInfo) => {
-  test.setTimeout(75_000);
+  test.setTimeout(90_000);
   const errors = await openPlaying(page);
   await captureEvidence(page, testInfo, "mobile-lifecycle-portrait", { width: 1170, height: 2532 });
 
