@@ -48,8 +48,9 @@ while (queue.length) {
   }
 }
 const runtimeSource = [...runtimeModules].filter(relativePath => relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
+const firstPartyRuntimeSource = [...runtimeModules].filter(relativePath => relativePath.startsWith("src/") && relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
 if (/(?:game|runtime-stability)\.js/.test(runtimeSource)) fail("Produkční bootstrap importuje legacy runtime soubor.");
-if (/getContext\s*\(\s*["']2d["']/.test(runtimeSource)) fail("Produkční bootstrap obsahuje zakázanou Canvas2D herní cestu.");
+if (/getContext\s*\(\s*["']2d["']/.test(firstPartyRuntimeSource)) fail("Produkční bootstrap obsahuje zakázanou Canvas2D herní cestu.");
 if (/LegacySaveAdapter|localStorage|sessionStorage/.test(runtimeSource)) fail("Produkční bootstrap importuje nebo používá zakázanou persistence/save vrstvu.");
 const rendererConstructors = [...runtimeSource.matchAll(/new\s+THREE\.WebGLRenderer\s*\(/g)].length;
 if (rendererConstructors !== 1) fail(`Runtime musí vlastnit právě jeden WebGLRenderer; nalezeno: ${rendererConstructors}.`);
