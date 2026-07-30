@@ -18,8 +18,10 @@ async function revealSoundButton(page) {
   await page.evaluate(() => {
     const hud = document.getElementById("hud");
     const button = document.getElementById("soundButton");
-    if (!hud || !button) throw new Error("Missing production audio controls.");
+    const titleScreen = document.getElementById("titleScreen");
+    if (!hud || !button || !titleScreen) throw new Error("Missing production audio controls.");
     hud.classList.remove("hidden");
+    titleScreen.style.pointerEvents = "none";
   });
 }
 
