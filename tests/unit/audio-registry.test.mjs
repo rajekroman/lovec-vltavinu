@@ -71,12 +71,20 @@ test("committed audio files match manifest bytes and SHA-256", async () => {
   const audioEntries = manifest.filter(item => item.type === "audio");
   assert.equal(audioEntries.length, 4);
 
+  const actual = {};
+  const expected = {};
   for (const item of audioEntries) {
     const fileUrl = new URL(`../../${item.url.slice(2)}`, import.meta.url);
     const file = await readFile(fileUrl);
     const fileStat = await stat(fileUrl);
-    const actualSha256 = createHash("sha256").update(file).digest("hex");
-    assert.equal(fileStat.size, item.metrics.bytes, `${item.id} byte size`);
-    assert.equal(actualSha256, item.sha256, `${item.id} SHA-256`);
+    actual[item.id] = {
+      bytes: fileStat.size,
+      sha256: createHash("sha256").update(file).digest("hex")
+    };
+    expected[item.id] = {
+      bytes: item.metrics.bytes,
+      sha256: item.sha256
+    };
   }
+  assert.deepEqual(actual, expected);
 });
