@@ -31,6 +31,16 @@ export default defineConfig({
       }
     },
     {
+      name: "audio-lifecycle-chromium",
+      testMatch: /audio-lifecycle\.spec\.mjs$/,
+      metadata: { inputMode: "desktop", orientation: "landscape" },
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 1280, height: 720 }
+      }
+    },
+    {
       name: "iphone-portrait",
       testMatch: [/slavia-smoke\.spec\.mjs$/, /mobile-smoke\.spec\.mjs$/],
       metadata: { inputMode: "touch", orientation: "portrait" },
