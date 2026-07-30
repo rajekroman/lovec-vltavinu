@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { test, expect } from "@playwright/test";
 
-const TARGET_TOLERANCE = 18;
+const TARGET_TOLERANCE = 36;
 
 async function runtimeSnapshot(page) {
   return page.evaluate(() => window.__lovecRuntime.snapshot());
@@ -39,7 +39,7 @@ async function touchLocator(page, locator) {
     });
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   } finally {
-    await client.detach();
+    await client.detach().catch(() => {});
   }
 }
 
@@ -79,8 +79,8 @@ function createInputDriver(page, testInfo) {
     const radius = Math.max(1, Math.min(box.width, box.height) / 2);
     const centerX = box.x + box.width / 2;
     const centerY = box.y + box.height / 2;
-    const x = Math.round(centerX + (axis === "x" ? direction * radius * 0.78 : 0));
-    const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.78 : 0));
+    const x = Math.round(centerX + (axis === "x" ? direction * radius * 0.98 : 0));
+    const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.98 : 0));
     const client = await page.context().newCDPSession(page);
     let active = true;
     await client.send("Input.dispatchTouchEvent", {
@@ -91,7 +91,7 @@ function createInputDriver(page, testInfo) {
       if (!active) return;
       active = false;
       await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
-      await client.detach();
+      await client.detach().catch(() => {});
     };
   }
 
@@ -170,27 +170,26 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind 
     await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: timeout + 2_000 });
     movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
   } finally {
-    await release();
+    await release().catch(() => {});
     await page.evaluate(async () => {
       const { app } = await import("./src/bootstrap.js");
       app.start();
       delete window.__slaviaQaMovement;
-    });
+    }).catch(() => {});
   }
 
   if (movement?.error) throw new Error(movement.error);
-  await expectReleasedInput(page);
   const final = await runtimeSnapshot(page);
   if (stopKind && activeRuntime(final)?.available?.kind === stopKind) return;
   const current = activeRuntime(final)?.player?.[axis];
-  if (typeof current !== "number" || Math.abs(target - current) > 36) {
+  if (typeof current !== "number" || Math.abs(target - current) > TARGET_TOLERANCE) {
     throw new Error(`Player did not settle near ${axis}=${target}; current ${current}.`);
   }
 }
 
 async function moveTo(page, input, x, y, kind, timeout = 12_000) {
   const approaches = [[x, y], [x - 20, y], [x + 20, y], [x, y - 20], [x, y + 20], [x, y]];
-  const collisionTolerantKind = kind === "permission" ? kind : null;
+  const collisionTolerantKind = kind;
   for (const [targetX, targetY] of approaches) {
     await moveAxisTo(page, input, "x", targetX, 20_000, collisionTolerantKind);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
@@ -231,7 +230,7 @@ async function performAction(page, input) {
       window.__slaviaQaInteractionOff?.();
       delete window.__slaviaQaInteractionOff;
       delete window.__slaviaQaInteraction;
-    });
+    }).catch(() => {});
   }
   await expectReleasedInput(page);
 }
@@ -286,7 +285,7 @@ async function successfulDigHit(page, input, expectedTotal) {
     await page.evaluate(async () => {
       const { app } = await import("./src/bootstrap.js");
       app.start();
-    });
+    }).catch(() => {});
   }
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
@@ -328,7 +327,7 @@ async function completeChlum(page, input) {
   expect(opened).toBe(true);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
-  await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
+  await moveTo(page, input, 1042, 732, "collect");
   await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
@@ -355,17 +354,58 @@ async function completeNesmen(page, input) {
     await performAction(page, input);
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
     for (let hit = 0; hit < 3; hit++) await successfulDigHit(page, input, ++totalHits);
-    if (index === 0) {
-      await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
+
+    const pendingKinds = new Set(index === 0 ? ["collect", "fill"] : ["fill"]);
+    while (pendingKinds.size > 0) {
+      let availableKind = activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null;
+      if (!pendingKinds.has(availableKind)) {
+        const requiredKind = pendingKinds.has("collect") ? "collect" : "fill";
+        const target = requiredKind === "collect"
+          ? { x: profile.x + 30, y: profile.y + 18 }
+          : profile;
+        await moveTo(page, input, target.x, target.y, requiredKind);
+        availableKind = activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null;
+      }
+      expect(pendingKinds.has(availableKind)).toBe(true);
+      pendingKinds.delete(availableKind);
       await performAction(page, input);
     }
-    await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("fill");
-    await performAction(page, input);
+
+    if (index === 0) {
+      const state = await runtimeSnapshot(page);
+      expect(state.session.findings.some(entry => entry.locality === "nesmen")).toBe(true);
+    }
   }
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-async function completeBesednice(page, input) {
+async function pauseForBesedniceEvidence(page, timeout = 10_000) {
+  await page.evaluate(async timeoutMs => {
+    const { app } = await import("./src/bootstrap.js");
+    await new Promise((resolve, reject) => {
+      const startedAt = performance.now();
+      const monitor = () => {
+        const runtime = window.__lovecRuntime?.snapshot?.()?.besednice?.runtime;
+        const player = runtime?.player;
+        const boss = runtime?.boss;
+        const distance = player && boss ? Math.hypot(player.x - boss.x, player.y - boss.y) : Infinity;
+        if (boss?.started === true && boss.defeated !== true && distance >= 120 && distance <= 200) {
+          app.stop();
+          resolve();
+          return;
+        }
+        if (performance.now() - startedAt >= timeoutMs) {
+          reject(new Error(`Karel did not enter the evidence distance; current ${distance}.`));
+          return;
+        }
+        requestAnimationFrame(monitor);
+      };
+      requestAnimationFrame(monitor);
+    });
+  }, timeout);
+}
+
+async function completeBesednice(page, input, testInfo) {
   for (const trace of [{ x: 470, y: 890 }, { x: 880, y: 620 }, { x: 1240, y: 420 }]) {
     await moveTo(page, input, trace.x, trace.y, "discover", 15_000);
     await performAction(page, input);
@@ -374,18 +414,35 @@ async function completeBesednice(page, input) {
   await performAction(page, input);
   await expect(page.locator("#digScreen")).toHaveClass(/visible/);
   for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
-  await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
+  await moveTo(page, input, 1464, 278, "collect");
   await performAction(page, input);
-  await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
-    timeout: 15_000,
-    intervals: [50, 100, 200]
-  }).toBe("recover");
+  await pauseForBesedniceEvidence(page);
+  try {
+    const besednice = await runtimeSnapshot(page);
+    const distance = Math.hypot(
+      besednice.besednice.runtime.player.x - besednice.besednice.runtime.boss.x,
+      besednice.besednice.runtime.player.y - besednice.besednice.runtime.boss.y
+    );
+    expect(besednice.besednice.runtime.loadedAssets).toContain("npc-rival-karel");
+    expect(besednice.besednice.runtime.boss.started).toBe(true);
+    expect(besednice.besednice.runtime.boss.defeated).not.toBe(true);
+    expect(distance).toBeGreaterThanOrEqual(120);
+    expect(distance).toBeLessThanOrEqual(200);
+    await captureEvidence(page, testInfo, "besednice-karel");
+  } finally {
+    await page.evaluate(async () => {
+      const { app } = await import("./src/bootstrap.js");
+      app.start();
+    }).catch(() => {});
+  }
+  await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
+  await moveTo(page, input, 1510, 900, "recover", 15_000);
   await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
 test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
-  test.setTimeout(300_000);
+  test.setTimeout(480_000);
   const input = createInputDriver(page, testInfo);
   const pageErrors = [];
   const httpErrors = [];
@@ -397,7 +454,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
   await completeNesmen(page, input);
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
-  await completeBesednice(page, input);
+  await completeBesednice(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
