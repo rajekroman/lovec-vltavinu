@@ -6,6 +6,10 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, number));
 }
 
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export class AudioEngine {
   constructor(options = {}) {
     if (!options.events) throw new TypeError("AudioEngine requires events.");
@@ -19,6 +23,7 @@ export class AudioEngine {
       if (!AudioContextCtor) return null;
       return new AudioContextCtor();
     });
+    this.logger = options.logger ?? globalThis.console ?? null;
 
     this.context = null;
     this.masterGain = null;
@@ -77,8 +82,16 @@ export class AudioEngine {
     const context = this.ensureContext();
     if (!context) return false;
 
-    if (context.state !== "running") await context.resume?.();
-    this.resumeAfterVisibility = false;
+    try {
+      if (context.state !== "running") await context.resume?.();
+    } catch (error) {
+      this.state = "error";
+      this.updateButton();
+      this.emitState();
+      this.logger?.warn?.("Audio unlock failed:", errorMessage(error));
+      return false;
+    }
+
     this.state = this.muted ? "muted" : "ready";
     this.updateButton();
     this.emitState();
@@ -92,8 +105,14 @@ export class AudioEngine {
 
   async handleButton(event) {
     event?.preventDefault?.();
-    if (this.state === "locked") await this.unlock();
-    else if (this.state === "suspended" && this.resumeAfterVisibility) await this.resumeFromGesture();
+    if (this.state === "locked") {
+      await this.unlock();
+      return;
+    }
+    if (this.state === "suspended" && this.resumeAfterVisibility) {
+      await this.resumeFromGesture();
+      return;
+    }
     this.setMuted(!this.muted);
   }
 
@@ -103,7 +122,7 @@ export class AudioEngine {
     if (next === this.muted) return false;
     this.muted = next;
     this.applyGain();
-    if (this.state !== "locked" && this.state !== "unavailable" && this.state !== "suspended") {
+    if (!["locked", "unavailable", "error", "suspended"].includes(this.state)) {
       this.state = this.muted ? "muted" : "ready";
     }
     this.updateButton();
@@ -130,8 +149,16 @@ export class AudioEngine {
 
   async suspend(reason = "manual") {
     if (!this.context || this.disposed) return false;
-    this.resumeAfterVisibility = this.context.state === "running" || this.resumeAfterVisibility;
-    if (this.context.state === "running") await this.context.suspend?.();
+    this.resumeAfterVisibility = this.context.state === "running";
+    try {
+      if (this.context.state === "running") await this.context.suspend?.();
+    } catch (error) {
+      this.state = "error";
+      this.updateButton();
+      this.emitState();
+      this.logger?.warn?.("Audio suspend failed:", errorMessage(error));
+      return false;
+    }
     this.state = "suspended";
     this.updateButton();
     this.emitState();
@@ -140,7 +167,15 @@ export class AudioEngine {
 
   async resumeFromGesture() {
     if (!this.context || this.disposed) return false;
-    if (this.context.state !== "running") await this.context.resume?.();
+    try {
+      if (this.context.state !== "running") await this.context.resume?.();
+    } catch (error) {
+      this.state = "error";
+      this.updateButton();
+      this.emitState();
+      this.logger?.warn?.("Audio resume failed:", errorMessage(error));
+      return false;
+    }
     this.resumeAfterVisibility = false;
     this.state = this.muted ? "muted" : "ready";
     this.updateButton();
@@ -158,7 +193,7 @@ export class AudioEngine {
 
   updateButton() {
     if (!this.button) return;
-    const muted = this.muted || this.state === "unavailable";
+    const muted = this.muted || this.state === "unavailable" || this.state === "error";
     this.button.textContent = muted ? "♪̸" : "♫";
     this.button.setAttribute?.("aria-pressed", String(this.muted));
     this.button.setAttribute?.("aria-label", this.muted ? "Zapnout zvuk" : "Vypnout zvuk");
@@ -190,7 +225,11 @@ export class AudioEngine {
     } catch {
       // Already disconnected.
     }
-    await this.context?.close?.();
+    try {
+      await this.context?.close?.();
+    } catch (error) {
+      this.logger?.warn?.("Audio dispose failed:", errorMessage(error));
+    }
     this.context = null;
     this.masterGain = null;
     this.state = "disposed";
