@@ -11,9 +11,9 @@ function entry(overrides = {}) {
     role: "music",
     loop: true,
     volume: 0.34,
-    metrics: { bytes: 16422 },
-    budget: { bytes: 20000 },
-    sha256: "67bee60e7335c76d058b4f28595e30ab152251a3851d9fef45c1ad6c4439adfa",
+    metrics: { bytes: 4354 },
+    budget: { bytes: 8192 },
+    sha256: "79bbca2ade8875a767cbcca1baec2e66384aa3c75e4c8887066dc531bab21d04",
     disposeOwner: "AudioEngine",
     license: {
       spdx: "CC0-1.0",
@@ -55,9 +55,9 @@ test("AudioRegistry groups entries by preload and role", () => {
       url: "./assets/audio/dig-hit.mp3",
       role: "effect",
       loop: false,
-      metrics: { bytes: 2341 },
+      metrics: { bytes: 1010 },
       budget: { bytes: 4096 },
-      sha256: "9465bb84295c44ce8cec793e9c0834b188679a890065ccc1edcbdc2417e8a73b"
+      sha256: "32cd46cd2d1e509fb1e162e9eb005f2bbf9b6bf6542fdbd64dcab2ac08197ea3"
     })
   ]);
   assert.deepEqual(registry.byPreload("audio:gesture").map(item => item.id), ["audio-music-journey", "audio-sfx-dig-hit"]);
