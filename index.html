@@ -24,7 +24,7 @@
     }
     @media(orientation:landscape) and (max-height:520px){
       #resultScreen{place-items:stretch center;padding:calc(8px + var(--safe-t)) calc(12px + var(--safe-r)) calc(8px + var(--safe-b)) calc(12px + var(--safe-l))}
-      #resultScreen .result-card{align-self:center;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(118px,.7fr);grid-template-areas:"kicker score" "title score" "text score" "stats stats" "action action" "records records";gap:6px 14px;max-width:780px;padding:14px 18px;text-align:left}
+      #resultScreen .result-card{align-self:center;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(118px,.7fr);grid-template-areas:"kicker score" "title score" "text score" "stats stats" "action action";gap:6px 14px;max-width:780px;padding:14px 18px;text-align:left}
       #resultKicker{grid-area:kicker;margin:0}
       #resultTitle{grid-area:title;margin:0;font-size:clamp(24px,5vw,38px)}
       #resultScreen .score-ring{grid-area:score;width:104px;height:104px;margin:0 auto;border-width:5px}
@@ -33,7 +33,6 @@
       #resultStats{grid-area:stats;margin:4px 0}
       #resultStats div{padding:7px}
       #againButton{grid-area:action}
-      #resultRecordsButton{grid-area:records}
     }
   </style>
   <title>Lovec vltavínů: Zelená vlna</title>
@@ -93,10 +92,8 @@
       <h1>Lovec<br>vltavínů</h1>
       <p class="subtitle">Z pole až na Zelenou vlnu</p>
       <button id="playButton" class="play-button" type="button"><span>VYRAZIT</span><small>jedním klepnutím</small></button>
-      <button id="continueButton" class="text-button hidden" type="button">Pokračovat v rozehrané výpravě</button>
       <div class="title-tools">
         <button id="howButton" class="text-button" type="button">Jak se hraje</button>
-        <button id="recordsButton" class="text-button" type="button">Rekordy</button>
       </div>
       <p class="version">v6.0 · Modular Bootstrap</p>
     </div>
@@ -170,7 +167,6 @@
       <p id="resultText"></p>
       <div id="resultStats" class="result-stats" role="list"></div>
       <button id="againButton" class="primary-button" type="button">NOVÁ VÝPRAVA</button>
-      <button id="resultRecordsButton" class="text-button" type="button">Zobrazit rekordy</button>
     </div>
   </section>
 
@@ -189,10 +185,6 @@
       </div>
       <button id="closeHowButton" class="primary-button" type="button">ROZUMÍM</button>
     </div>
-  </section>
-
-  <section id="recordsScreen" class="screen">
-    <div class="records-card"><p class="eyebrow">NEJLEPŠÍ VÝPRAVY</p><h2>Rekordy</h2><ol id="recordsList"></ol><button id="closeRecordsButton" class="primary-button" type="button">ZAVŘÍT</button></div>
   </section>
 
   <noscript><div class="noscript">Hra potřebuje zapnutý JavaScript.</div></noscript>

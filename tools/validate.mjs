@@ -18,6 +18,8 @@ const read = relativePath => {
 
 const requiredFiles = ["index.html", "style.css", "manifest.webmanifest", "sw.js", "icon-180.png", "icon-192.png", "icon-512.png", "vendor/three.module.min.js", "src/bootstrap.js", "assets/manifests/assets.json"];
 requiredFiles.forEach(relativePath => { if (!exists(relativePath)) fail(`Chybí povinný soubor: ${relativePath}`); });
+const forbiddenLegacyFiles = ["game.js", "runtime-stability.js"];
+forbiddenLegacyFiles.forEach(relativePath => { if (exists(relativePath)) fail(`Legacy runtime soubor nesmí existovat: ${relativePath}`); });
 const html = read("index.html");
 const serviceWorker = read("sw.js");
 const manifestText = read("manifest.webmanifest");
@@ -46,6 +48,9 @@ while (queue.length) {
   }
 }
 const runtimeSource = [...runtimeModules].filter(relativePath => relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
+const firstPartyRuntimeSource = [...runtimeModules].filter(relativePath => relativePath.startsWith("src/") && relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
+if (/(?:game|runtime-stability)\.js/.test(runtimeSource)) fail("Produkční bootstrap importuje legacy runtime soubor.");
+if (/getContext\s*\(\s*["']2d["']/.test(firstPartyRuntimeSource)) fail("Produkční bootstrap obsahuje zakázanou Canvas2D herní cestu.");
 if (/LegacySaveAdapter|localStorage|sessionStorage/.test(runtimeSource)) fail("Produkční bootstrap importuje nebo používá zakázanou persistence/save vrstvu.");
 const rendererConstructors = [...runtimeSource.matchAll(/new\s+THREE\.WebGLRenderer\s*\(/g)].length;
 if (rendererConstructors !== 1) fail(`Runtime musí vlastnit právě jeden WebGLRenderer; nalezeno: ${rendererConstructors}.`);
@@ -119,6 +124,7 @@ if (!runtimeSource.includes("maxSubSteps: options.maxSubSteps ?? 5")) fail("Game
 console.log(`Kontrolováno HTML ID: ${htmlIds.length}`);
 console.log(`Kontrolováno runtime DOM referencí: ${referencedIds.size}`);
 console.log(`Kontrolováno runtime modulů: ${runtimeModules.size}`);
+console.log(`Kontrolováno zakázaných legacy souborů: ${forbiddenLegacyFiles.length}`);
 console.log(`Kontrolováno PWA cest: ${cachedPaths.size}`);
 console.log(`Kontrolováno Chlum/common assetů: ${chlumAssetCount}`);
 console.log(`Kontrolováno Nesměň assetů: ${nesmenAssetCount}`);

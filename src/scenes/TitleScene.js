@@ -11,8 +11,6 @@ export class TitleScene {
     this.controller = new AbortController();
     const { signal } = this.controller;
     this.screens.showTitle();
-    this.document.getElementById("continueButton").classList.add("hidden");
-    this.document.getElementById("recordsButton").classList.add("hidden");
     this.document.querySelector(".version").textContent = "v6.0 · Modular Bootstrap";
 
     this.document.getElementById("playButton").addEventListener("click", event => {
