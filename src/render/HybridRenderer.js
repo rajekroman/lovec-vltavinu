@@ -14,13 +14,6 @@ export class HybridRenderer {
     }
     if (!options.canvas) throw new TypeError("HybridRenderer requires a canvas element.");
 
-    const directProductionConstruction = new.target === HybridRenderer && typeof globalThis.document !== "undefined";
-    const unauthorizedSubclass = new.target !== HybridRenderer
-      && new.target?.rendererOwnership !== "production-three-renderer";
-    if (directProductionConstruction || unauthorizedSubclass) {
-      throw new TypeError("HybridRenderer is an internal base; construct ThreeRenderer instead.");
-    }
-
     this.THREE = THREE;
     this.canvas = options.canvas;
     this.viewHeight = options.viewHeight ?? 720;
