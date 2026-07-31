@@ -8,7 +8,7 @@ export function prepareSpriteTexture(texture, cloneTexture = true) {
 
 export class HybridRenderer {
   constructor(options = {}) {
-    if (new.target === HybridRenderer) {
+    if (new.target === HybridRenderer || new.target?.rendererOwnership !== "production-three-renderer") {
       throw new TypeError("HybridRenderer is an internal base; construct ThreeRenderer instead.");
     }
 
