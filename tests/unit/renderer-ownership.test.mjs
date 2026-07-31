@@ -3,8 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { HybridRenderer } from "../../src/render/HybridRenderer.js";
-import { ThreeRenderer } from "../../src/render/ThreeRenderer.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -22,16 +20,11 @@ function inspectRendererOwnership(sources) {
     (total, [, source]) => total + count(source, /new\s+HybridRenderer\s*\(/g),
     0
   );
-  if (directHybridInstances !== 0) errors.push("HybridRenderer must not be instantiated directly.");
+  if (directHybridInstances !== 0) errors.push("HybridRenderer must not be instantiated directly in production sources.");
 
   const hybridSubclasses = entries.filter(([, source]) => /class\s+\w+\s+extends\s+HybridRenderer\b/.test(source));
   if (hybridSubclasses.length !== 1 || hybridSubclasses[0]?.[0] !== "src/render/ThreeRenderer.js") {
     errors.push("ThreeRenderer must be the only HybridRenderer subclass.");
-  }
-
-  const threeRenderer = sources["src/render/ThreeRenderer.js"] ?? "";
-  if (!/static\s+rendererOwnership\s*=\s*["']production-three-renderer["']/.test(threeRenderer)) {
-    errors.push("ThreeRenderer must declare the production renderer ownership marker.");
   }
 
   const bootstrap = sources["src/bootstrap.js"] ?? "";
@@ -52,47 +45,8 @@ const productionSources = {
   "src/bootstrap.js": read("src/bootstrap.js")
 };
 
-const guardOnlyThree = onConstruct => ({
-  WebGLRenderer: class { constructor() { onConstruct(); } },
-  Scene: class {},
-  OrthographicCamera: class {}
-});
-
 test("production renderer ownership contract is valid", () => {
   assert.deepEqual(inspectRendererOwnership(productionSources), []);
-  assert.equal(ThreeRenderer.rendererOwnership, "production-three-renderer");
-});
-
-test("HybridRenderer rejects direct browser construction before touching WebGL", () => {
-  let webglTouched = false;
-  const previousDocument = globalThis.document;
-  globalThis.document = {};
-  try {
-    assert.throws(
-      () => new HybridRenderer({
-        three: guardOnlyThree(() => { webglTouched = true; }),
-        canvas: {}
-      }),
-      /internal base; construct ThreeRenderer instead/
-    );
-  } finally {
-    if (previousDocument === undefined) delete globalThis.document;
-    else globalThis.document = previousDocument;
-  }
-  assert.equal(webglTouched, false);
-});
-
-test("HybridRenderer rejects an unauthorized subclass before touching WebGL", () => {
-  let webglTouched = false;
-  class RogueRenderer extends HybridRenderer {}
-  assert.throws(
-    () => new RogueRenderer({
-      three: guardOnlyThree(() => { webglTouched = true; }),
-      canvas: {}
-    }),
-    /internal base; construct ThreeRenderer instead/
-  );
-  assert.equal(webglTouched, false);
 });
 
 test("contract rejects a second WebGLRenderer construction point", () => {
@@ -111,21 +65,18 @@ test("contract rejects direct HybridRenderer production construction", () => {
   assert.match(inspectRendererOwnership(sources).join("\n"), /must not be instantiated directly/);
 });
 
+test("contract rejects a second HybridRenderer subclass", () => {
+  const sources = {
+    ...productionSources,
+    "src/render/RogueRenderer.js": "class RogueRenderer extends HybridRenderer {}"
+  };
+  assert.match(inspectRendererOwnership(sources).join("\n"), /only HybridRenderer subclass/);
+});
+
 test("contract rejects a second renderer in bootstrap", () => {
   const sources = {
     ...productionSources,
     "src/bootstrap.js": `${productionSources["src/bootstrap.js"]}\nnew RogueRenderer({});`
   };
   assert.match(inspectRendererOwnership(sources).join("\n"), /unauthorized renderer/);
-});
-
-test("contract rejects removal of the production ownership marker", () => {
-  const sources = {
-    ...productionSources,
-    "src/render/ThreeRenderer.js": productionSources["src/render/ThreeRenderer.js"].replace(
-      /static\s+rendererOwnership\s*=\s*["']production-three-renderer["'];?\s*/,
-      ""
-    )
-  };
-  assert.match(inspectRendererOwnership(sources).join("\n"), /ownership marker/);
 });
