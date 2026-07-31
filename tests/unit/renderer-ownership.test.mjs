@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { HybridRenderer } from "../../src/render/HybridRenderer.js";
+import { ThreeRenderer } from "../../src/render/ThreeRenderer.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -28,6 +29,11 @@ function inspectRendererOwnership(sources) {
     errors.push("ThreeRenderer must be the only HybridRenderer subclass.");
   }
 
+  const threeRenderer = sources["src/render/ThreeRenderer.js"] ?? "";
+  if (!/static\s+rendererOwnership\s*=\s*["']production-three-renderer["']/.test(threeRenderer)) {
+    errors.push("ThreeRenderer must declare the production renderer ownership marker.");
+  }
+
   const bootstrap = sources["src/bootstrap.js"] ?? "";
   if (count(bootstrap, /new\s+ThreeRenderer\s*\(/g) !== 1) {
     errors.push("bootstrap.js must construct exactly one ThreeRenderer.");
@@ -48,11 +54,20 @@ const productionSources = {
 
 test("production renderer ownership contract is valid", () => {
   assert.deepEqual(inspectRendererOwnership(productionSources), []);
+  assert.equal(ThreeRenderer.rendererOwnership, "production-three-renderer");
 });
 
 test("HybridRenderer rejects direct construction before touching WebGL", () => {
   assert.throws(
     () => new HybridRenderer({}),
+    /internal base; construct ThreeRenderer instead/
+  );
+});
+
+test("HybridRenderer rejects an unauthorized subclass before touching WebGL", () => {
+  class RogueRenderer extends HybridRenderer {}
+  assert.throws(
+    () => new RogueRenderer({}),
     /internal base; construct ThreeRenderer instead/
   );
 });
@@ -79,4 +94,15 @@ test("contract rejects a second renderer in bootstrap", () => {
     "src/bootstrap.js": `${productionSources["src/bootstrap.js"]}\nnew RogueRenderer({});`
   };
   assert.match(inspectRendererOwnership(sources).join("\n"), /unauthorized renderer/);
+});
+
+test("contract rejects removal of the production ownership marker", () => {
+  const sources = {
+    ...productionSources,
+    "src/render/ThreeRenderer.js": productionSources["src/render/ThreeRenderer.js"].replace(
+      /static\s+rendererOwnership\s*=\s*["']production-three-renderer["'];?\s*/,
+      ""
+    )
+  };
+  assert.match(inspectRendererOwnership(sources).join("\n"), /ownership marker/);
 });
