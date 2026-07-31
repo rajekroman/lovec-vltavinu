@@ -8,6 +8,10 @@ export function prepareSpriteTexture(texture, cloneTexture = true) {
 
 export class HybridRenderer {
   constructor(options = {}) {
+    if (new.target === HybridRenderer) {
+      throw new TypeError("HybridRenderer is an internal base; construct ThreeRenderer instead.");
+    }
+
     const THREE = options.three;
     if (!THREE?.WebGLRenderer || !THREE?.Scene || !THREE?.OrthographicCamera) {
       throw new TypeError("HybridRenderer requires an injected Three.js namespace.");
