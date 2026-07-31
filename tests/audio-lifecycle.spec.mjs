@@ -14,17 +14,6 @@ async function setDocumentHidden(page, hidden) {
   }, hidden);
 }
 
-async function revealSoundButton(page) {
-  await page.evaluate(() => {
-    const hud = document.getElementById("hud");
-    const button = document.getElementById("soundButton");
-    const titleScreen = document.getElementById("titleScreen");
-    if (!hud || !button || !titleScreen) throw new Error("Missing production audio controls.");
-    hud.classList.remove("hidden");
-    titleScreen.style.pointerEvents = "none";
-  });
-}
-
 test("audio lifecycle remains gesture-gated and disposes cleanly", async ({ page }) => {
   const pageErrors = [];
   const httpErrors = [];
@@ -37,6 +26,10 @@ test("audio lifecycle remains gesture-gated and disposes cleanly", async ({ page
   await page.goto("/index.html?debug=audio-lifecycle", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => Boolean(await page.evaluate(() => window.__lovecRuntime))).toBe(true);
 
+  const soundButton = page.locator("#soundButton");
+  await expect(soundButton).toBeAttached();
+  await expect(soundButton).toBeHidden();
+
   await expect.poll(() => audioSnapshot(page)).toMatchObject({
     state: "locked",
     muted: false,
@@ -44,16 +37,19 @@ test("audio lifecycle remains gesture-gated and disposes cleanly", async ({ page
     activeSources: 0
   });
 
-  await revealSoundButton(page);
-  const soundButton = page.locator("#soundButton");
-  await expect(soundButton).toBeVisible();
-
-  await soundButton.click();
+  const playButton = page.locator("#playButton");
+  await expect(playButton).toBeVisible();
+  await playButton.click();
   await expect.poll(() => audioSnapshot(page)).toMatchObject({
     state: "ready",
     muted: false,
     contextState: "running"
   });
+
+  const briefButton = page.locator("#briefButton");
+  await expect(briefButton).toBeVisible();
+  await briefButton.click();
+  await expect(soundButton).toBeVisible();
 
   await soundButton.click();
   await expect.poll(() => audioSnapshot(page)).toMatchObject({
