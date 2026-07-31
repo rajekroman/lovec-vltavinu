@@ -52,24 +52,47 @@ const productionSources = {
   "src/bootstrap.js": read("src/bootstrap.js")
 };
 
+const guardOnlyThree = onConstruct => ({
+  WebGLRenderer: class { constructor() { onConstruct(); } },
+  Scene: class {},
+  OrthographicCamera: class {}
+});
+
 test("production renderer ownership contract is valid", () => {
   assert.deepEqual(inspectRendererOwnership(productionSources), []);
   assert.equal(ThreeRenderer.rendererOwnership, "production-three-renderer");
 });
 
-test("HybridRenderer rejects direct construction before touching WebGL", () => {
-  assert.throws(
-    () => new HybridRenderer({}),
-    /internal base; construct ThreeRenderer instead/
-  );
+test("HybridRenderer rejects direct browser construction before touching WebGL", () => {
+  let webglTouched = false;
+  const previousDocument = globalThis.document;
+  globalThis.document = {};
+  try {
+    assert.throws(
+      () => new HybridRenderer({
+        three: guardOnlyThree(() => { webglTouched = true; }),
+        canvas: {}
+      }),
+      /internal base; construct ThreeRenderer instead/
+    );
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
+  assert.equal(webglTouched, false);
 });
 
 test("HybridRenderer rejects an unauthorized subclass before touching WebGL", () => {
+  let webglTouched = false;
   class RogueRenderer extends HybridRenderer {}
   assert.throws(
-    () => new RogueRenderer({}),
+    () => new RogueRenderer({
+      three: guardOnlyThree(() => { webglTouched = true; }),
+      canvas: {}
+    }),
     /internal base; construct ThreeRenderer instead/
   );
+  assert.equal(webglTouched, false);
 });
 
 test("contract rejects a second WebGLRenderer construction point", () => {

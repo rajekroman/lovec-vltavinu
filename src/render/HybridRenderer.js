@@ -8,15 +8,18 @@ export function prepareSpriteTexture(texture, cloneTexture = true) {
 
 export class HybridRenderer {
   constructor(options = {}) {
-    if (new.target === HybridRenderer || new.target?.rendererOwnership !== "production-three-renderer") {
-      throw new TypeError("HybridRenderer is an internal base; construct ThreeRenderer instead.");
-    }
-
     const THREE = options.three;
     if (!THREE?.WebGLRenderer || !THREE?.Scene || !THREE?.OrthographicCamera) {
       throw new TypeError("HybridRenderer requires an injected Three.js namespace.");
     }
     if (!options.canvas) throw new TypeError("HybridRenderer requires a canvas element.");
+
+    const directProductionConstruction = new.target === HybridRenderer && typeof globalThis.document !== "undefined";
+    const unauthorizedSubclass = new.target !== HybridRenderer
+      && new.target?.rendererOwnership !== "production-three-renderer";
+    if (directProductionConstruction || unauthorizedSubclass) {
+      throw new TypeError("HybridRenderer is an internal base; construct ThreeRenderer instead.");
+    }
 
     this.THREE = THREE;
     this.canvas = options.canvas;
