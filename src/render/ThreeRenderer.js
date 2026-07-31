@@ -50,6 +50,8 @@ export function syncSpriteVisual(object, sprite) {
 }
 
 export class ThreeRenderer extends HybridRenderer {
+  static rendererOwnership = "production-three-renderer";
+
   constructor(options = {}) {
     super(options);
     this.maxInternalPixels = options.maxInternalPixels ?? 1_800_000;
