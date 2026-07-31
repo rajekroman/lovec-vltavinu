@@ -1,38 +1,32 @@
 # PROJECT_CONTROL.md — dokončovací plán, automatická orchestrace a integrační stav
 
-Revize: **2.11.0 · 31. 7. 2026**  
+Revize: **2.12.0 · 31. 7. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
 
 ## 1. Aktuální stav
 
-- Aktuální `main`: `7518db8ff150be8ef20913b29ffafd1b6ea324be`.
+- Výchozí produkční `main`: `d03a2468e4d1788f1cc3b5537ebc79bd432bc3eb`.
 - Verze aplikace: `6.0.0`.
-- PR #94 byl sloučen merge commitem `627f8c649feb64ddf592975a79fc654372b97ae2`.
-- PR #94 doplnil pouze QA infrastrukturu: browser audio lifecycle smoke, samostatný Playwright projekt a `workflow_dispatch`.
-- Workflow #1119 / run `30593243265` na pre-merge headu `f3d35c69ad0ea56d46613ffd0059dcbfdc9025e4`: **SUCCESS**.
-- Workflow #1119 ověřil static/unit část a šest Playwright scénářů: audio lifecycle, desktop full-flow, iPhone portrait full-flow, iPhone portrait input/lifecycle a iPhone landscape full-flow.
-- Static artifact: `8779115969`; digest `sha256:ff8d39ebeb31c6cdbf7723601949c5f94ada7b9942ff9bfd675fb5722e61efb8`.
-- Playwright artifact: `8779262699`; digest `sha256:4db0e6f2a3f307d39dd7b69e4e28dbd4e204f01e3df03b34b78fc850310963de`.
-- Issue #92 bylo na výslovný pokyn vlastníka uzavřeno jako `not_planned` bez warm-upu a bez dvou po sobě jdoucích certifikačních běhů na merge SHA.
-- Release záznam `docs/releases/v6.0.0-owner-waived.md` byl commitnut přímo do `main` commitem `7518db8ff150be8ef20913b29ffafd1b6ea324be`.
-- Issue #95 bylo uzavřeno jako `completed` a eviduje **owner-waived release v6.0.0**.
-- Aktuální release SHA `7518db8ff150be8ef20913b29ffafd1b6ea324be` nebyl formálně certifikován podle původní tříběhové sekvence.
-- GitHub Release objekt, git tag a nový GitHub Pages deployment nejsou ověřeny.
-- Přímý release commit do `main` byl procesní odchylkou od `AGENTS.md`; odchylka je zachována v auditu a nesmí být vydávána za standardní integrační postup.
+- Aktivní kanonický dokončovací balík: issue #100.
+- Aktivní formální QA evidence: issue #98.
+- Pracovní větev: `agent/final-project-completion`.
+- Produkční kód, testy, workflow a assety se v dokončovacím balíku nemění; mění se pouze aktuální projektová a uživatelská dokumentace.
+- Přesný release candidate je neměnný head dokončovacího PR a musí být zapsán do issue #100 i #98 před přijetím warm-upu.
+- Historický owner-waived release v6.0.0 zůstává auditním faktem, dokud není dokončena nová tříběhová certifikační sekvence.
 
-## 2. Neměnná produktová a architektonická rozhodnutí
+## 2. Ověřená produktová verze
 
-- Produkční větev je pouze `main`.
 - Produkční vstup je pouze `src/bootstrap.js`.
 - Runtime používá ES moduly, Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden loader, jeden input systém a jednu in-memory `GameSession`.
-- Kanonické kapitoly jsou `chlum → nesmen → besednice → slavia`.
-- Kanonický průchod končí finálním výsledkem a čistým restartem.
-- Gameplay stav se neukládá do localStorage ani IndexedDB; nevzniká save systém ani inventářové UI.
+- Kanonické kapitoly jsou přesně `chlum → nesmen → besednice → slavia`.
+- Kanonický průchod končí výběrem tří kamenů, výsledkem poroty a čistým restartem.
+- Gameplay stav se neukládá do `localStorage` ani IndexedDB; nevzniká save systém ani inventářové UI.
 - `game.js`, `runtime-stability.js`, Canvas gameplay runtime a legacy save cesta nejsou součástí produkčního stromu.
-- Service worker smí sloužit pouze jako distribuční cache.
-- Release a nasazení smějí vycházet pouze z `main`.
+- Audio se odemyká uživatelským gestem a má lifecycle obsluhu pro mute/unmute, pozadí, návrat a `pagehide`.
+- Service worker slouží pouze jako distribuční cache.
+- Aplikace používá relativní URL a je připravena pro statické nasazení z kořene GitHub Pages.
 
 ## 3. Stav integračních bran
 
@@ -40,59 +34,108 @@ Tento dokument je autoritativní stavový registr projektu. Technické invariant
 |---|---|---|
 | 0 — Besednice | DOKONČENA | PR #55 |
 | 1 — Slavia | DOKONČENA | PR #63, workflow #899 |
-| 2 — vizuální polish | DOKONČENA | PR #76, workflow #1015 |
-| 3 — audio/výkon | DOKONČENA S PŮVODNÍM RIZIKEM | PR #87, workflow #1073 |
+| 2 — vizuální/content polish | DOKONČENA | PR #76, workflow #1015 |
+| 3 — audio/výkon | DOKONČENA | PR #87, workflow #1073 |
 | 4 — legacy cleanup | DOKONČENA | PR #90, workflow #1096 |
-| 5 — finální QA | ADMINISTRATIVNĚ UKONČENA BEZ FORMÁLNÍ CERTIFIKACE | issue #92 `not_planned`; workflow #1119 pouze na pre-merge headu |
-| 6 — release | OWNER-WAIVED RELEASE ZAZNAMENÁN | commit `7518db8f…`, issue #95 |
+| 5 — QA infrastruktura | DOKONČENA | PR #94, workflow #1119 |
+| 6 — post-release governance | DOKONČENA | PR #97, workflow #1124 |
+| 7 — formální certifikace | AKTIVNÍ | issue #98, issue #100 |
+| 8 — finální release/deployment evidence | BLOCKED CERTIFIKACÍ | po třech zelených bězích stejného SHA |
 
 ## 4. Stav agentů A0–A7
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **ACTIVE POUZE PRO POST-RELEASE GOVERNANCE** | dokončit issue #96 a governance PR; poté přejít do standby |
-| A1 architektura | **STANDBY** | pouze nový konkrétní architektonický incident |
-| A2 gameplay/data | **STANDBY** | pouze nový konkrétní gameplay/data incident |
-| A3 grafika | **STANDBY** | pouze nový konkrétní assetový incident |
-| A4 UI/mobil | **STANDBY** | pouze nový konkrétní UI/input incident |
-| A5 audio/výkon | **STANDBY** | pouze nový konkrétní audio/výkon incident |
-| A6 QA | **CLOSED — OWNER WAIVER** | znovu aktivovat jen explicitním issue |
-| A7 release | **CLOSED — OWNER-WAIVED v6.0.0** | nový release pouze přes nové issue a explicitní A0 aktivaci |
+| A0 koordinace | **ACTIVE — ISSUE #100** | dokončovací PR, certifikační orchestrace, integrace a finální HANDOFF |
+| A1 architektura | **STANDBY** | pouze konkrétní reprodukovatelná architektonická vada |
+| A2 gameplay/data | **STANDBY** | pouze konkrétní reprodukovatelná gameplay/data vada |
+| A3 grafika | **STANDBY** | pouze konkrétní reprodukovatelná assetová vada |
+| A4 UI/mobil | **STANDBY** | pouze konkrétní reprodukovatelná UI/input vada |
+| A5 audio/výkon | **STANDBY** | pouze konkrétní reprodukovatelná audio/výkon vada |
+| A6 QA | **ACTIVE — ISSUE #98** | warm-up, cert-1, cert-2 a úplný QA HANDOFF |
+| A7 release | **BLOCKED** | odblokovat až po A0 přijetí úplné A6 certifikace |
 
-Po merge post-release governance PR nemá žádný agent automaticky aktivní implementační balík. Nová práce musí mít nové kanonické issue, aktuální base SHA, jasné vlastnictví cest a nový HANDOFF.
+A0 nesmí opravovat produkční vadu v cizím modulu. Pokud certifikace odhalí blocker nebo critical defect, A0 vytvoří konkrétní pod-issue, určí vlastníka, base SHA, povolené cesty, acceptance criteria a nový testovací reset.
 
-## 5. Evidence owner-waived release
+## 5. Poslední přijatá evidence
 
-### Přijaté důkazy
+### PR #94 / workflow #1119
 
-- PR #94 změnil pouze `.github/workflows/validate.yml`, `playwright.config.mjs` a `tests/audio-lifecycle.spec.mjs`.
-- Workflow #1119 bylo kompletně zelené na headu `f3d35c69ad0ea56d46613ffd0059dcbfdc9025e4`.
-- Browserová sada skončila `6 passed`.
-- Audio lifecycle pokryl locked/no-autoplay, gesture unlock, mute/unmute, background/foreground, `pagehide`, dispose a nulové page/HTTP chyby.
+- pre-merge head: `f3d35c69ad0ea56d46613ffd0059dcbfdc9025e4`;
+- static/unit: PASS;
+- Playwright: `6 passed` včetně audio lifecycle;
+- static artifact: `8779115969`;
+- static digest: `sha256:ff8d39ebeb31c6cdbf7723601949c5f94ada7b9942ff9bfd675fb5722e61efb8`;
+- Playwright artifact: `8779262699`;
+- Playwright digest: `sha256:4db0e6f2a3f307d39dd7b69e4e28dbd4e204f01e3df03b34b78fc850310963de`.
 
-### Nepokryté požadavky
+### PR #97 / workflow #1124
 
-- Nebyl proveden warm-up na release SHA `7518db8ff150be8ef20913b29ffafd1b6ea324be`.
-- Neběhla dvě po sobě jdoucí kompletní certifikační spuštění stejného release SHA.
-- Není ověřen GitHub Release objekt ani git tag.
-- Není ověřen nový GitHub Pages deployment.
+- PR head: `b3fad1b34827aefdc3f5fca010f70c7e32c3d914`;
+- static/unit: PASS;
+- desktop/mobile Playwright matrix: PASS;
+- static artifact: `8779901784`;
+- static digest: `sha256:7c156c5a7fe64c7370bf3dcafd7e8f2c0ca2cddfa5774c25221db3d3ec3dd26d`;
+- Playwright artifact: `8780017864`;
+- Playwright digest: `sha256:cabc62863c1c159540a594f15e890a168a8650482692075c7113dbe01b2597ca`.
 
-Tato omezení jsou vědomě přijata vlastníkem projektu. Označení „owner-waived release“ nesmí být zaměněno za plnou certifikaci podle revize 2.10.0.
+Tyto běhy dokazují funkčnost před dokončovacím balíkem, ale nenahrazují novou tříběhovou certifikaci aktuálního release candidate.
 
-## 6. Pravidla pro další změny
+## 6. Závazná certifikační sekvence
 
-1. Žádný přímý commit do `main`; každá další změna musí jít přes větev `agent/<jedno-tema>` a draft PR.
-2. Produkční incident má přednost před novým rozvojem.
-3. Každý nový balík musí uvést issue, roli, base SHA, povolené a zakázané cesty, acceptance criteria, testy a HANDOFF.
-4. Bez nového explicitního rozhodnutí se neobnovuje alternativní architektura, save systém, inventář ani druhý renderer.
-5. Další release musí jasně rozlišit: testovaný commit, merge commit, tag, GitHub Release objekt a skutečný deployment.
-6. Pokud má být další release formálně certifikovaný, musí proběhnout warm-up a dvě po sobě jdoucí kompletní zelená spuštění stejného nezměněného release SHA.
+1. Dokončovací PR určí jediný release candidate SHA.
+2. **Warm-up:** první kompletní workflow na přesném SHA; nezapočítává se.
+3. **Cert-1:** bezprostředně následující kompletní zelený workflow na stejném SHA.
+4. **Cert-2:** další bezprostředně následující kompletní zelený workflow na stejném SHA.
+5. Mezi běhy nesmí vzniknout commit ani změna testů, workflow, timeoutů, retries, assetů nebo produkčního kódu.
+6. Každý běh musí obsahovat:
+   - `Static and unit validation`;
+   - `Desktop and mobile Playwright matrix`;
+   - `6/6` Playwright scénářů včetně audio lifecycle;
+   - `static-validation-report` s digestem;
+   - `playwright-report` s digestem.
+7. Změna SHA nebo jakákoli oprava resetuje celou sérii.
 
-## 7. Post-release governance balík
+## 7. Integrační metoda finálního SHA
 
-- Issue: #96.
-- Base: `main@7518db8ff150be8ef20913b29ffafd1b6ea324be`.
-- Větev: `agent/post-release-governance`.
-- Povolená cesta: pouze `docs/PROJECT_CONTROL.md`.
-- Zakázáno: produkční kód, testy, workflow, assety, manifesty a release dokumenty.
-- Požadovaný výstup: jeden malý draft PR, přesný scope, CI evidence a HANDOFF.
+- Dokončovací změna vzniká na `agent/final-project-completion` a je kontrolována v draft PR.
+- Po třech přijatých bězích musí být do `main` integrován přesně certifikovaný head SHA bez změny stromu.
+- A0 smí použít pouze non-force fast-forward ref update po dokončeném PR review, protože běžný merge commit by vytvořil jiné, necertifikované SHA.
+- Tento fast-forward není náhradní přímá implementace: všechny změny vznikají na pracovní větvi, mají issue, PR, review, CI a HANDOFF.
+
+## 8. Release a deployment
+
+Finální A7 krok musí rozlišit:
+
+- certifikovaný commit SHA;
+- výsledný tip `main`;
+- git tag;
+- GitHub Release objekt;
+- veřejný GitHub Pages deployment a jeho otestovanou URL.
+
+Projekt nesmí být označen jako plně vydaný, dokud není alespoň certifikovaný SHA na `main` a není přesně popsán stav veřejného deploymentu. Chybějící oprávnění k vytvoření tagu, GitHub Release nebo Pages deploymentu se eviduje jako externí release blocker, nikoli jako funkční vada hry.
+
+## 9. Historické trackery
+
+Po přijetí formální certifikace A0 uzavře nebo označí:
+
+- #64 a #65 jako nahrazené finální QA implementací PR #94 a issue #98;
+- #19 jako `not_planned`, protože alternativní Vite/TypeScript MVP není integrační základ;
+- #5 a #6 jako completed podle dokončených vizuálních a audio/výkon bran;
+- #7 a #8 až po finálním release/deployment HANDOFFu;
+- #98 jako completed po úplném A6 HANDOFFu;
+- #100 jako completed jako poslední projektový checkpoint.
+
+## 10. Definition of Done projektu
+
+Projekt je hotový pouze tehdy, když:
+
+- README a řídicí registr odpovídají skutečné v6.0.0;
+- hra je dosažitelná z titulní obrazovky a dokončitelná po finální výsledek;
+- funguje desktop, iPhone portrait, iPhone landscape, pauza, otočení, background/foreground, audio lifecycle a čistý restart;
+- validátor, unit testy a šest Playwright scénářů projdou ve třech předepsaných bězích stejného SHA;
+- nevznikl save systém, inventář ani druhý renderer;
+- není otevřený blocker nebo critical defect;
+- certifikovaný SHA je na `main`;
+- stav tagu, GitHub Release a veřejného deploymentu je ověřen nebo přesně označen jako externí blocker;
+- issue #98 a #100 obsahují úplné HANDOFFy.
