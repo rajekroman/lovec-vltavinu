@@ -15,6 +15,7 @@ const read = relativePath => {
   if (!exists(relativePath)) { fail(`Chybí soubor: ${relativePath}`); return ""; }
   return fs.readFileSync(absolute(relativePath), "utf8");
 };
+const countMatches = (source, pattern) => [...source.matchAll(pattern)].length;
 
 const requiredFiles = ["index.html", "style.css", "manifest.webmanifest", "sw.js", "icon-180.png", "icon-192.png", "icon-512.png", "vendor/three.module.min.js", "src/bootstrap.js", "assets/manifests/assets.json"];
 requiredFiles.forEach(relativePath => { if (!exists(relativePath)) fail(`Chybí povinný soubor: ${relativePath}`); });
@@ -33,12 +34,14 @@ if (scripts.length !== 1 || scripts[0]?.path !== "src/bootstrap.js" || !/type=["
 if (/src=["']\.\/(?:game|runtime-stability)\.js["']/.test(html)) fail("index.html stále spouští legacy gameplay runtime.");
 
 const runtimeModules = new Set();
+const runtimeModuleSources = new Map();
 const queue = ["src/bootstrap.js"];
 while (queue.length) {
   const relativePath = queue.shift();
   if (runtimeModules.has(relativePath)) continue;
   runtimeModules.add(relativePath);
   const source = read(relativePath);
+  runtimeModuleSources.set(relativePath, source);
   const imports = [...source.matchAll(/(?:import|export)\s*(?:[^"']*?\s*from\s*)?["']([^"']+)["']/g)].map(match => match[1]);
   for (const specifier of imports) {
     if (!specifier.startsWith(".")) { fail(`Runtime používá nepřipnutý bare import v ${relativePath}: ${specifier}`); continue; }
@@ -47,13 +50,37 @@ while (queue.length) {
     else if (resolved.endsWith(".js")) queue.push(resolved);
   }
 }
-const runtimeSource = [...runtimeModules].filter(relativePath => relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
-const firstPartyRuntimeSource = [...runtimeModules].filter(relativePath => relativePath.startsWith("src/") && relativePath.endsWith(".js")).map(relativePath => read(relativePath)).join("\n");
+const runtimeSource = [...runtimeModuleSources.values()].join("\n");
+const firstPartyRuntimeEntries = [...runtimeModuleSources].filter(([relativePath]) => relativePath.startsWith("src/") && relativePath.endsWith(".js"));
+const firstPartyRuntimeSource = firstPartyRuntimeEntries.map(([, source]) => source).join("\n");
 if (/(?:game|runtime-stability)\.js/.test(runtimeSource)) fail("Produkční bootstrap importuje legacy runtime soubor.");
 if (/getContext\s*\(\s*["']2d["']/.test(firstPartyRuntimeSource)) fail("Produkční bootstrap obsahuje zakázanou Canvas2D herní cestu.");
 if (/LegacySaveAdapter|localStorage|sessionStorage/.test(runtimeSource)) fail("Produkční bootstrap importuje nebo používá zakázanou persistence/save vrstvu.");
-const rendererConstructors = [...runtimeSource.matchAll(/new\s+THREE\.WebGLRenderer\s*\(/g)].length;
+
+const webglOwnerPaths = firstPartyRuntimeEntries
+  .filter(([, source]) => /new\s+THREE\.WebGLRenderer\s*\(/.test(source))
+  .map(([relativePath]) => relativePath);
+const rendererConstructors = countMatches(firstPartyRuntimeSource, /new\s+THREE\.WebGLRenderer\s*\(/g);
 if (rendererConstructors !== 1) fail(`Runtime musí vlastnit právě jeden WebGLRenderer; nalezeno: ${rendererConstructors}.`);
+if (webglOwnerPaths.length !== 1 || webglOwnerPaths[0] !== "src/render/HybridRenderer.js") {
+  fail(`Jediný konstrukční bod WebGLRenderer musí být src/render/HybridRenderer.js; nalezeno: ${webglOwnerPaths.join(", ") || "žádný"}.`);
+}
+const directHybridInstances = countMatches(firstPartyRuntimeSource, /new\s+HybridRenderer\s*\(/g);
+if (directHybridInstances !== 0) fail(`HybridRenderer je interní základ a nesmí být přímo instancován; nalezeno: ${directHybridInstances}.`);
+const hybridSubclassPaths = firstPartyRuntimeEntries
+  .filter(([, source]) => /class\s+\w+\s+extends\s+HybridRenderer\b/.test(source))
+  .map(([relativePath]) => relativePath);
+if (hybridSubclassPaths.length !== 1 || hybridSubclassPaths[0] !== "src/render/ThreeRenderer.js") {
+  fail(`Jediným potomkem HybridRenderer musí být src/render/ThreeRenderer.js; nalezeno: ${hybridSubclassPaths.join(", ") || "žádný"}.`);
+}
+const bootstrapSource = runtimeModuleSources.get("src/bootstrap.js") ?? "";
+const bootstrapThreeRenderers = countMatches(bootstrapSource, /new\s+ThreeRenderer\s*\(/g);
+if (bootstrapThreeRenderers !== 1) fail(`bootstrap.js musí vytvořit právě jeden ThreeRenderer; nalezeno: ${bootstrapThreeRenderers}.`);
+const unauthorizedBootstrapRenderers = [...bootstrapSource.matchAll(/new\s+(\w*Renderer)\s*\(/g)]
+  .map(match => match[1])
+  .filter(name => name !== "ThreeRenderer");
+if (unauthorizedBootstrapRenderers.length) fail(`bootstrap.js vytváří nepovolený renderer: ${unauthorizedBootstrapRenderers.join(", ")}.`);
+
 const referencedIds = new Set([...[...runtimeSource.matchAll(/getElementById\(["']([^"']+)["']\)/g)].map(match => match[1]), ...[...runtimeSource.matchAll(/\.element\(["']([^"']+)["']\)/g)].map(match => match[1])]);
 const missingIds = [...referencedIds].filter(id => !htmlIdSet.has(id)).sort();
 if (missingIds.length) fail(`Runtime odkazuje na chybějící HTML ID: ${missingIds.join(", ")}`);
