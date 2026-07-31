@@ -85,7 +85,7 @@ Dočasné `game.js`, `runtime-stability.js`, Canvas renderer a legacy save soubo
 | Gameplay systémy | pravidla interakcí, kopání, nebezpečí, bossů a cílů | vytvářet Three.js objekty |
 | Obecné systémy | pohyb, kolize, animace a lifetime | měnit quest texty |
 | `ThreeRenderer` | jediná produkční renderer instance, kamera, vrstvy, sync ECS→Three a dispose | rozhodovat o výsledku kolize nebo úkolu |
-| `HybridRenderer` | interní implementační základ a jediný konstrukční bod `THREE.WebGLRenderer` | být přímo instancován nebo použit jako druhá produkční cesta |
+| `HybridRenderer` | interní, izolovaně testovatelný implementační základ a jediný konstrukční bod `THREE.WebGLRenderer` | být přímo instancován v produkčním stromu nebo použit jako druhá produkční cesta |
 | UI controllery | odvozovat a diffovat HUD/screen model do DOM | být autoritou herního stavu |
 | `AudioEngine` | audio po gestu, hudební přechody, pause/resume | spouštět questy |
 | `GameSession` | stav aktuálního průchodu pouze v paměti | localStorage, migrace nebo inventářové UI |
@@ -94,7 +94,7 @@ Dočasné `game.js`, `runtime-stability.js`, Canvas renderer a legacy save soubo
 
 - `src/bootstrap.js` vytváří právě jednu instanci `ThreeRenderer` a nevytváří žádný jiný renderer.
 - `ThreeRenderer` je jediný povolený potomek `HybridRenderer` v produkčním stromu.
-- `HybridRenderer` je interní základ; přímé `new HybridRenderer(...)` musí selhat ještě před vytvořením WebGL prostředků.
+- `HybridRenderer` je interní, ale izolovaně testovatelný základ; přímá produkční instance `new HybridRenderer(...)` je zakázána a odmítnuta statickým validátorem produkčního importního grafu.
 - Jediný výraz `new THREE.WebGLRenderer(...)` v produkčním stromu smí být v `src/render/HybridRenderer.js`.
 - Tato jediná instance vlastní jediný canvas, jednu ortografickou kameru, render vrstvy a `dispose()` WebGL rendereru.
 - `GameApp` vlastní jediný fixed-step loop; renderer nesmí vytvářet paralelní `requestAnimationFrame` smyčku.
@@ -299,5 +299,5 @@ Při pauze, skrytí stránky, ztrátě fokusu, otočení zařízení a změně s
 - Eventy mají názvy a payloady z této tabulky.
 - Neexistuje nový save/import/export ani inventářový modul.
 - Scene transition nezanechá aktivní vstup, listener, audio track nebo GPU objekt.
-- Renderer ownership testy potvrzují jediný konstrukční bod, jediný bootstrap renderer a zákaz přímé instance `HybridRenderer`.
+- Renderer ownership testy potvrzují jediný konstrukční bod, jediný bootstrap renderer a zákaz přímé produkční instance `HybridRenderer`.
 - Unit, validační a mobilní smoke testy jsou zelené.
