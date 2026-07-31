@@ -1,6 +1,7 @@
 name: Validate game
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -30,6 +31,7 @@ jobs:
           node --check tools/validate.mjs
           find src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           find tests/unit -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+          node --check tests/audio-lifecycle.spec.mjs
           node --check tests/mobile-smoke.spec.mjs
           node --check tests/slavia-smoke.spec.mjs
           node --check playwright.config.mjs
