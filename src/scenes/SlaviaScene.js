@@ -52,6 +52,7 @@ export class SlaviaScene {
     this.availableInteraction = null;
     this.modal = null;
     this.resultShown = false;
+    this.restartPending = false;
     this.evaluation = null;
     this.hudRevision = this.hudRevision ?? 0;
     this.hudSignature = "";
@@ -359,6 +360,8 @@ export class SlaviaScene {
       ],
       buttonLabel: "NOVÁ VÝPRAVA",
       onContinue: () => {
+        if (this.restartPending) return;
+        this.restartPending = true;
         this.session.reset();
         this.app.changeScene("title").catch(error => console.error("Scene transition:", error));
       }
