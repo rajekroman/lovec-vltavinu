@@ -20,7 +20,6 @@ Tento dokument je normativní pro cílovou Three.js verzi. `docs/architecture-v6
 │   │   ├── AssetLoader.js
 │   │   └── InputManager.js
 │   ├── data/
-│   │   ├── assets.js
 │   │   ├── levels.js
 │   │   ├── dialogues.js
 │   │   └── balance.js
@@ -114,7 +113,7 @@ Dočasné `game.js`, `runtime-stability.js`, Canvas renderer a legacy save soubo
 }
 ```
 
-ID je stabilní a unikátní. URL je relativní k nasazenému rootu GitHub Pages. Každý runtime asset musí být v manifestu.
+`assets/manifests/assets.json` je skutečná a jediná autoritativní manifestová databáze runtime assetů. ID je stabilní a unikátní. URL je relativní k nasazenému rootu GitHub Pages. Každý runtime asset musí být v tomto manifestu; `src/data` neobsahuje paralelní asset registry.
 
 ### Level definition
 
