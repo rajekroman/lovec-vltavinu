@@ -10,10 +10,10 @@ const CORE = [
   "./vendor/three/addons/loaders/GLTFLoader.js", "./vendor/three/addons/utils/BufferGeometryUtils.js", "./vendor/three/addons/utils/SkeletonUtils.js",
   "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js", "./src/scenes/ChlumNesmenBridgeScene.js", "./src/scenes/NesmenScene.js", "./src/scenes/NesmenRestorationScene.js", "./src/scenes/NesmenBesedniceBridgeScene.js", "./src/scenes/BesedniceScene.js", "./src/scenes/SlaviaScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav.png", "./assets/sprites/npcs/rival-karel.png", "./assets/sprites/npcs/forester-jan.png", "./assets/sprites/npcs/expert-eva.png", "./assets/sprites/npcs/thief-franta.png",
-  "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png", "./assets/sprites/findings/vltavin-nesmen.png",
-  "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/nesmen-forest-floor.png", "./assets/textures/terrain/nesmen-sand-profile.png",
+  "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png", "./assets/sprites/findings/vltavin-nesmen.png", "./assets/sprites/findings/vltavin-besednice-hedgehog.png",
+  "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/nesmen-forest-floor.png", "./assets/textures/terrain/nesmen-sand-profile.png", "./assets/textures/terrain/besednice-quarry.png",
   "./assets/models/chlum/tractor-no-driver.glb", "./assets/models/chlum/hay-bale.glb", "./assets/models/chlum/field-marker.glb", "./assets/models/chlum/field-fence-segment.glb",
-  "./assets/models/nesmen/profile-marker.glb", "./assets/models/nesmen/tree-stump.glb", "./assets/models/slavia/kd-slavia.glb", "./assets/models/slavia/document-folder.glb",
+  "./assets/models/nesmen/profile-marker.glb", "./assets/models/nesmen/tree-stump.glb", "./assets/models/besednice/trace-marker.glb", "./assets/models/besednice/hedgehog-marker.glb", "./assets/models/besednice/quarry-rock.glb", "./assets/models/slavia/kd-slavia.glb", "./assets/models/slavia/document-folder.glb",
   "./assets/audio/journey-loop.mp3", "./assets/audio/dig-hit.mp3", "./assets/audio/finding-chime.mp3", "./assets/audio/danger-pulse.mp3", "./assets/audio/LICENSE.md"
 ];
 self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE))); self.skipWaiting(); });
