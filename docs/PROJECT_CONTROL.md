@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#156 ACTIVE** | vede pouze schválený rozsah #156 a jeho integrační evidence |
+| A0 koordinace | **#158 ACTIVE** | vede pouze schválený rozsah #158 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
-| A2 gameplay/data | **#156 ACTIVE (omezeně)** | poskytuje stávající objective snapshot do UI modelu bez změny pravidel |
+| A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#156 ACTIVE** | zpřístupněný objective progress v existujícím HUDu |
+| A4 UI/mobil | **#158 ACTIVE** | neblokující milníková zpětná vazba v existujícím HUDu |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #156 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #158 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -198,13 +198,23 @@ Distribuční připravenost tohoto balíku znamená zelené gate a sloučený PR
 
 ### #156 — Jednotná čitelnost postupu úkolem v HUDu
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený gameplay-clarity balík.
+Stav: **COMPLETED / MERGED**, issue #156 a PR #157.
 
 - Base: `main@22d20418c06378228773cc594d2ee0a4773dd18a`; pracovní větev: `agent/final-gameplay-polish`.
 - Povolený rozsah: stávající HUD, UI model scén, související markup/CSS, kontraktové testy a tento řídicí záznam.
 - Hráč u každé kanonické kapitoly uvidí normalizovaný postup stávajícího objective systému v procentech a jako přístupný `progressbar`.
 - Nejsou povoleny nové akce, změna objective pravidel, save systém, inventář, druhý renderer ani změna eventových payloadů.
 - Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke; layout nesmí omezit touch targety v portrait ani landscape.
+
+### #158 — Milníková zpětná vazba pro nálezy a splněné cíle
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený feedback balík.
+
+- Base: `main@3afd6484aa5204dd3924ff8a490870ec8e4dd17f`; pracovní větev: `agent/progress-milestone-feedback`.
+- Povolený rozsah: existující toast UI, jeho přístupnost, kontraktové testy a tento řídicí záznam.
+- Toast naslouchá pouze platným eventům `finding:collected` a `objective:complete`; nepřidává payload ani gameplay pravidla.
+- Zobrazení je neinteraktivní, s bezpečným restartem timeoutu a nevytváří persistentní stav.
+- Před sloučením: validátor, unit suite a relevantní browser smoke.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

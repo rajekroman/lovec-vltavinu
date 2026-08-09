@@ -21,12 +21,18 @@ export class HudController {
       dangerBanner: this.require("dangerBanner"),
       dangerText: this.require("dangerText"),
       hint: this.require("hint"),
+      toast: this.require("toast"),
       action: this.require("actionButton"),
       actionIcon: this.require("actionIcon"),
       actionText: this.require("actionText")
     };
     this.installAccessibilityContracts();
-    this.unsubscribe = this.events.on("hud:model:changed", payload => this.render(payload));
+    this.unsubscribe = [
+      this.events.on("hud:model:changed", payload => this.render(payload)),
+      this.events.on("finding:collected", payload => this.showToast(`NÁLEZ ZAPSÁN · +${Math.round(payload.score)} BODŮ`, "good")),
+      this.events.on("objective:complete", () => this.showToast("ÚKOL SPLNĚN", "good"))
+    ];
+    this.toastTimer = null;
   }
 
   require(id) {
@@ -41,7 +47,24 @@ export class HudController {
     elements.dangerBanner.setAttribute("role", "status");
     elements.dangerBanner.setAttribute("aria-live", "polite");
     elements.objectiveProgress.setAttribute("role", "progressbar");
+    elements.toast.setAttribute("role", "status");
+    elements.toast.setAttribute("aria-live", "polite");
+    elements.toast.setAttribute("aria-hidden", "true");
     elements.action.removeAttribute?.("aria-pressed");
+  }
+
+  showToast(text, tone = "good") {
+    const toast = this.elements.toast;
+    if (this.toastTimer !== null) clearTimeout(this.toastTimer);
+    toast.textContent = String(text ?? "");
+    toast.classList.remove("good", "bad", "rare");
+    toast.classList.add("show", tone);
+    toast.setAttribute("aria-hidden", "false");
+    this.toastTimer = setTimeout(() => {
+      toast.classList.remove("show");
+      toast.setAttribute("aria-hidden", "true");
+      this.toastTimer = null;
+    }, 2200);
   }
 
   render({ revision, model }) {
@@ -105,12 +128,16 @@ export class HudController {
   }
 
   dispose() {
-    this.unsubscribe?.();
+    for (const unsubscribe of this.unsubscribe ?? []) unsubscribe?.();
     this.unsubscribe = null;
+    if (this.toastTimer !== null) clearTimeout(this.toastTimer);
+    this.toastTimer = null;
     this.lastFingerprint = "";
     this.elements.app.classList.remove("danger-state");
     this.elements.hud.classList.remove("danger-shake");
     this.elements.hint.classList.remove("action-ready");
     this.elements.action.classList.remove("ready");
+    this.elements.toast.classList.remove("show", "good", "bad", "rare");
+    this.elements.toast.setAttribute("aria-hidden", "true");
   }
 }
