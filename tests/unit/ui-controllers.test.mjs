@@ -118,7 +118,7 @@ class FakeEvents {
 const createUiDocument = () => {
   const document = new FakeDocument();
   for (const id of [
-    "app", "hud", "controls", "missionNumber", "placeLabel", "objectiveLabel", "bagValue",
+    "app", "hud", "controls", "missionNumber", "placeLabel", "objectiveLabel", "objectiveProgress", "bagValue",
     "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint",
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo",
@@ -149,6 +149,7 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
     missionNumber: 1,
     placeLabel: "Chlum",
     objective: "Promluv s Václavem",
+    objectiveProgress: 0.2,
     findings: 2,
     danger: 0.92,
     hint: "Přibliž se k Václavovi",
@@ -162,6 +163,9 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
 
   assert.equal(document.getElementById("placeLabel").textContent, "CHLUM");
   assert.equal(document.getElementById("objectiveLabel").textContent, "Promluv s Václavem");
+  assert.equal(document.getElementById("objectiveProgress").textContent, "POSTUP 20 %");
+  assert.equal(document.getElementById("objectiveProgress").getAttribute("role"), "progressbar");
+  assert.equal(document.getElementById("objectiveProgress").getAttribute("aria-valuenow"), "20");
   assert.equal(document.getElementById("heatFill").style.width, "92%");
   assert.equal(document.getElementById("dangerMeterText").textContent, "KRITICKÉ");
   assert.equal(document.getElementById("heatPill").classList.contains("detected"), true);

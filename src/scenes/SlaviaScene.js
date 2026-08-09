@@ -408,6 +408,7 @@ export class SlaviaScene {
       missionNumber: this.level.order + 1,
       placeLabel: this.level.name,
       objective: labels[state.phase],
+      objectiveProgress: this.objectiveProgress(state) / 7,
       findings: this.session.state.findings.length,
       danger: state.phase === "thief-recovery" ? 0.7 : 0,
       dangerMessage: state.phase === "thief-recovery" ? "Franta odnáší nejlepší nález" : "",

@@ -475,6 +475,7 @@ export class BesedniceScene {
       missionNumber: this.level.order + 1,
       placeLabel: this.level.name,
       objective: objective.text,
+      objectiveProgress: objective.progress,
       findings: this.session.state.findings.length,
       danger: bossActive ? 0.65 : 0,
       dangerMessage: bossActive ? "Karel má ježek" : "",

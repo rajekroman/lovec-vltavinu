@@ -13,6 +13,7 @@ export class HudController {
       missionNumber: this.require("missionNumber"),
       placeLabel: this.require("placeLabel"),
       objectiveLabel: this.require("objectiveLabel"),
+      objectiveProgress: this.require("objectiveProgress"),
       bagValue: this.require("bagValue"),
       dangerMeter: this.require("heatPill"),
       dangerMeterText: this.require("dangerMeterText"),
@@ -39,6 +40,7 @@ export class HudController {
     elements.dangerMeter.setAttribute("role", "progressbar");
     elements.dangerBanner.setAttribute("role", "status");
     elements.dangerBanner.setAttribute("aria-live", "polite");
+    elements.objectiveProgress.setAttribute("role", "progressbar");
     elements.action.removeAttribute?.("aria-pressed");
   }
 
@@ -53,6 +55,13 @@ export class HudController {
     elements.missionNumber.textContent = String(model.missionNumber ?? 1);
     elements.placeLabel.textContent = String(model.placeLabel ?? "").toUpperCase();
     elements.objectiveLabel.textContent = String(model.objective ?? "");
+    const objectiveProgress = clamp01(model.objectiveProgress);
+    const objectivePercent = Math.round(objectiveProgress * 100);
+    elements.objectiveProgress.textContent = `POSTUP ${objectivePercent} %`;
+    elements.objectiveProgress.setAttribute("aria-valuemin", "0");
+    elements.objectiveProgress.setAttribute("aria-valuemax", "100");
+    elements.objectiveProgress.setAttribute("aria-valuenow", String(objectivePercent));
+    elements.objectiveProgress.setAttribute("aria-valuetext", `${objectivePercent} %`);
     elements.bagValue.textContent = String(Math.max(0, Number(model.findings) || 0));
 
     const danger = clamp01(model.danger);

@@ -521,6 +521,7 @@ export class NesmenScene {
       missionNumber: this.level.order + 1,
       placeLabel: this.level.name,
       objective: objective.text,
+      objectiveProgress: objective.progress,
       findings: this.session.state.findings.length,
       danger: 0,
       dangerMessage: "",
