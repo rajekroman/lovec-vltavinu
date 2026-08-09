@@ -380,7 +380,8 @@ export class ChlumScene {
   pause() {
     this.session.setPhase("paused");
     this.app.input.reset("pause-overlay");
-    this.screens.showPause({ onResume: () => this.resume(), onMenu: () => this.app.changeScene("title").catch(error => console.error("Scene transition:", error)) });
+    const hud = this.hudModel();
+    this.screens.showPause({ onResume: () => this.resume(), onMenu: () => this.app.changeScene("title").catch(error => console.error("Scene transition:", error)), placeLabel: hud.placeLabel, objective: hud.objective, progress: hud.objectiveProgress });
     this.emitHud(true);
   }
 

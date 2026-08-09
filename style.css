@@ -90,6 +90,9 @@ button{-webkit-tap-highlight-color:transparent}
 }
 @media(prefers-reduced-motion:reduce){.action-button.ready,.danger-meter.detected,.boss-hud.enraged em,#app.danger-state:after{animation:none!important}.boss-intro{transition:none}}
 
+.pause-objective{margin:8px 0 4px;color:#edf2ec;font-weight:760;line-height:1.32}.pause-progress{margin:0 0 14px;color:#a8c8ae;font-size:10px;font-weight:900;letter-spacing:.14em}
+@media(orientation:landscape) and (max-height:520px){.pause-objective{margin:5px 0 3px;font-size:12px}.pause-progress{margin-bottom:8px;font-size:8px}}
+
 /* A4 interaction feedback — presentation only; existing HUD model and input lifecycle remain authoritative. */
 .hint{max-width:min(560px,calc(100vw - 28px - var(--safe-l) - var(--safe-r)));padding:10px 16px;color:#f4f1e9;font-size:clamp(13px,1.2vw,15px);line-height:1.25;letter-spacing:.01em;text-align:center;text-wrap:balance;background:linear-gradient(150deg,rgba(13,22,17,.96),rgba(5,11,8,.94));border-color:rgba(226,235,225,.24);box-shadow:0 10px 30px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.055);transition:border-color .12s,background .12s,box-shadow .12s,color .12s}
 .hint.action-ready{color:#fff;border-color:rgba(172,224,184,.72);background:linear-gradient(150deg,rgba(39,76,51,.97),rgba(13,32,21,.97));box-shadow:0 0 0 1px rgba(126,198,143,.2),0 10px 34px rgba(0,0,0,.48)}

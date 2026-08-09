@@ -130,7 +130,7 @@ const createUiDocument = () => {
     "app", "hud", "controls", "missionNumber", "placeLabel", "objectiveLabel", "objectiveProgress", "bagValue",
     "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint", "toast",
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
-    "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo",
+    "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo", "pausePlace", "pauseObjective", "pauseProgress",
     "digHits", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
     "resultScore", "resultStats"
   ]) document.add(id);
@@ -258,6 +258,27 @@ test("ScreenController exposes one-button dialog and exact-three dig overlay wit
   assert.equal(document.getElementById("sweetZone").style.width, "19.999999999999996%");
   assert.match(document.getElementById("digButton").getAttribute("aria-label"), /2 z 3/);
   assert.throws(() => screens.updateDig({ requiredHits: 4 }), /literal 3/);
+});
+
+test("ScreenController pause recap preserves one resume action and exposes objective progress", () => {
+  const document = createUiDocument();
+  const screens = new ScreenController(document);
+  let resumed = 0;
+  screens.showPause({
+    placeLabel: "Nesměň",
+    objective: "Zasyp otevřenou díru",
+    progress: 0.6,
+    onResume: () => { resumed += 1; },
+    onMenu: () => {}
+  });
+
+  assert.equal(document.getElementById("pausePlace").textContent, "NESMĚŇ · PAUZA");
+  assert.equal(document.getElementById("pauseObjective").textContent, "Zasyp otevřenou díru");
+  assert.equal(document.getElementById("pauseProgress").textContent, "POSTUP 60 %");
+  assert.equal(document.getElementById("pauseProgress").getAttribute("role"), "progressbar");
+  assert.equal(document.getElementById("pauseProgress").getAttribute("aria-valuenow"), "60");
+  document.getElementById("resumeButton").onclick({ preventDefault() {} });
+  assert.equal(resumed, 1);
 });
 
 test("ScreenController renders a generic level result and restores playing overlays", () => {
