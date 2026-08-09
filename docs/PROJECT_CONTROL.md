@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#166 ACTIVE** | vede pouze schválený rozsah #166 a jeho integrační evidence |
+| A0 koordinace | **#168 ACTIVE** | vede pouze schválený rozsah #168 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#166 ACTIVE** | aktualizovat onboarding podle kanonického ovládání |
+| A4 UI/mobil | **#168 ACTIVE** | klávesová cesta zpět z nápovědy |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #166 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #168 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -248,13 +248,23 @@ Stav: **COMPLETED / MERGED**, issue #164 a PR #165.
 
 ### #166 — Aktualizovat onboarding podle kanonického ovládání
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální obsahový UI balík.
+Stav: **COMPLETED / MERGED**, issue #166 a PR #167.
 
 - Base: `main@ea7ae63`; pracovní větev: `agent/onboarding-action-clarity`.
 - Povolený rozsah: stávající onboarding, jeho kontraktový test a tento řídicí záznam.
 - Úvodní karta popisuje pohyb, přiblížení k cíli a jediné kontextové tlačítko, přesně tři rytmické zásahy při kopání a bezpečné vyhnutí se hrozbě.
 - Text nesmí odkazovat na legacy běh, kombo ani ztrátu předmětu. Nejsou povoleny změny vstupů, gameplay pravidel, eventů, save systému, inventáře ani rendereru.
 - Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; karta musí zůstat stručná a použitelná v portrait i landscape.
+
+### #168 — Umožnit zavření nápovědy klávesou Escape
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální přístupnostní UI balík.
+
+- Base: `main@7ef624a`; pracovní větev: `agent/modal-focus-polish`.
+- Povolený rozsah: lifecycle titulní scény, kontraktový test a tento řídicí záznam.
+- Klávesa Escape zavře pouze právě otevřenou obrazovku nápovědy a vrátí titulní obrazovku, která už zajišťuje fokus na první akční prvek.
+- Nejsou povoleny změny ScreenControlleru, gameplay vstupů, pravidel, eventů, save systému, inventáře ani rendereru.
+- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
