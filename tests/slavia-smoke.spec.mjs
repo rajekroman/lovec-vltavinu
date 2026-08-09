@@ -313,6 +313,8 @@ async function completeChlum(page, input, testInfo) {
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
   await captureEvidence(page, testInfo, "chlum-furrows-overview", "css");
+  await waitForTractorLeftOf(page);
+  await captureEvidence(page, testInfo, "chlum-tractor", "css");
 
   let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
