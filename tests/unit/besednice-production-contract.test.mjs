@@ -105,8 +105,17 @@ test("desktop and mobile smoke use project-native normalized input", () => {
 
   assert.match(slaviaSmoke, /metadata\?\.inputMode === "desktop"/);
   assert.match(slaviaSmoke, /page\.keyboard\.press\("KeyE"\)/);
+  assert.match(slaviaSmoke, /const repeatTimer = setInterval/);
+  assert.match(slaviaSmoke, /page\.keyboard\.down\(key\)\.catch/);
+  assert.match(slaviaSmoke, /clearInterval\(repeatTimer\)/);
   assert.match(slaviaSmoke, /newCDPSession\(page\)/);
   assert.match(slaviaSmoke, /Input\.dispatchTouchEvent/);
+  assert.match(slaviaSmoke, /\{ timeout: 20_000 \}\)\.toEqual/);
+  assert.match(slaviaSmoke, /let moveZoneBox = null/);
+  assert.match(slaviaSmoke, /const movementTimeout = input\.desktop \? timeout : timeout \+ 30_000/);
+  assert.match(slaviaSmoke, /Date\.now\(\) \+ movementTimeout \+ 2_000/);
+  assert.match(slaviaSmoke, /Math\.min\(8_000, Math\.max\(1, movementDeadline - Date\.now\(\)\)\)/);
+  assert.match(slaviaSmoke, /while \(!movement\?\.done\)/);
   assert.match(slaviaSmoke, /Chlum → Nesměň → Besednice → Slavia uses the project-native input/);
   assert.doesNotMatch(slaviaSmoke, /\.onclick|handler\.call|element\.click\(\)|recordFinding|ensureSlaviaRegistered|changeScene\("slavia"\)|session\.reset\(\)/);
   for (const artifact of ["slavia-arrival", "slavia-certification", "slavia-final-result"]) assert.ok(slaviaSmoke.includes(artifact));
