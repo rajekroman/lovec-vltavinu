@@ -139,18 +139,18 @@ export class SlaviaScene {
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     this.renderer.bindEntity(this.playerEntity, this.renderer.createSprite(playerTexture, {
-      width: 72,
-      height: 82,
+      width: 82,
+      height: 108,
       z: 12,
       anchorX: 0.5,
-      anchorY: 0.16,
+      anchorY: 0.08,
       assetId: "player-hunter-walk"
     }), "actors");
 
     for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-thief-franta"]]) {
       const entity = this.entityByExternalId.get(entityId);
       const sprite = this.renderer.createSprite(this.texture(assetId), {
-        width: 76,
+        width: 82,
         height: 108,
         z: 12,
         anchorX: 0.5,

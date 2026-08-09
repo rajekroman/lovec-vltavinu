@@ -192,17 +192,17 @@ export class NesmenScene {
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     const player = this.renderer.createSprite(playerTexture, {
-      width: 72,
-      height: 82,
+      width: 82,
+      height: 108,
       z: 12,
       anchorX: 0.5,
-      anchorY: 0.16,
+      anchorY: 0.08,
       assetId: "player-hunter-walk"
     });
     const forester = this.renderer.createSprite(foresterTexture, {
-      width: 76,
-      height: 114,
-      z: 10,
+      width: 82,
+      height: 108,
+      z: 12,
       anchorX: 0.5,
       anchorY: 0.08,
       assetId: "npc-forester-jan"
