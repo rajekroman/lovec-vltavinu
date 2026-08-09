@@ -119,12 +119,14 @@ export class HudController {
     elements.hint.classList.toggle("hidden", !interactionPrompt);
     elements.hint.classList.toggle("action-ready", actionReady);
 
+    const visibleActionLabel = actionReady ? actionLabel : "PŘIBLIŽ SE";
     elements.action.classList.toggle("ready", actionReady);
-    elements.action.setAttribute("aria-label", actionLabel);
+    elements.action.classList.toggle("unavailable", !actionReady);
+    elements.action.setAttribute("aria-label", actionReady ? actionLabel : "Akce není dostupná; přibliž se k cíli.");
     elements.action.setAttribute("aria-disabled", actionReady ? "false" : "true");
     elements.action.setAttribute("data-action-ready", actionReady ? "true" : "false");
-    elements.actionIcon.textContent = String(model.actionIcon ?? "◉");
-    elements.actionText.textContent = actionLabel;
+    elements.actionIcon.textContent = actionReady ? String(model.actionIcon ?? "◉") : "↗";
+    elements.actionText.textContent = visibleActionLabel;
   }
 
   dispose() {
@@ -137,6 +139,7 @@ export class HudController {
     this.elements.hud.classList.remove("danger-shake");
     this.elements.hint.classList.remove("action-ready");
     this.elements.action.classList.remove("ready");
+    this.elements.action.classList.remove("unavailable");
     this.elements.toast.classList.remove("show", "good", "bad", "rare");
     this.elements.toast.setAttribute("aria-hidden", "true");
   }
