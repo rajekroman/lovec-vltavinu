@@ -142,7 +142,17 @@ export class ScreenController {
     return this.show("resultScreen", { playing: false });
   }
 
-  showPause({ onResume, onMenu }) {
+  showPause({ onResume, onMenu, placeLabel = "", objective = "", progress = 0 }) {
+    const percentage = Math.round(clamp01(progress) * 100);
+    this.element("pausePlace").textContent = placeLabel ? `${String(placeLabel).toUpperCase()} · PAUZA` : "PAUZA";
+    this.element("pauseObjective").textContent = String(objective || "Výprava čeká na další krok.");
+    const progressElement = this.element("pauseProgress");
+    progressElement.textContent = `POSTUP ${percentage} %`;
+    progressElement.setAttribute("role", "progressbar");
+    progressElement.setAttribute("aria-valuemin", "0");
+    progressElement.setAttribute("aria-valuemax", "100");
+    progressElement.setAttribute("aria-valuenow", String(percentage));
+    progressElement.setAttribute("aria-valuetext", `${percentage} %`);
     bindOnce(this.element("resumeButton"), onResume);
     const menu = this.element("menuButton");
     menu.textContent = "ODEJÍT DO MENU";

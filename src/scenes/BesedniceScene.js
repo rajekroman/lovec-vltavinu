@@ -440,7 +440,10 @@ export class BesedniceScene {
     this.app.input.reset("pause-overlay");
     this.screens.showPause({
       onResume: () => this.resume(),
-      onMenu: () => this.app.changeScene("title").catch(error => console.error("Scene transition:", error))
+      onMenu: () => this.app.changeScene("title").catch(error => console.error("Scene transition:", error)),
+      placeLabel: this.level.name,
+      objective: this.objectiveSnapshot().text,
+      progress: this.objectiveSnapshot().progress
     });
     this.emitHud(true);
   }

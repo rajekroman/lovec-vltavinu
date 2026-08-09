@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#158 ACTIVE** | vede pouze schválený rozsah #158 a jeho integrační evidence |
+| A0 koordinace | **#160 ACTIVE** | vede pouze schválený rozsah #160 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#158 ACTIVE** | neblokující milníková zpětná vazba v existujícím HUDu |
+| A4 UI/mobil | **#160 ACTIVE** | kontextový mission recap v existující pauze |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #158 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #160 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -208,13 +208,23 @@ Stav: **COMPLETED / MERGED**, issue #156 a PR #157.
 
 ### #158 — Milníková zpětná vazba pro nálezy a splněné cíle
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený feedback balík.
+Stav: **COMPLETED / MERGED**, issue #158 a PR #159.
 
 - Base: `main@3afd6484aa5204dd3924ff8a490870ec8e4dd17f`; pracovní větev: `agent/progress-milestone-feedback`.
 - Povolený rozsah: existující toast UI, jeho přístupnost, kontraktové testy a tento řídicí záznam.
 - Toast naslouchá pouze platným eventům `finding:collected` a `objective:complete`; nepřidává payload ani gameplay pravidla.
 - Zobrazení je neinteraktivní, s bezpečným restartem timeoutu a nevytváří persistentní stav.
 - Před sloučením: validátor, unit suite a relevantní browser smoke.
+
+### #160 — Kontextový přehled úkolu v pauze
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený pause-recap balík.
+
+- Base: `main@e3c335a0b039709c4041940899d6202ee5acd7a6`; pracovní větev: `agent/pause-mission-recap`.
+- Povolený rozsah: stávající pauzový panel, UI model scén, kontraktové testy a tento řídicí záznam.
+- Pauza ukáže lokalitu, aktuální objective a normalizovaný procentní postup z existujícího snapshotu; návrat a menu zůstávají beze změny.
+- Nejsou povoleny nové akce, změny objektivů, event payloadů, save systému, inventáře ani rendereru.
+- Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
