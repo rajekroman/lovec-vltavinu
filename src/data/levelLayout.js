@@ -38,15 +38,15 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
   },
   nesmen: {
     props: [
-      { kind: "treeCluster", x: 120, y: 520, width: 165, height: 230, obstacleId: "nesmen-west-growth" },
-      { kind: "treeCluster", x: 480, y: 150, width: 220, height: 95, obstacleId: "nesmen-north-mid-growth" },
+      { kind: "treeCluster", x: 120, y: 520, width: 110, height: 230, obstacleId: "nesmen-west-growth" },
+      { kind: "treeCluster", x: 760, y: 150, width: 180, height: 95, obstacleId: "nesmen-north-mid-growth" },
       { kind: "treeCluster", x: 1080, y: 150, width: 250, height: 95, obstacleId: "nesmen-north-east-growth" },
       { kind: "treeCluster", x: 1260, y: 650, width: 105, height: 300, obstacleId: "nesmen-east-growth" },
       { kind: "treeCluster", x: 720, y: 965, width: 250, height: 90, obstacleId: "nesmen-south-growth" },
-      { kind: "tree", x: 466, y: 296, scale: 1.45, obstacleId: "nesmen-landmark-tree" },
+      { kind: "tree", x: 466, y: 336, scale: 1.45, obstacleId: "nesmen-landmark-tree" },
       { kind: "root", x: 520, y: 790, width: 145, height: 30, rotation: -0.16, obstacleId: "nesmen-root" },
       { kind: "stump", x: 455, y: 735, scale: 0.88, obstacleId: "nesmen-stump-west" },
-      { kind: "stump", x: 1180, y: 530, scale: 0.94, obstacleId: "nesmen-stump-east" },
+      { kind: "stump", x: 1130, y: 530, scale: 0.94, obstacleId: "nesmen-stump-east" },
       { kind: "sandMound", x: 610, y: 430, scale: 1.0 },
       { kind: "sandMound", x: 930, y: 690, scale: 1.0 },
       { kind: "sandMound", x: 1210, y: 360, scale: 1.0 },
@@ -54,15 +54,15 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "rock", x: 1045, y: 915, scale: 0.55 }
     ],
     obstacles: [
-      { id: "nesmen-west-growth", x: 120, y: 520, width: 165, height: 230 },
-      { id: "nesmen-north-mid-growth", x: 480, y: 150, width: 220, height: 95 },
+      { id: "nesmen-west-growth", x: 120, y: 520, width: 110, height: 230 },
+      { id: "nesmen-north-mid-growth", x: 760, y: 150, width: 180, height: 95 },
       { id: "nesmen-north-east-growth", x: 1080, y: 150, width: 250, height: 95 },
       { id: "nesmen-east-growth", x: 1260, y: 650, width: 105, height: 300 },
       { id: "nesmen-south-growth", x: 720, y: 965, width: 250, height: 90 },
-      { id: "nesmen-landmark-tree", x: 430, y: 260, width: 72, height: 72 },
+      { id: "nesmen-landmark-tree", x: 430, y: 300, width: 72, height: 72 },
       { id: "nesmen-root", x: 520, y: 790, width: 145, height: 30 },
       { id: "nesmen-stump-west", x: 433, y: 713, width: 44, height: 44 },
-      { id: "nesmen-stump-east", x: 1157, y: 507, width: 46, height: 46 }
+      { id: "nesmen-stump-east", x: 1107, y: 507, width: 46, height: 46 }
     ]
   },
   besednice: {
@@ -71,11 +71,11 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "embankment", x: 590, y: 190, width: 280, height: 88, obstacleId: "besednice-north-val" },
       { kind: "profileWall", x: 1510, y: 180, width: 90, height: 160, obstacleId: "besednice-hedgehog-wall" },
       { kind: "rockCluster", x: 280, y: 600, width: 125, height: 120, obstacleId: "besednice-west-rocks" },
-      { kind: "quarryPit", x: 650, y: 820, width: 220, height: 105, obstacleId: "besednice-mid-pit" },
+      { kind: "quarryPit", x: 560, y: 700, width: 220, height: 105, obstacleId: "besednice-mid-pit" },
       { kind: "quarryPit", x: 720, y: 1060, width: 260, height: 70, obstacleId: "besednice-south-pit" },
-      { kind: "embankment", x: 1320, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
+      { kind: "embankment", x: 1250, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
       { kind: "rockCluster", x: 1010, y: 480, width: 120, height: 100, obstacleId: "besednice-central-rocks" },
-      { kind: "rock", x: 1450, y: 710, scale: 1.12, obstacleId: "besednice-east-rock" },
+      { kind: "rock", x: 1380, y: 710, scale: 1.12, obstacleId: "besednice-east-rock" },
       { kind: "scrub", x: 170, y: 400, scale: 1.05 },
       { kind: "scrub", x: 1540, y: 1080, scale: 1.2 },
       { kind: "scrub", x: 1120, y: 1090, scale: 0.86 },
@@ -87,17 +87,17 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { id: "besednice-north-val", x: 590, y: 190, width: 280, height: 88 },
       { id: "besednice-hedgehog-wall", x: 1510, y: 180, width: 90, height: 160 },
       { id: "besednice-west-rocks", x: 280, y: 600, width: 125, height: 120 },
-      { id: "besednice-mid-pit", x: 650, y: 820, width: 220, height: 105 },
+      { id: "besednice-mid-pit", x: 560, y: 700, width: 220, height: 105 },
       { id: "besednice-south-pit", x: 720, y: 1060, width: 260, height: 70 },
-      { id: "besednice-east-val", x: 1320, y: 620, width: 175, height: 110 },
+      { id: "besednice-east-val", x: 1250, y: 620, width: 175, height: 110 },
       { id: "besednice-central-rocks", x: 1010, y: 480, width: 120, height: 100 },
-      { id: "besednice-east-rock", x: 1418, y: 678, width: 64, height: 64 }
+      { id: "besednice-east-rock", x: 1348, y: 678, width: 64, height: 64 }
     ]
   },
   slavia: {
     props: [
       { kind: "plaza", x: 470, y: 190, width: 1030, height: 720 },
-      { kind: "buildingWing", x: 1540, y: 120, width: 220, height: 300, obstacleId: "slavia-north-wing" },
+      { kind: "buildingWing", x: 1540, y: 120, width: 220, height: 270, obstacleId: "slavia-north-wing" },
       { kind: "buildingWing", x: 1540, y: 650, width: 220, height: 270, obstacleId: "slavia-south-wing" },
       { kind: "entrance", x: 1555, y: 455, width: 195, height: 115 },
       { kind: "eventTent", x: 570, y: 180, width: 150, height: 86, obstacleId: "slavia-registration-tent" },
@@ -114,7 +114,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "lamp", x: 1340, y: 860, scale: 1.0 }
     ],
     obstacles: [
-      { id: "slavia-north-wing", x: 1540, y: 120, width: 220, height: 300 },
+      { id: "slavia-north-wing", x: 1540, y: 120, width: 220, height: 270 },
       { id: "slavia-south-wing", x: 1540, y: 650, width: 220, height: 270 },
       { id: "slavia-registration-tent", x: 570, y: 180, width: 150, height: 86 },
       { id: "slavia-exhibit-tent", x: 860, y: 835, width: 150, height: 80 },
