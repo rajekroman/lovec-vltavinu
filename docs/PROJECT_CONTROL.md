@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#174 ACTIVE** | vede pouze schválený rozsah #174 a jeho integrační evidence |
+| A0 koordinace | **#176 ACTIVE** | vede pouze schválený rozsah #176 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
-| A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#174 ACTIVE** | dialogová sémantika stávající nápovědy |
+| A3 grafika/assety | **#176 ACTIVE** | sjednocená realistická sprite sada NPC a manifest |
+| A4 UI/mobil | **#176 ACTIVE** | společná renderovaná výška postav v kanonických scénách |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #174 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #176 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -288,13 +288,24 @@ Stav: **COMPLETED / MERGED**, issue #172 a PR #173.
 
 ### #174 — Doplnit dialogovou sémantiku nápovědy
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální přístupnostní UI balík.
+Stav: **COMPLETED / MERGED**, issue #174 a PR #175.
 
 - Base: `main@93b5b3a`; pracovní větev: `agent/help-modal-semantics`.
 - Povolený rozsah: stávající markup nápovědy, kontraktový test a tento řídicí záznam.
 - Nápověda získá `role="dialog"`, `aria-modal="true"`, vlastní název a popis z existujícího obsahu; vzhled ani ovládání se nemění.
 - Nejsou povoleny změny ScreenControlleru, navigace, inputu, gameplay, eventů, save systému, inventáře, rendereru ani assetů.
 - Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
+
+### #176 — Sjednotit detailní grafiku hráče a NPC
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální graficko-integrační balík.
+
+- Base: `main@382f887`; pracovní větev: `agent/character-visual-refresh`.
+- Povolený rozsah: versionované NPC PNG, jejich manifestové URL a metadata, produkční render postav čtyř scén, kontraktové testy a tento řídicí záznam.
+- Nové NPC jsou realistické pre-renderované 3D sprity ve stejném detailním materiálovém stylu jako hlavní postava. Stabilní manifestová ID odkazují na nové `*-v2.png`; původní PNG zůstávají beze změny.
+- Ve všech čtyřech scénách jsou hráč a NPC vykresleni rozměrem `82 × 108` se shodným anchorem `0.5 / 0.08`. Kolize, dosahy a pravidla hry se nemění.
+- Každý nový PNG má relativní URL, rozměr `256 × 384`, byte budget, SHA-256 a `disposeOwner` v manifestu; pět nových runtime URL je zahrnuto v distribuční cache service workeru.
+- Před sloučením: validátor, kompletní unit suite, asset integrity testy a relevantní desktop/mobile vizuální smoke.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

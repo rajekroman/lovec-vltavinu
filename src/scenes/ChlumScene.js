@@ -179,8 +179,8 @@ export class ChlumScene {
     this.renderer.add(root, "ground");
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
-    const player = this.renderer.createSprite(playerTexture, { width: 72, height: 82, z: 12, anchorX: 0.5, anchorY: 0.16, assetId: "player-hunter-walk" });
-    const farmer = this.renderer.createSprite(farmerTexture, { width: 78, height: 116, z: 10, anchorX: 0.5, anchorY: 0.08, assetId: "npc-farmer-vaclav" });
+    const player = this.renderer.createSprite(playerTexture, { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "player-hunter-walk" });
+    const farmer = this.renderer.createSprite(farmerTexture, { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "npc-farmer-vaclav" });
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.farmerEntity, farmer, "actors");
     const marker = this.modelFactory.bind(this.digEntity, this.model("model-chlum-field-marker"), { assetId: "model-chlum-field-marker", layer: "props", rotationX: Math.PI / 2, scale: 48, z: 3 });

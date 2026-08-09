@@ -163,10 +163,10 @@ export class BesedniceScene {
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     const player = this.renderer.createSprite(playerTexture, {
-      width: 72, height: 82, z: 12, anchorX: 0.5, anchorY: 0.16, assetId: "player-hunter-walk"
+      width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "player-hunter-walk"
     });
     const karel = this.renderer.createSprite(karelTexture, {
-      width: 82, height: 116, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
+      width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
     });
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.karelEntity, karel, "actors");
