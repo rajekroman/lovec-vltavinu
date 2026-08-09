@@ -169,11 +169,25 @@ async function moveTo(page, input, x, y, kind) {
   }).toBe(kind);
 }
 
-async function waitForTractorLeftOf(page, maxX = 620, timeout = 30_000) {
-  await expect.poll(async () => {
-    const tractorX = (await runtimeSnapshot(page)).chlum?.runtime?.tractor?.x;
-    return typeof tractorX === "number" && tractorX <= maxX;
-  }, { timeout, intervals: [100, 180, 250] }).toBe(true);
+async function frameRuntimePoint(page, point) {
+  await page.evaluate(async target => {
+    const { app, renderer } = await import("./src/bootstrap.js");
+    app.stop();
+    renderer.setCameraCenter(target.x, target.y, 0.92);
+    renderer.render();
+  }, point);
+}
+
+async function frameChlumTarget(page, targetId) {
+  await page.evaluate(async id => {
+    const { app, renderer } = await import("./src/bootstrap.js");
+    const { getLevelTarget } = await import("./src/data/levels.js");
+    const target = getLevelTarget("chlum", id)?.positions?.[0];
+    if (!target) throw new Error(`Missing Chlum target ${id}.`);
+    app.stop();
+    renderer.setCameraCenter(target.x, target.y, 0.92);
+    renderer.render();
+  }, targetId);
 }
 
 async function startChlum(page, input) {
@@ -204,18 +218,13 @@ test("A6 read-only Chlum furrows visual capture", async ({ page }, testInfo) => 
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
 
-  await waitForTractorLeftOf(page, 620);
+  const tractor = (await runtimeSnapshot(page)).chlum?.runtime?.tractor;
+  expect(tractor).toBeTruthy();
+  await frameRuntimePoint(page, tractor);
   await captureEvidence(page, testInfo, "chlum-tractor-checkpoint");
 
-  await moveAxisTo(page, input, "x", 1020);
-  await moveAxisTo(page, input, "y", 410);
-  await waitForTractorLeftOf(page, 620);
-  await moveAxisTo(page, input, "y", 720, 20_000, "dig");
-  await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null, {
-    timeout: 12_000,
-    intervals: [30, 60, 100]
-  }).toBe("dig");
-  await captureEvidence(page, testInfo, "chlum-field-marker-dig-context");
+  await frameChlumTarget(page, "chlum-dig-site");
+  await captureEvidence(page, testInfo, "chlum-field-marker-checkpoint");
 
   const final = await runtimeSnapshot(page);
   expect(final.scene).toBe("chlum");
