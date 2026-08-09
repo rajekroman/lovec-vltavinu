@@ -1,22 +1,22 @@
-import { DIG_REQUIRED_HITS, getLevelDefinition } from "../data/levels.js";
+import { getLevelDefinition } from "../data/levels.js";
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 const count = value => Math.max(0, Math.floor(Number(value) || 0));
 
 function chlum(runtime) {
   const permit = runtime.permit === true;
-  const digHits = count(runtime.digHits);
+  const searched = runtime.searched === true;
   const findings = count(runtime.findings);
   return {
     text: !permit
       ? "Promluv s Václavem"
-      : digHits < DIG_REQUIRED_HITS
-        ? `Kopání ${digHits}/${DIG_REQUIRED_HITS}`
+      : !searched
+        ? "Aktivuj radar a hledej signál"
         : findings < 1 ? "Vyzvedni nalezený vltavín" : "Vltavín je v bezpečí",
-    complete: permit && digHits >= DIG_REQUIRED_HITS && findings >= 1,
-    progress: clamp01((permit ? 0.2 : 0) + clamp01(digHits / DIG_REQUIRED_HITS) * 0.4 + clamp01(findings) * 0.4),
-    current: { permit, digHits, findings },
-    target: { permit: true, digHits: DIG_REQUIRED_HITS, findings: 1 }
+    complete: permit && searched && findings >= 1,
+    progress: clamp01((permit ? 0.2 : 0) + (searched ? 0.4 : 0) + clamp01(findings) * 0.4),
+    current: { permit, searched, findings },
+    target: { permit: true, searched: true, findings: 1 }
   };
 }
 

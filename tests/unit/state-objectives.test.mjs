@@ -103,10 +103,11 @@ test("migrateLegacySave odstraní zdroj pouze na vyžádání", () => {
   assert.ok(storage.getItem(CURRENT_SAVE_KEY));
 });
 
-test("Chlum vyžaduje povolení, tři zásahy i nález", () => {
-  assert.equal(evaluateObjective("chlum", { permit: false, digHits: 3, findings: 1 }).text, "Promluv s Václavem");
-  assert.equal(isObjectiveComplete("chlum", { permit: true, digHits: 2, findings: 1 }), false);
-  assert.equal(isObjectiveComplete("chlum", { permit: true, digHits: 3, findings: 1 }), true);
+test("Chlum vyžaduje povolení, povrchové hledání i nález", () => {
+  assert.equal(evaluateObjective("chlum", { permit: false, searched: true, findings: 1 }).text, "Promluv s Václavem");
+  assert.equal(evaluateObjective("chlum", { permit: true, searched: false, findings: 0 }).text, "Aktivuj radar a hledej signál");
+  assert.equal(isObjectiveComplete("chlum", { permit: true, searched: false, findings: 1 }), false);
+  assert.equal(isObjectiveComplete("chlum", { permit: true, searched: true, findings: 1 }), true);
 });
 
 test("Nesměň vyžaduje povolení, kopání, zahrabání i nález", () => {
@@ -141,7 +142,7 @@ test("Slavia vyžaduje dokumenty, znalkyni, Frantu, certifikát i vstup", () => 
 
 test("progress objektivů zůstává v rozsahu 0 až 1", () => {
   const cases = [
-    ["chlum", { permit: true, digHits: 999, findings: 999 }],
+    ["chlum", { permit: true, searched: true, findings: 999 }],
     ["nesmen", { permit: true, dug: 999, filled: 999, findings: 999 }],
     ["besednice", { clues: 999, hedgehog: true, bossStarted: true, bossDefeated: true }],
     ["slavia", { papers: 999, expertConsulted: true, bossStarted: true, bossDefeated: true, certified: true, entered: true }]
