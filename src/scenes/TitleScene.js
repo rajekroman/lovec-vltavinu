@@ -10,6 +10,7 @@ export class TitleScene {
     this.controller?.abort();
     this.controller = new AbortController();
     const { signal } = this.controller;
+    this.helpOpen = false;
     this.screens.showTitle();
     this.document.querySelector(".version").textContent = "v6.0 · Modular Bootstrap";
 
@@ -19,10 +20,18 @@ export class TitleScene {
     }, { signal });
     this.document.getElementById("howButton").addEventListener("click", event => {
       event.preventDefault();
+      this.helpOpen = true;
       this.screens.show("howScreen", { playing: false });
     }, { signal });
     this.document.getElementById("closeHowButton").addEventListener("click", event => {
       event.preventDefault();
+      this.helpOpen = false;
+      this.screens.showTitle();
+    }, { signal });
+    this.document.addEventListener("keydown", event => {
+      if (event.key !== "Escape" || !this.helpOpen) return;
+      event.preventDefault();
+      this.helpOpen = false;
       this.screens.showTitle();
     }, { signal });
   }
@@ -30,6 +39,7 @@ export class TitleScene {
   async exit() {
     this.controller?.abort();
     this.controller = null;
+    this.helpOpen = false;
   }
 
   async dispose() {
