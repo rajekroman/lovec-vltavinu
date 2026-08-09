@@ -38,7 +38,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
   },
   nesmen: {
     props: [
-      { kind: "treeCluster", x: 120, y: 520, width: 110, height: 230, obstacleId: "nesmen-west-growth" },
+      { kind: "treeCluster", x: 120, y: 520, width: 80, height: 230, obstacleId: "nesmen-west-growth" },
       { kind: "treeCluster", x: 760, y: 150, width: 180, height: 95, obstacleId: "nesmen-north-mid-growth" },
       { kind: "treeCluster", x: 1080, y: 150, width: 250, height: 95, obstacleId: "nesmen-north-east-growth" },
       { kind: "treeCluster", x: 1260, y: 650, width: 105, height: 300, obstacleId: "nesmen-east-growth" },
@@ -54,7 +54,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "rock", x: 1045, y: 915, scale: 0.55 }
     ],
     obstacles: [
-      { id: "nesmen-west-growth", x: 120, y: 520, width: 110, height: 230 },
+      { id: "nesmen-west-growth", x: 120, y: 520, width: 80, height: 230 },
       { id: "nesmen-north-mid-growth", x: 760, y: 150, width: 180, height: 95 },
       { id: "nesmen-north-east-growth", x: 1080, y: 150, width: 250, height: 95 },
       { id: "nesmen-east-growth", x: 1260, y: 650, width: 105, height: 300 },
@@ -105,7 +105,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "displayTable", x: 610, y: 625, width: 105, height: 56, obstacleId: "slavia-table-a" },
       { kind: "displayTable", x: 850, y: 600, width: 105, height: 56, obstacleId: "slavia-table-b" },
       { kind: "glassCase", x: 1180, y: 620, width: 110, height: 60, obstacleId: "slavia-vitrine" },
-      { kind: "juryDais", x: 1320, y: 230, width: 95, height: 50, obstacleId: "slavia-jury-dais" },
+      { kind: "juryDais", x: 1320, y: 160, width: 95, height: 50, obstacleId: "slavia-jury-dais" },
       { kind: "cityTree", x: 425, y: 215, scale: 1.0, obstacleId: "slavia-city-tree-north" },
       { kind: "cityTree", x: 458, y: 978, scale: 1.08, obstacleId: "slavia-city-tree-south" },
       { kind: "bench", x: 730, y: 210, width: 92, height: 26, obstacleId: "slavia-bench" },
@@ -121,7 +121,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { id: "slavia-table-a", x: 610, y: 625, width: 105, height: 56 },
       { id: "slavia-table-b", x: 850, y: 600, width: 105, height: 56 },
       { id: "slavia-vitrine", x: 1180, y: 620, width: 110, height: 60 },
-      { id: "slavia-jury-dais", x: 1320, y: 230, width: 95, height: 50 },
+      { id: "slavia-jury-dais", x: 1320, y: 160, width: 95, height: 50 },
       { id: "slavia-city-tree-north", x: 390, y: 180, width: 70, height: 70 },
       { id: "slavia-city-tree-south", x: 420, y: 940, width: 78, height: 78 },
       { id: "slavia-bench", x: 730, y: 210, width: 92, height: 26 }
