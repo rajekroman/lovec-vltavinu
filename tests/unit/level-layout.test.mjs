@@ -40,6 +40,31 @@ function reachableOnGrid(level, layout, target, range = 72) {
   return false;
 }
 
+function axisSegmentBlocked(from, to, obstacle, radius = PLAYER_RADIUS) {
+  const left = obstacle.x - radius;
+  const right = obstacle.x + obstacle.width + radius;
+  const bottom = obstacle.y - radius;
+  const top = obstacle.y + obstacle.height + radius;
+  if (from.y === to.y) {
+    if (from.y < bottom || from.y > top) return false;
+    return Math.max(Math.min(from.x, to.x), left) <= Math.min(Math.max(from.x, to.x), right);
+  }
+  if (from.x === to.x) {
+    if (from.x < left || from.x > right) return false;
+    return Math.max(Math.min(from.y, to.y), bottom) <= Math.min(Math.max(from.y, to.y), top);
+  }
+  throw new Error("Canonical lane segment must be axis-aligned.");
+}
+
+function assertDirectMobileLane(layout, from, to, label) {
+  const corner = { x: to.x, y: from.y };
+  for (const [start, end, axis] of [[from, corner, "x"], [corner, to, "y"]]) {
+    if (start.x === end.x && start.y === end.y) continue;
+    const blocker = layout.obstacles.find(obstacle => axisSegmentBlocked(start, end, obstacle));
+    assert.equal(blocker, undefined, `${label} ${axis}-lane blocked by ${blocker?.id ?? "unknown obstacle"}`);
+  }
+}
+
 test("each canonical level has authored props and visually explained collider-backed obstacles", () => {
   assert.deepEqual(Object.keys(LEVEL_ENVIRONMENT_LAYOUTS), ["chlum", "nesmen", "besednice", "slavia"]);
   for (const level of LEVEL_DEFINITIONS) {
@@ -78,6 +103,31 @@ test("all mandatory objective positions remain reachable from spawn with a mobil
           `${level.id} target ${target.id} at ${position.x},${position.y} is not reachable`
         );
       }
+    }
+  }
+});
+
+test("canonical objective approaches retain simple mobile-safe lanes between interaction spaces", () => {
+  const routes = {
+    nesmen: [
+      { x: 180, y: 980 }, { x: 280, y: 240 }, { x: 610, y: 430 },
+      { x: 930, y: 690 }, { x: 1210, y: 360 }
+    ],
+    besednice: [
+      { x: 140, y: 1040 }, { x: 470, y: 890 }, { x: 880, y: 620 },
+      { x: 1240, y: 420 }, { x: 1430, y: 260 }, { x: 1464, y: 278 }, { x: 1510, y: 900 }
+    ],
+    slavia: [
+      { x: 380, y: 860 }, { x: 410, y: 760 }, { x: 790, y: 460 },
+      { x: 1130, y: 780 }, { x: 1450, y: 430 }, { x: 1020, y: 260 },
+      { x: 1450, y: 430 }, { x: 1630, y: 520 }
+    ]
+  };
+
+  for (const [levelId, points] of Object.entries(routes)) {
+    const layout = getLevelEnvironmentLayout(levelId);
+    for (let index = 1; index < points.length; index += 1) {
+      assertDirectMobileLane(layout, points[index - 1], points[index], `${levelId} route ${index}`);
     }
   }
 });
