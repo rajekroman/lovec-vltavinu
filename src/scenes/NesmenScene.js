@@ -8,6 +8,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
+const REFERENCE_CLEARING = Object.freeze({ width: 1800, height: 1200, cameraZoom: 0.75 });
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -146,17 +147,15 @@ export class NesmenScene {
     const root = new THREE.Group();
     root.name = "nesmen-vertical-slice";
     const [environmentTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
-      this.texture("terrain-nesmen-excavated-sand-v1"),
+      this.texture("terrain-nesmen-reference-clearing-v2"),
       this.texture("terrain-nesmen-sand-profile"),
       this.texture("player-hunter-walk"),
       this.texture("npc-forester-jan")
     ]);
-    environmentTexture.repeat.set(0.832, 1);
-    environmentTexture.offset.set(0.084, 0);
     sandTexture.repeat.set(2.2, 1.2);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
+      new THREE.PlaneGeometry(REFERENCE_CLEARING.width, REFERENCE_CLEARING.height),
       new THREE.MeshBasicMaterial({ map: environmentTexture })
     );
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -4);
@@ -472,7 +471,7 @@ export class NesmenScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.92);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, REFERENCE_CLEARING.cameraZoom);
   }
 
   objectiveSnapshot() {
