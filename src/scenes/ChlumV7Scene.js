@@ -2,10 +2,24 @@ import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
+const V7_STYLESHEET_ID = "lovec-v7-visual-theme";
+
+function ensureV7Theme(documentRef = globalThis.document) {
+  if (!documentRef?.head) return false;
+  documentRef.documentElement?.classList?.add("v7-visual-rebuild");
+  if (documentRef.getElementById(V7_STYLESHEET_ID)) return true;
+  const link = documentRef.createElement("link");
+  link.id = V7_STYLESHEET_ID;
+  link.rel = "stylesheet";
+  link.href = "./v7.css";
+  documentRef.head.append(link);
+  return true;
+}
 
 export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   constructor(options) {
     super(options);
+    ensureV7Theme();
     this.foregroundRoot = null;
     this.visualMode = "uninitialized";
   }
@@ -132,3 +146,5 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     };
   }
 }
+
+export { ensureV7Theme };
