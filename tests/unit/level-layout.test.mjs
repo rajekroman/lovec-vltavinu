@@ -11,6 +11,7 @@ import {
 
 const PLAYER_RADIUS = 28;
 const GRID_STEP = 20;
+const INPUT_TARGET_TOLERANCE = 36;
 
 function reachableOnGrid(level, layout, target, range = 72) {
   const walkable = level.walkable ?? level.bounds;
@@ -63,6 +64,25 @@ function assertDirectMobileLane(layout, from, to, label) {
     const blocker = layout.obstacles.find(obstacle => axisSegmentBlocked(start, end, obstacle));
     assert.equal(blocker, undefined, `${label} ${axis}-lane blocked by ${blocker?.id ?? "unknown obstacle"}`);
   }
+}
+
+function settleAxis(current, target) {
+  const delta = target - current;
+  if (Math.abs(delta) <= INPUT_TARGET_TOLERANCE) return target;
+  return target - Math.sign(delta) * INPUT_TARGET_TOLERANCE;
+}
+
+function assertNativeInputApproach(layout, from, to, label) {
+  const x = settleAxis(from.x, to.x);
+  const corner = { x, y: from.y };
+  const xBlocker = layout.obstacles.find(obstacle => axisSegmentBlocked(from, corner, obstacle));
+  assert.equal(xBlocker, undefined, `${label} native x approach blocked by ${xBlocker?.id ?? "unknown obstacle"}`);
+
+  const y = settleAxis(from.y, to.y);
+  const settled = { x, y };
+  const yBlocker = layout.obstacles.find(obstacle => axisSegmentBlocked(corner, settled, obstacle));
+  assert.equal(yBlocker, undefined, `${label} native y approach blocked by ${yBlocker?.id ?? "unknown obstacle"}`);
+  return settled;
 }
 
 test("each canonical level has authored props and visually explained collider-backed obstacles", () => {
@@ -126,8 +146,10 @@ test("canonical objective approaches retain simple mobile-safe lanes between int
 
   for (const [levelId, points] of Object.entries(routes)) {
     const layout = getLevelEnvironmentLayout(levelId);
+    let nativePosition = points[0];
     for (let index = 1; index < points.length; index += 1) {
       assertDirectMobileLane(layout, points[index - 1], points[index], `${levelId} route ${index}`);
+      nativePosition = assertNativeInputApproach(layout, nativePosition, points[index], `${levelId} route ${index}`);
     }
   }
 });
