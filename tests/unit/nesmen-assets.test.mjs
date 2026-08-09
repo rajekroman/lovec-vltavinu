@@ -14,6 +14,7 @@ const EXPECTED_IDS = [
   "finding-vltavin-nesmen",
   "terrain-nesmen-forest-floor",
   "terrain-nesmen-sand-profile",
+  "terrain-nesmen-excavated-sand-v1",
   "model-nesmen-profile-marker",
   "model-nesmen-tree-stump"
 ];
@@ -34,7 +35,7 @@ function triangleCount(model) {
   return triangles;
 }
 
-test("Nesměň manifest contains exactly six budgeted owned assets", () => {
+test("Nesměň manifest contains exactly seven budgeted owned assets", () => {
   assert.deepEqual(entries.map(entry => entry.id), EXPECTED_IDS);
   assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length);
   for (const entry of entries) {

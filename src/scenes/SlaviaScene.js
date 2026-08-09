@@ -116,9 +116,12 @@ export class SlaviaScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "slavia-vertical-slice";
+    const environmentTexture = this.texture("terrain-slavia-malse-exterior-v1");
+    environmentTexture.repeat.set(1, 0.917);
+    environmentTexture.offset.set(0, 0.0415);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
-      new THREE.MeshBasicMaterial({ color: 0x6d765f })
+      new THREE.MeshBasicMaterial({ map: environmentTexture })
     );
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
     root.add(ground, new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55));
@@ -127,7 +130,7 @@ export class SlaviaScene {
     const building = this.modelFactory.clone(this.model("model-slavia-kd-building"), {
       assetId: "model-slavia-kd-building",
       rotationX: Math.PI / 2,
-      scale: 62,
+      scale: 104,
       z: 2
     });
     this.renderer.bindEntity(buildingEntity, building, "props");
