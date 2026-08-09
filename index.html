@@ -174,9 +174,9 @@
     <div class="small-card"><p id="pausePlace" class="eyebrow">PAUZA</p><h2>Výprava čeká</h2><p id="pauseObjective" class="pause-objective">Načítání úkolu</p><p id="pauseProgress" class="pause-progress">POSTUP 0 %</p><button id="resumeButton" class="primary-button" type="button">POKRAČOVAT</button><button id="menuButton" class="secondary-button" type="button">ODEJÍT DO MENU</button></div>
   </section>
 
-  <section id="howScreen" class="screen">
+  <section id="howScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="howTitle" aria-describedby="howIntro">
     <div class="how-card">
-      <p class="eyebrow">JEDEN PALEC, JEDNO TLAČÍTKO</p><h2>Jak se hraje</h2>
+      <p id="howIntro" class="eyebrow">JEDEN PALEC, JEDNO TLAČÍTKO</p><h2 id="howTitle">Jak se hraje</h2>
       <div class="how-grid">
         <div><b>1</b><strong>Pohyb</strong><p>Táhni palcem vlevo a procházej lokality vlastním tempem.</p></div>
         <div><b>2</b><strong>Jedna akce</strong><p>Přibliž se k cíli. Když tlačítko vpravo ukáže název akce, můžeš mluvit, hledat, kopat nebo zahrnout profil.</p></div>
