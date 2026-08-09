@@ -333,12 +333,12 @@ Stav: **COMPLETED / MERGED** na `main@ce5a4a95624d21727aae5613dfb3c406681ce760` 
 
 ### #182 — Release v6.2.0 po integraci prostředí
 
-Stav: **COMPLETED / RELEASED** jako `v6.2.0` na merge SHA `0175ff8483b24de73e835d005cb60d1338c0a491` (PR #183).
+Stav: **ACTIVE**, releasový kandidát bude přesně označen merge SHA releasového PR; tento kandidát je přímým potomkem `v6.0.0`, `v6.1.0` a #180.
 
 - Povolený rozsah: pouze číslo verze v balíčku a titulní obrazovce, verzovaný název distribuční cache, odpovídající kontraktový test a aktualizace tohoto řídicího záznamu.
 - Gameplay, data, render kontrakty, assety a ovládání se nemění.
-- Validátor a syntaxe prošly bez chyb; úplná unit sada prošla 183/183; desktop, iPhone portrait a iPhone landscape full-flow smoke prošly; GitHub Pages deploy stejného SHA skončil úspěšně.
-- Release URL: `https://github.com/rajekroman/lovec-vltavinu/releases/tag/v6.2.0`; historické tagy `v6.0.0` a `v6.1.0` zůstávají neměnné.
+- Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a deploy GitHub Pages stejného SHA.
+- Nový tag bude `v6.2.0`; historické tagy `v6.0.0` a `v6.1.0` zůstávají neměnné.
 
 ### #190 — Rozlišit povrchové hledání v Chlumu a kopání v Nesměni
 
