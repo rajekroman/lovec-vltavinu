@@ -350,6 +350,15 @@ Stav: **ACTIVE**, issue #190; pracovní větev `agent/chlum-surface-search` z `m
 - Session-only skóre a nálezy, Václav, traktor, jeden renderer a přechod Chlum → Nesměň zůstávají zachované. Nevzniká inventář ani save systém.
 - Povinná gate: validátor, syntaxe, kompletní unit sada a full-flow smoke na desktopu, iPhone portrait i landscape.
 
+### #192 — Release v6.3.0 po radarové integraci
+
+Stav: **ACTIVE**, issue #192; pracovní větev `agent/release-v6-3` z `main@916c297`.
+
+- Release navazuje na #189 (stabilizace QA vstupu) a #191 (povrchové hledání radarem v Chlumu).
+- Distribuční metadata jsou sladěna na `v6.3`: package verze, titulní obrazovka a service-worker cache.
+- Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada a zelená GitHub Actions matice.
+- Nový nepohyblivý tag bude `v6.3.0`; historické tagy `v6.0.0`, `v6.1.0` a `v6.2.0` zůstávají neměnné.
+
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
 - explicitní nový produktový/feature požadavek vlastníka;
