@@ -66,8 +66,20 @@ function createInputDriver(page, testInfo) {
       const key = axis === "x"
         ? (direction > 0 ? "ArrowRight" : "ArrowLeft")
         : (direction > 0 ? "ArrowUp" : "ArrowDown");
+      let active = true;
+      let repeatError = null;
       await page.keyboard.down(key);
-      return async () => page.keyboard.up(key);
+      const repeatTimer = setInterval(() => {
+        if (!active) return;
+        page.keyboard.down(key).catch(error => { repeatError ??= error; });
+      }, 250);
+      return async () => {
+        if (!active) return;
+        active = false;
+        clearInterval(repeatTimer);
+        await page.keyboard.up(key);
+        if (repeatError) throw repeatError;
+      };
     }
 
     const zone = page.locator("#moveZone");
