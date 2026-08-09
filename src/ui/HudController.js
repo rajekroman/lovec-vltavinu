@@ -77,12 +77,16 @@ export class HudController {
     elements.app.classList.toggle("danger-state", detected);
     elements.hud.classList.toggle("danger-shake", critical);
 
-    const hint = String(model.hint ?? "");
-    elements.hint.textContent = hint;
-    elements.hint.classList.toggle("hidden", !hint);
-
     const actionLabel = String(model.actionLabel ?? "AKCE");
     const actionReady = Boolean(model.actionReady);
+    const hint = String(model.hint ?? "");
+    const interactionPrompt = actionReady
+      ? [hint, `AKCE: ${actionLabel}`].filter(Boolean).join(" · ")
+      : hint;
+    elements.hint.textContent = interactionPrompt;
+    elements.hint.classList.toggle("hidden", !interactionPrompt);
+    elements.hint.classList.toggle("action-ready", actionReady);
+
     elements.action.classList.toggle("ready", actionReady);
     elements.action.setAttribute("aria-label", actionLabel);
     elements.action.setAttribute("aria-disabled", actionReady ? "false" : "true");
@@ -97,5 +101,7 @@ export class HudController {
     this.lastFingerprint = "";
     this.elements.app.classList.remove("danger-state");
     this.elements.hud.classList.remove("danger-shake");
+    this.elements.hint.classList.remove("action-ready");
+    this.elements.action.classList.remove("ready");
   }
 }
