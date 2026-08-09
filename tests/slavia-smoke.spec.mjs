@@ -20,7 +20,7 @@ function activeRuntime(state) {
 
 function digHitCount(state) {
   const runtime = activeRuntime(state);
-  return Number(state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+  return Number(runtime?.totalDigHits);
 }
 
 async function touchLocator(page, locator) {
@@ -273,7 +273,7 @@ async function pauseLoopAtDigSweetSpot(page, expectedTotal, timeout = 10_000) {
       const monitor = () => {
         const state = window.__lovecRuntime?.snapshot?.();
         const runtime = state?.[state.scene]?.runtime;
-        const total = Number(state?.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+        const total = Number(runtime?.totalDigHits);
         if (total >= target) {
           app.stop();
           resolve();
@@ -343,20 +343,21 @@ async function completeChlum(page, input) {
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
 
-  let opened = false;
+  let revealed = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
     await moveAxisTo(page, input, "x", 1020);
     await moveAxisTo(page, input, "y", 410);
     await waitForTractorLeftOf(page);
     await moveAxisTo(page, input, "y", 720);
-    if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
-    await performAction(page, input);
-    opened = true;
+    await expect(page.locator("#actionButton")).toHaveAttribute("aria-label", "RADAR");
+    if (!input.desktop) await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "false");
+    await input.contextualAction();
+    await expectReleasedInput(page);
+    revealed = activeRuntime(await runtimeSnapshot(page))?.searched === true;
+    if (!revealed) continue;
     break;
   }
-  expect(opened).toBe(true);
-  await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
+  expect(revealed).toBe(true);
   await moveTo(page, input, 1042, 732, "collect");
   await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);

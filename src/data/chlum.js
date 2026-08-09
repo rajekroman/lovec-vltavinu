@@ -10,8 +10,8 @@ const deepFreeze = value => {
 
 const level = getLevelDefinition("chlum");
 const farmerPosition = getLevelTarget("chlum", "farmer-vaclav")?.positions[0];
-const digPosition = getLevelTarget("chlum", "chlum-dig-site")?.positions[0];
-if (!level || !farmerPosition || !digPosition || !getDialogueDefinition("chlum-permission")) throw new Error("Chlum canonical data is incomplete.");
+const searchPosition = getLevelTarget("chlum", "chlum-search-site")?.positions[0];
+if (!level || !farmerPosition || !searchPosition || !getDialogueDefinition("chlum-permission")) throw new Error("Chlum canonical data is incomplete.");
 
 const entities = [
   {
@@ -40,7 +40,7 @@ const entities = [
     }
   },
   { id: "farmer-vaclav", components: { transform: { ...farmerPosition, rotation: 0, scale: 1 }, sprite: { assetId: "npc-farmer-vaclav", layer: "actors", frame: 0 }, collider: { shape: "circle", radius: 24, layer: "npc", mask: [] }, interaction: { kind: "permission", label: "MLUVIT", action: CONTEXT_ACTION, range: 64, priority: 100, enabled: true }, npc: { name: "Václav", role: "farmer", dialogueId: "chlum-permission" } } },
-  { id: "chlum-dig-site", components: { transform: { ...digPosition, rotation: 0, scale: 1 }, model: { assetId: "model-chlum-field-marker", layer: "props" }, interaction: { kind: "dig", label: "KOPAT", action: CONTEXT_ACTION, range: 58, priority: 50, enabled: false }, digSpot: { findingId: "chlum-finding-1", variantId: "chlum-standard", collected: false } } },
+  { id: "chlum-search-site", components: { transform: { ...searchPosition, rotation: 0, scale: 1 }, model: { assetId: "model-chlum-field-marker", layer: "props" }, searchSpot: { findingId: "chlum-finding-1", variantId: "chlum-standard", searched: false, detectionRange: 240 } } },
   { id: "tractor", components: { transform: { x: 360, y: 590, rotation: Math.PI / 2, scale: 1 }, model: { assetId: "model-chlum-tractor-no-driver", layer: "actors" }, collider: { shape: "aabb", width: 112, height: 64, layer: "hazard", mask: ["player"] }, hazard: { kind: "tractor", danger: 100, consequence: "return-to-spawn", enabled: true }, patrol: { axis: "x", min: 240, max: 1360, speed: 135, direction: 1 } } }
 ];
 

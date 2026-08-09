@@ -340,6 +340,16 @@ Stav: **ACTIVE**, releasový kandidát bude přesně označen merge SHA releasov
 - Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a deploy GitHub Pages stejného SHA.
 - Nový tag bude `v6.2.0`; historické tagy `v6.0.0` a `v6.1.0` zůstávají neměnné.
 
+### #190 — Rozlišit povrchové hledání v Chlumu a kopání v Nesměni
+
+Stav: **ACTIVE**, issue #190; pracovní větev `agent/chlum-surface-search` z `main@0175ff8`.
+
+- Chlum po Václavově povolení používá jediné kontextové tlačítko jako radar. Puls radaru hlásí sílu signálu, v dosahu odhalí povrchový vltavín a další kontextová akce nález sebere.
+- Chlum nepoužívá `DigSystem`, kopací modal ani stav rytmických zásahů. Nesměň zachovává tři kopané a následně zahrnuté profily; přesně tři úspěšné rytmické zásahy zůstávají beze změny.
+- Mobil používá existující dotykový joystick a akční tlačítko; desktop zachovává WASD/šipky a `E`. Obě varianty vedou přes jediný `InputManager`.
+- Session-only skóre a nálezy, Václav, traktor, jeden renderer a přechod Chlum → Nesměň zůstávají zachované. Nevzniká inventář ani save systém.
+- Povinná gate: validátor, syntaxe, kompletní unit sada a full-flow smoke na desktopu, iPhone portrait i landscape.
+
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
 - explicitní nový produktový/feature požadavek vlastníka;

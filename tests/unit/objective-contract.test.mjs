@@ -5,8 +5,8 @@ import { evaluateObjective } from "../../src/gameplay/Objectives.js";
 
 const scenarios = {
   chlum: {
-    complete: { permit: true, digHits: 3, findings: 1 },
-    premature: { permit: true, digHits: 2, findings: 1 }
+    complete: { permit: true, searched: true, findings: 1 },
+    premature: { permit: true, searched: false, findings: 1 }
   },
   nesmen: {
     complete: { permit: true, dug: 3, filled: 3, findings: 1 },

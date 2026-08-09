@@ -38,9 +38,9 @@ test("Besednice ObjectiveSystem preserves existing Chlum and Nesměň permission
   const session = createGameSession();
   session.enterLevel("chlum");
   const chlum = new ObjectiveSystem({ session, levelId: "chlum" });
-  assert.equal(chlum.snapshot({ permit: true, digHits: 3 }).current.permit, false);
+  assert.equal(chlum.snapshot({ permit: true, searched: true }).current.permit, false);
   assert.equal(chlum.grantPermission(), true);
-  assert.equal(chlum.snapshot({ digHits: 3 }).current.permit, true);
+  assert.equal(chlum.snapshot({ searched: true }).current.permit, true);
 
   session.enterLevel("nesmen");
   const nesmen = new ObjectiveSystem({ session, levelId: "nesmen" });
