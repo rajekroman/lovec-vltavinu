@@ -22,7 +22,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
-      testMatch: /slavia-smoke\.spec\.mjs$/,
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /chlum-visual-capture\.spec\.mjs$/],
       metadata: { inputMode: "desktop", orientation: "landscape" },
       use: {
         ...devices["Desktop Chrome"],
@@ -42,7 +42,7 @@ export default defineConfig({
     },
     {
       name: "iphone-portrait",
-      testMatch: [/slavia-smoke\.spec\.mjs$/, /mobile-smoke\.spec\.mjs$/],
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /mobile-smoke\.spec\.mjs$/, /chlum-visual-capture\.spec\.mjs$/],
       metadata: { inputMode: "touch", orientation: "portrait" },
       use: {
         ...iphone13,
@@ -53,7 +53,7 @@ export default defineConfig({
     },
     {
       name: "iphone-landscape",
-      testMatch: /slavia-smoke\.spec\.mjs$/,
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /chlum-visual-capture\.spec\.mjs$/],
       metadata: { inputMode: "touch", orientation: "landscape" },
       use: {
         ...iphone13,
