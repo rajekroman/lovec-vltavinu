@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#164 ACTIVE** | vede pouze schválený rozsah #164 a jeho integrační evidence |
+| A0 koordinace | **#166 ACTIVE** | vede pouze schválený rozsah #166 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#164 ACTIVE** | rozlišit připravenou a nedostupnou kontextovou akci |
+| A4 UI/mobil | **#166 ACTIVE** | aktualizovat onboarding podle kanonického ovládání |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #164 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #166 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -238,13 +238,23 @@ Stav: **COMPLETED / MERGED**, issue #162 a PR #163.
 
 ### #164 — Rozlišit připravenou a nedostupnou kontextovou akci
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený HUD balík.
+Stav: **COMPLETED / MERGED**, issue #164 a PR #165.
 
 - Base: `main@6ea1409`; pracovní větev: `agent/contextual-action-clarity`.
 - Povolený rozsah: stávající HUD kontextové akce, její přístupnost, kontraktové testy a tento řídicí záznam.
 - Mimo dosah ukáže stávající tlačítko ztlumený stav `PŘIBLIŽ SE` se srozumitelným ARIA popisem; po přiblížení se obnoví konkrétní label dosavadní jediné akce.
 - Nejsou povoleny nové akce nebo touch targety, změny InteractionSystemu, objective/kopacích pravidel, event payloadů, save systému, inventáře ani rendereru.
 - Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; rozměr ovládání se nesmí změnit v portrait ani landscape.
+
+### #166 — Aktualizovat onboarding podle kanonického ovládání
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální obsahový UI balík.
+
+- Base: `main@ea7ae63`; pracovní větev: `agent/onboarding-action-clarity`.
+- Povolený rozsah: stávající onboarding, jeho kontraktový test a tento řídicí záznam.
+- Úvodní karta popisuje pohyb, přiblížení k cíli a jediné kontextové tlačítko, přesně tři rytmické zásahy při kopání a bezpečné vyhnutí se hrozbě.
+- Text nesmí odkazovat na legacy běh, kombo ani ztrátu předmětu. Nejsou povoleny změny vstupů, gameplay pravidel, eventů, save systému, inventáře ani rendereru.
+- Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; karta musí zůstat stručná a použitelná v portrait i landscape.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
