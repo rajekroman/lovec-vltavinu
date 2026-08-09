@@ -5,6 +5,7 @@ import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
@@ -161,30 +162,10 @@ export class NesmenScene {
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -4);
     root.add(ground);
 
-    for (const patch of [
-      { x: 720, y: 525, width: 920, height: 130, rotation: 0.28 },
-      { x: 1030, y: 470, width: 670, height: 105, rotation: -0.42 }
-    ]) {
-      const trail = new THREE.Mesh(
-        new THREE.PlaneGeometry(patch.width, patch.height),
-        new THREE.MeshBasicMaterial({ map: sandTexture, transparent: true, opacity: 0.52, depthWrite: false })
-      );
-      trail.position.set(patch.x, patch.y, -2.5);
-      trail.rotation.z = patch.rotation;
-      root.add(trail);
-    }
-
     const ambient = new THREE.HemisphereLight(0xc9e6bb, 0x17251c, 1.8);
     const sun = new THREE.DirectionalLight(0xffefc5, 1.9);
     sun.position.set(-220, 340, 520);
     root.add(ambient, sun);
-
-    for (const stump of [
-      { x: 410, y: 700, scale: 58, rotationZ: 0.2 },
-      { x: 770, y: 925, scale: 46, rotationZ: -0.35 },
-      { x: 1330, y: 830, scale: 54, rotationZ: 0.55 },
-      { x: 1120, y: 170, scale: 42, rotationZ: -0.1 }
-    ]) this.addDecorModel(root, "model-nesmen-tree-stump", stump);
 
     this.visualRoot = root;
     this.renderer.add(root, "ground");
@@ -233,18 +214,6 @@ export class NesmenScene {
     }
   }
 
-  addDecorModel(root, id, options) {
-    root.add(this.modelFactory.clone(this.model(id), {
-      assetId: id,
-      x: options.x,
-      y: options.y,
-      z: options.z ?? 1,
-      rotationX: Math.PI / 2,
-      rotationZ: options.rotationZ ?? 0,
-      scale: options.scale ?? 40
-    }));
-  }
-
   beginPlaying() {
     this.session.setPhase("playing");
     this.screens.play();
@@ -268,8 +237,9 @@ export class NesmenScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, this.level.bounds.x + 28, this.level.bounds.x + this.level.bounds.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, this.level.bounds.y + 28, this.level.bounds.y + this.level.bounds.height - 28);
+    const walkable = this.level.walkable ?? this.level.bounds;
+    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
+    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
     this.setCameraToPlayer();
   }
 
@@ -502,7 +472,7 @@ export class NesmenScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    this.renderer.setCameraCenter(transform.x, transform.y, 0.92);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.92);
   }
 
   objectiveSnapshot() {

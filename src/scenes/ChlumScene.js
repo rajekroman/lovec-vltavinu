@@ -6,6 +6,7 @@ import { DigSystem } from "../gameplay/DigSystem.js";
 import { DangerSystem } from "../gameplay/DangerSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "chlum-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
@@ -223,8 +224,9 @@ export class ChlumScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, this.level.bounds.x + 28, this.level.bounds.x + this.level.bounds.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, this.level.bounds.y + 28, this.level.bounds.y + this.level.bounds.height - 28);
+    const walkable = this.level.walkable ?? this.level.bounds;
+    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
+    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
     const tractor = this.app.world.get(this.tractorEntity, "transform");
     const patrol = this.app.world.get(this.tractorEntity, "patrol");
     tractor[patrol.axis] += patrol.direction * patrol.speed * dt;
@@ -395,7 +397,7 @@ export class ChlumScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    this.renderer.setCameraCenter(transform.x, transform.y, 0.92);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.92);
   }
 
   objectiveSnapshot() { return this.objectives.snapshot({ digHits: this.digHits }); }

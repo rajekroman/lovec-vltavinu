@@ -15,7 +15,9 @@ export function createAnimation(options = {}) {
     frame: frames[Math.max(0, Math.min(frames.length - 1, options.index ?? 0))],
     motionDriven: options.motionDriven === true,
     motionThreshold: Math.max(0, Number(options.motionThreshold) || 0.001),
-    resetOnIdle: options.resetOnIdle !== false
+    resetOnIdle: options.resetOnIdle !== false,
+    direction: options.direction ?? "down",
+    directionFrames: options.directionFrames ?? null
   };
 }
 
@@ -24,6 +26,29 @@ const resetAnimation = animation => {
   animation.elapsed = 0;
   animation.completed = false;
   animation.frame = animation.frames[0];
+};
+
+const resolveDirection = (x, y, fallback = "down") => {
+  if (Math.abs(x) > Math.abs(y)) return x < 0 ? "left" : "right";
+  if (Math.abs(y) > 0) return y > 0 ? "up" : "down";
+  return fallback;
+};
+
+const selectDirectionalFrames = (animation, sprite, x, y) => {
+  const directionFrames = animation.directionFrames;
+  if (!directionFrames || typeof directionFrames !== "object") return false;
+  const direction = resolveDirection(x, y, animation.direction);
+  const frames = directionFrames[direction];
+  if (!Array.isArray(frames) || frames.length === 0) return false;
+
+  if (animation.direction !== direction || animation.frames !== frames) {
+    animation.direction = direction;
+    animation.frames = frames;
+    animation.index = Math.min(animation.index, frames.length - 1);
+    animation.frame = frames[animation.index];
+  }
+  sprite.flipX = false;
+  return true;
 };
 
 export class AnimationSystem {
@@ -54,7 +79,8 @@ export class AnimationSystem {
     const threshold = Math.max(0, Number(options.threshold) || 0.001);
     const moving = Math.hypot(x, y) >= threshold;
 
-    if (Math.abs(x) >= threshold) sprite.flipX = x < 0;
+    const directional = moving && selectDirectionalFrames(animation, sprite, x, y);
+    if (!directional && Math.abs(x) >= threshold) sprite.flipX = x < 0;
     if (moving) this.play(animation);
     else this.pause(animation, { reset: options.resetOnIdle !== false });
     sprite.frame = animation.frame;

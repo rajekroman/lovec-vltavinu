@@ -5,6 +5,7 @@ import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { BossSystem } from "../gameplay/BossSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
@@ -151,13 +152,6 @@ export class BesedniceScene {
     const sun = new THREE.DirectionalLight(0xffefcf, 1.85);
     sun.position.set(-180, 420, 580);
     root.add(ambient, sun);
-    for (const rock of [
-      { x: 350, y: 260, scale: 65, rotationZ: 0.1 },
-      { x: 720, y: 1060, scale: 52, rotationZ: -0.35 },
-      { x: 1070, y: 950, scale: 76, rotationZ: 0.65 },
-      { x: 1510, y: 610, scale: 58, rotationZ: -0.2 },
-      { x: 1320, y: 110, scale: 44, rotationZ: 0.4 }
-    ]) this.addDecorModel(root, "model-besednice-rock", rock);
     this.visualRoot = root;
     this.renderer.add(root, "ground");
     playerTexture.repeat.set(0.25, 0.25);
@@ -184,23 +178,6 @@ export class BesedniceScene {
     this.renderer.bindEntity(this.hedgehogEntity, hedgehogMarker, "props");
   }
 
-  addDecorModel(root, id, options) {
-    const object = this.modelFactory.clone(this.model(id), {
-      assetId: id,
-      x: options.x,
-      y: options.y,
-      z: options.z ?? 1,
-      rotationX: Math.PI / 2,
-      rotationZ: options.rotationZ ?? 0,
-      scale: options.scale ?? 40
-    });
-    object.traverse?.(node => {
-      const materials = Array.isArray(node.material) ? node.material : [node.material];
-      for (const material of materials) material?.color?.multiplyScalar?.(0.72);
-    });
-    root.add(object);
-  }
-
   beginPlaying() {
     this.session.setPhase("playing");
     this.screens.play();
@@ -224,8 +201,9 @@ export class BesedniceScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, this.level.bounds.x + 28, this.level.bounds.x + this.level.bounds.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, this.level.bounds.y + 28, this.level.bounds.y + this.level.bounds.height - 28);
+    const walkable = this.level.walkable ?? this.level.bounds;
+    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
+    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
     this.setCameraToPlayer();
   }
 
@@ -458,7 +436,7 @@ export class BesedniceScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    this.renderer.setCameraCenter(transform.x, transform.y, 0.9);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.9);
   }
 
   hudModel() {
