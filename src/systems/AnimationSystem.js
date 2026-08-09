@@ -28,18 +28,52 @@ const resetAnimation = animation => {
   animation.frame = animation.frames[0];
 };
 
-const resolveDirection = (x, y, fallback = "down") => {
+export const resolveCardinalDirection = (x, y, fallback = "down") => {
   if (Math.abs(x) > Math.abs(y)) return x < 0 ? "left" : "right";
   if (Math.abs(y) > 0) return y > 0 ? "up" : "down";
   return fallback;
 };
 
+export const resolveEightWayDirection = (x, y, fallback = "down", diagonalThreshold = 0.55) => {
+  const dx = Number(x) || 0;
+  const dy = Number(y) || 0;
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax === 0 && ay === 0) return fallback;
+
+  const ratio = Math.max(0.1, Math.min(0.9, Number(diagonalThreshold) || 0.55));
+  const diagonal = ax >= ay * ratio && ay >= ax * ratio;
+  if (!diagonal) return resolveCardinalDirection(dx, dy, fallback);
+  if (dy > 0) return dx < 0 ? "upLeft" : "upRight";
+  return dx < 0 ? "downLeft" : "downRight";
+};
+
+const fallbackDirections = (direction, x, y, fallback) => {
+  if (direction === "upLeft" || direction === "upRight") {
+    return [direction, Math.abs(x) > Math.abs(y) ? (x < 0 ? "left" : "right") : "up", resolveCardinalDirection(x, y, fallback)];
+  }
+  if (direction === "downLeft" || direction === "downRight") {
+    return [direction, Math.abs(x) > Math.abs(y) ? (x < 0 ? "left" : "right") : "down", resolveCardinalDirection(x, y, fallback)];
+  }
+  return [direction];
+};
+
 const selectDirectionalFrames = (animation, sprite, x, y) => {
   const directionFrames = animation.directionFrames;
   if (!directionFrames || typeof directionFrames !== "object") return false;
-  const direction = resolveDirection(x, y, animation.direction);
-  const frames = directionFrames[direction];
-  if (!Array.isArray(frames) || frames.length === 0) return false;
+  const requested = resolveEightWayDirection(x, y, animation.direction);
+  const candidates = fallbackDirections(requested, x, y, animation.direction);
+  let direction = null;
+  let frames = null;
+  for (const candidate of candidates) {
+    const candidateFrames = directionFrames[candidate];
+    if (Array.isArray(candidateFrames) && candidateFrames.length > 0) {
+      direction = candidate;
+      frames = candidateFrames;
+      break;
+    }
+  }
+  if (!frames) return false;
 
   if (animation.direction !== direction || animation.frames !== frames) {
     animation.direction = direction;
