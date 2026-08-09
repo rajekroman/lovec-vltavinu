@@ -309,13 +309,27 @@ Stav: **COMPLETED / MERGED**, issue #176 a PR #177.
 
 ### #178 — Finální QA a release kandidát po grafickém sjednocení
 
-Stav issue určuje GitHub; tento záznam vymezuje finální QA/release balík `v6.1.0`.
+Stav: **COMPLETED / RELEASED** jako `v6.1.0` na merge SHA `745109103722646b69ad5b514d66f9882662ecb9`.
 
 - Candidate base: `main@9f880db1e4d2698d6c671238cf6737a48bd6ba31`; pracovní větev: `agent/final-release-validation`.
 - Lokálně prošly: validátor `0 chyb / 0 varování`, syntaxe všech modulů, úplná unit sada a Playwright desktop, iPhone portrait i iPhone landscape. GitHub Pages deploy candidate SHA skončil `success`.
 - GitHub Actions run `31300903064` skončil `5/6 PASS`; portrait full-flow překročil 480 s při souběžném běhu tří WebGL projektů, bez assetové nebo runtime chyby. Release balík proto stabilizuje pouze počet Playwright workerů na jeden a zachovává plnou matici projektů.
-- Historický tag `v6.0.0` zůstává neměnný. Nový tag `v6.1.0` bude vytvořen pouze na merge SHA tohoto release PR spolu s GitHub Release a uvedenou transparentní výjimkou.
+- Historický tag `v6.0.0` zůstává neměnný. Tag `v6.1.0` byl vytvořen na merge SHA release PR spolu s GitHub Release a uvedenou transparentní výjimkou.
 - Release metadata pouze mění hráčský štítek na `v6.1`; nevzniká save systém, inventář, nový renderer ani gameplay změna.
+
+### #180 — Integrace redesignu prostředí bez prostoru mimo mapu
+
+Stav: **ACTIVE**, cílem je nový sloučený kandidát na `main`, který je přímým potomkem `v6.0.0` i `v6.1.0`.
+
+- Base: `main@745109103722646b69ad5b514d66f9882662ecb9`; pracovní větev: `agent/environment-runtime-visibility-fix`.
+- Reprodukce na desktopu `1280 × 720` ukázala při okrajových spawnech Nesměně a Besednice velkou černou plochu mimo level bounds; nové environment textury byly načtené, ale kamera nebyla omezená podle velikosti viewportu a zoomu.
+- Čistý výpočet `CameraBounds` omezuje střed jediné ortografické kamery uvnitř mapy a je zapojen do všech čtyř produkčních scén.
+- Nesměň, Besednice a Slavia zachovávají environment assety `*-v1`; odstraněny jsou pouze rušivé dekorativní překryvy, které zakrývaly detailní podklady. Kanonický model KD Slavia zůstává načtený a navázaný na cílovou entitu, ale fasádu vizuálně poskytuje správně škálovaný environment plate.
+- Do této větve jsou přeneseny také dosud nesloučené commity Chlum brázd `17d9f14` a `91736be`; při konfliktu byl zachován kompletní novější manifest z `main` a aktualizován jen záznam `terrain-chlum-furrows`.
+- Hlavní postava nyní volí skutečnou čtyřsměrovou řadu realistického sprite sheetu (čelo, levý bok, pravý bok, záda) při `6 fps`; při zastavení stojí v posledním směru místo návratu do čelní pózy.
+- Každý level definuje vlastní `walkable` zónu. Pohyb se omezuje na pole, lesní mýtinu, dno lomu a dlážděné okolí KD Slavia; spawn Slavie byl přesunut z řeky na nábřežní plochu. Všechny povinné cíle zůstávají validovaně dosažitelné.
+- Kontrakty beze změny: jeden `WebGLRenderer`, ortografická kamera, čtyři kapitoly, jedna kontextová akce, přesně tři zásahy, žádný nový save systém ani inventář.
+- Povinná gate: validátor, syntaxe modulů, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a vizuální kontrola všech čtyř map. Nový release vyžaduje samostatné release issue a nový nepohyblivý tag; `v6.0.0` ani `v6.1.0` se nepřepisují.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

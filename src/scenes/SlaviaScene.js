@@ -4,6 +4,7 @@ import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
@@ -133,6 +134,9 @@ export class SlaviaScene {
       scale: 104,
       z: 2
     });
+    // The environment plate already contains the detailed, correctly scaled facade.
+    // Keep the canonical model bound to the destination entity without covering it.
+    building.visible = false;
     this.renderer.bindEntity(buildingEntity, building, "props");
 
     const playerTexture = this.texture("player-hunter-walk");
@@ -198,8 +202,9 @@ export class SlaviaScene {
     const player = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = player?.speed ?? 220;
-    transform.x = clamp(transform.x + (move.x ?? 0) * speed * dt, this.level.bounds.x + 28, this.level.bounds.x + this.level.bounds.width - 28);
-    transform.y = clamp(transform.y + (move.y ?? 0) * speed * dt, this.level.bounds.y + 28, this.level.bounds.y + this.level.bounds.height - 28);
+    const walkable = this.level.walkable ?? this.level.bounds;
+    transform.x = clamp(transform.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
+    transform.y = clamp(transform.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
     this.setCameraToPlayer();
   }
 
@@ -394,7 +399,7 @@ export class SlaviaScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    this.renderer.setCameraCenter(transform.x, transform.y, 0.9);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.9);
   }
 
   hudModel() {
