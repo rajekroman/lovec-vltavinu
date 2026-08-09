@@ -20,7 +20,8 @@ const EXPECTED_IDS = [
   "model-chlum-tractor-no-driver",
   "model-chlum-hay-bale",
   "model-chlum-field-marker",
-  "model-chlum-field-fence-segment"
+  "model-chlum-field-fence-segment",
+  "terrain-chlum-green-wave-v1"
 ];
 const fileFor = entry => path.join(root, entry.url.slice(2));
 const arrayBufferFor = entry => {

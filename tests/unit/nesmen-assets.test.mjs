@@ -16,7 +16,8 @@ const EXPECTED_IDS = [
   "terrain-nesmen-sand-profile",
   "terrain-nesmen-reference-clearing-v2",
   "model-nesmen-profile-marker",
-  "model-nesmen-tree-stump"
+  "model-nesmen-tree-stump",
+  "terrain-nesmen-green-wave-v1"
 ];
 const fileFor = entry => path.join(root, entry.url.slice(2));
 const bufferFor = entry => fs.readFileSync(fileFor(entry));
@@ -35,7 +36,7 @@ function triangleCount(model) {
   return triangles;
 }
 
-test("Nesměň manifest contains exactly seven budgeted owned assets", () => {
+test("Nesměň manifest contains eight budgeted owned assets", () => {
   assert.deepEqual(entries.map(entry => entry.id), EXPECTED_IDS);
   assert.equal(new Set(manifest.map(entry => entry.id)).size, manifest.length);
   for (const entry of entries) {
@@ -53,7 +54,10 @@ test("Nesměň PNG dimensions and GLB triangle counts match the manifest", async
   const loader = new GltfAssetLoader();
   for (const entry of entries) {
     const buffer = bufferFor(entry);
-    if (entry.type === "texture") {
+    if (entry.url.endsWith(".svg")) {
+      assert.match(buffer.toString("utf8"), /<svg\b/);
+      assert.deepEqual(entry.dimensions, { width: 1500, height: 1200 });
+    } else if (entry.type === "texture") {
       assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", entry.id);
       const dimensions = { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
       assert.deepEqual(dimensions, entry.dimensions, entry.id);

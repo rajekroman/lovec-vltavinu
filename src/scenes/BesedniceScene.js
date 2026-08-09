@@ -6,10 +6,11 @@ import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { BossSystem } from "../gameplay/BossSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createObstacleComponents, getLevelEnvironmentLayout, resolveCircleMovement } from "../data/levelLayout.js";
+import { createAuthoredEnvironment } from "./LevelEnvironment.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export class BesedniceScene {
   constructor(options) {
@@ -122,6 +123,7 @@ export class BesedniceScene {
       this.entityByExternalId.set(definition.id, entity);
       this.externalIdByEntity.set(entity, definition.id);
     }
+    for (const obstacle of getLevelEnvironmentLayout("besednice").obstacles) this.app.world.createEntity(createObstacleComponents(obstacle));
     this.playerEntity = this.entityByExternalId.get("player");
     this.traceEntities = BESEDNICE_TRACE_IDS.map(id => this.entityByExternalId.get(id));
     this.hedgehogEntity = this.entityByExternalId.get("besednice-hedgehog");
@@ -136,12 +138,10 @@ export class BesedniceScene {
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
     const [environmentTexture, playerTexture, karelTexture] = await Promise.all([
-      this.texture("terrain-besednice-clay-quarry-v1"),
+      this.texture("terrain-besednice-green-wave-v1"),
       this.texture("player-hunter-walk"),
       this.texture("npc-rival-karel")
     ]);
-    environmentTexture.repeat.set(0.874, 1);
-    environmentTexture.offset.set(0.063, 0);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
       new THREE.MeshBasicMaterial({ map: environmentTexture })
@@ -152,6 +152,7 @@ export class BesedniceScene {
     const sun = new THREE.DirectionalLight(0xffefcf, 1.85);
     sun.position.set(-180, 420, 580);
     root.add(ambient, sun);
+    root.add(createAuthoredEnvironment(THREE, getLevelEnvironmentLayout("besednice").props));
     this.visualRoot = root;
     this.renderer.add(root, "ground");
     playerTexture.repeat.set(0.25, 0.25);
@@ -202,8 +203,15 @@ export class BesedniceScene {
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
     const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
+    const resolved = resolveCircleMovement({
+      position: player,
+      movement: { x: (move.x ?? 0) * speed * dt, y: (move.y ?? 0) * speed * dt },
+      radius: 28,
+      walkable,
+      obstacles: getLevelEnvironmentLayout("besednice").obstacles
+    });
+    player.x = resolved.x;
+    player.y = resolved.y;
     this.setCameraToPlayer();
   }
 

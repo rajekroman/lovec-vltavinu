@@ -6,10 +6,11 @@ import { DangerSystem } from "../gameplay/DangerSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createObstacleComponents, getLevelEnvironmentLayout, resolveCircleMovement } from "../data/levelLayout.js";
+import { createAuthoredEnvironment } from "./LevelEnvironment.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "chlum-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export class ChlumScene {
   constructor(options) {
@@ -147,6 +148,7 @@ export class ChlumScene {
       this.entityByExternalId.set(definition.id, entity);
       this.externalIdByEntity.set(entity, definition.id);
     }
+    for (const obstacle of getLevelEnvironmentLayout("chlum").obstacles) this.app.world.createEntity(createObstacleComponents(obstacle));
     this.playerEntity = this.entityByExternalId.get("player");
     this.farmerEntity = this.entityByExternalId.get("farmer-vaclav");
     this.searchEntity = this.entityByExternalId.get("chlum-search-site");
@@ -158,12 +160,11 @@ export class ChlumScene {
     const root = new THREE.Group();
     root.name = "chlum-vertical-slice";
     const [fieldTexture, furrowTexture, playerTexture, farmerTexture] = await Promise.all([
-      this.texture("terrain-chlum-field"),
+      this.texture("terrain-chlum-green-wave-v1"),
       this.texture("terrain-chlum-furrows"),
       this.texture("player-hunter-walk"),
       this.texture("npc-farmer-vaclav")
     ]);
-    fieldTexture.repeat.set(2.4, 1.8);
     furrowTexture.repeat.set(3.2, 2.1);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height), new THREE.MeshBasicMaterial({ map: fieldTexture }));
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -4);
@@ -179,6 +180,7 @@ export class ChlumScene {
     this.addDecorModel(root, "model-chlum-field-fence-segment", { x: 570, y: 300, scale: 58 });
     this.addDecorModel(root, "model-chlum-hay-bale", { x: 1270, y: 930, scale: 52, rotationZ: 0.4 });
     this.addDecorModel(root, "model-chlum-hay-bale", { x: 1360, y: 860, scale: 44, rotationZ: -0.25 });
+    root.add(createAuthoredEnvironment(THREE, getLevelEnvironmentLayout("chlum").props));
     this.visualRoot = root;
     this.renderer.add(root, "ground");
     playerTexture.repeat.set(0.25, 0.25);
@@ -228,8 +230,15 @@ export class ChlumScene {
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
     const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
+    const resolved = resolveCircleMovement({
+      position: player,
+      movement: { x: (move.x ?? 0) * speed * dt, y: (move.y ?? 0) * speed * dt },
+      radius: 28,
+      walkable,
+      obstacles: getLevelEnvironmentLayout("chlum").obstacles
+    });
+    player.x = resolved.x;
+    player.y = resolved.y;
     const tractor = this.app.world.get(this.tractorEntity, "transform");
     const patrol = this.app.world.get(this.tractorEntity, "patrol");
     tractor[patrol.axis] += patrol.direction * patrol.speed * dt;

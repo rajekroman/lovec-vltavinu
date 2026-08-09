@@ -135,8 +135,8 @@ else {
   }
   chlumAssetCount = assetManifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum").length;
   nesmenAssetCount = assetManifest.filter(entry => entry.preload === "level:nesmen").length;
-  if (chlumAssetCount !== 11) fail(`Chlum/common preload musí obsahovat 11 assetů; nalezeno: ${chlumAssetCount}.`);
-  if (nesmenAssetCount !== 7) fail(`Nesměň preload musí obsahovat 7 assetů; nalezeno: ${nesmenAssetCount}.`);
+  if (chlumAssetCount !== 12) fail(`Chlum/common preload musí obsahovat 12 assetů; nalezeno: ${chlumAssetCount}.`);
+  if (nesmenAssetCount !== 8) fail(`Nesměň preload musí obsahovat 8 assetů; nalezeno: ${nesmenAssetCount}.`);
 }
 
 const visibleVersion = html.match(/\bv(\d+)\.(\d+)\b/)?.slice(1).join(".");

@@ -5,10 +5,11 @@ import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createObstacleComponents, getLevelEnvironmentLayout, resolveCircleMovement } from "../data/levelLayout.js";
+import { createAuthoredEnvironment } from "./LevelEnvironment.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export class SlaviaScene {
   constructor(options) {
@@ -109,6 +110,7 @@ export class SlaviaScene {
       this.entityByExternalId.set(definition.id, entity);
       this.externalIdByEntity.set(entity, definition.id);
     }
+    for (const obstacle of getLevelEnvironmentLayout("slavia").obstacles) this.app.world.createEntity(createObstacleComponents(obstacle));
     this.playerEntity = this.entityByExternalId.get("player");
     if (!Number.isInteger(this.playerEntity)) throw new Error("Slavia player entity is missing.");
   }
@@ -117,15 +119,14 @@ export class SlaviaScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "slavia-vertical-slice";
-    const environmentTexture = this.texture("terrain-slavia-malse-exterior-v1");
-    environmentTexture.repeat.set(1, 0.917);
-    environmentTexture.offset.set(0, 0.0415);
+    const environmentTexture = this.texture("terrain-slavia-green-wave-v1");
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
       new THREE.MeshBasicMaterial({ map: environmentTexture })
     );
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
     root.add(ground, new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55));
+    root.add(createAuthoredEnvironment(THREE, getLevelEnvironmentLayout("slavia").props));
 
     const buildingEntity = this.entityByExternalId.get("kd-slavia");
     const building = this.modelFactory.clone(this.model("model-slavia-kd-building"), {
@@ -134,9 +135,6 @@ export class SlaviaScene {
       scale: 104,
       z: 2
     });
-    // The environment plate already contains the detailed, correctly scaled facade.
-    // Keep the canonical model bound to the destination entity without covering it.
-    building.visible = false;
     this.renderer.bindEntity(buildingEntity, building, "props");
 
     const playerTexture = this.texture("player-hunter-walk");
@@ -203,8 +201,15 @@ export class SlaviaScene {
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = player?.speed ?? 220;
     const walkable = this.level.walkable ?? this.level.bounds;
-    transform.x = clamp(transform.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    transform.y = clamp(transform.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
+    const resolved = resolveCircleMovement({
+      position: transform,
+      movement: { x: (move.x ?? 0) * speed * dt, y: (move.y ?? 0) * speed * dt },
+      radius: 28,
+      walkable,
+      obstacles: getLevelEnvironmentLayout("slavia").obstacles
+    });
+    transform.x = resolved.x;
+    transform.y = resolved.y;
     this.setCameraToPlayer();
   }
 

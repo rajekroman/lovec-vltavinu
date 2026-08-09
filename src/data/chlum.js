@@ -35,7 +35,7 @@ const entities = [
         direction: "down",
         directionFrames: { down: [0, 1, 2, 3], left: [4, 5, 6, 7], right: [8, 9, 10, 11], up: [12, 13, 14, 15] }
       },
-      collider: { shape: "circle", radius: 18, layer: "player", mask: ["hazard"] },
+      collider: { shape: "circle", radius: 18, layer: "player", mask: ["hazard", "obstacle"] },
       player: { speed: 220 }
     }
   },

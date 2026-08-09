@@ -20,6 +20,7 @@ const expectedAssets = Object.freeze([
   "finding-vltavin-besednice-hedgehog",
   "terrain-besednice-quarry",
   "terrain-besednice-clay-quarry-v1",
+  "terrain-besednice-green-wave-v1",
   "model-besednice-trace-marker",
   "model-besednice-hedgehog-marker",
   "model-besednice-rock"

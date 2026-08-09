@@ -6,11 +6,12 @@ import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createObstacleComponents, getLevelEnvironmentLayout, resolveCircleMovement } from "../data/levelLayout.js";
+import { createAuthoredEnvironment } from "./LevelEnvironment.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const REFERENCE_CLEARING = Object.freeze({ width: 1800, height: 1200, cameraZoom: 0.75 });
 const cloneData = value => JSON.parse(JSON.stringify(value));
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export class NesmenScene {
   constructor(options) {
@@ -136,6 +137,7 @@ export class NesmenScene {
       this.entityByExternalId.set(definition.id, entity);
       this.externalIdByEntity.set(entity, definition.id);
     }
+    for (const obstacle of getLevelEnvironmentLayout("nesmen").obstacles) this.app.world.createEntity(createObstacleComponents(obstacle));
     this.playerEntity = this.entityByExternalId.get("player");
     this.foresterEntity = this.entityByExternalId.get("forester");
     this.profileEntities = NESMEN_PROFILE_IDS.map(id => this.entityByExternalId.get(id));
@@ -147,7 +149,7 @@ export class NesmenScene {
     const root = new THREE.Group();
     root.name = "nesmen-vertical-slice";
     const [environmentTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
-      this.texture("terrain-nesmen-reference-clearing-v2"),
+      this.texture("terrain-nesmen-green-wave-v1"),
       this.texture("terrain-nesmen-sand-profile"),
       this.texture("player-hunter-walk"),
       this.texture("npc-forester-jan")
@@ -165,6 +167,7 @@ export class NesmenScene {
     const sun = new THREE.DirectionalLight(0xffefc5, 1.9);
     sun.position.set(-220, 340, 520);
     root.add(ambient, sun);
+    root.add(createAuthoredEnvironment(THREE, getLevelEnvironmentLayout("nesmen").props));
 
     this.visualRoot = root;
     this.renderer.add(root, "ground");
@@ -237,8 +240,15 @@ export class NesmenScene {
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
     const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
+    const resolved = resolveCircleMovement({
+      position: player,
+      movement: { x: (move.x ?? 0) * speed * dt, y: (move.y ?? 0) * speed * dt },
+      radius: 28,
+      walkable,
+      obstacles: getLevelEnvironmentLayout("nesmen").obstacles
+    });
+    player.x = resolved.x;
+    player.y = resolved.y;
     this.setCameraToPlayer();
   }
 
