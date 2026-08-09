@@ -21,6 +21,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     super(options);
     ensureV7Theme();
     this.foregroundRoot = null;
+    this.farmerInteractionRing = null;
     this.visualMode = "uninitialized";
   }
 
@@ -64,20 +65,19 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
-    const player = this.renderer.createSprite(playerTexture, {
+    const actorSpriteOptions = {
       width: 86,
       height: 116,
       z: 12,
       anchorX: 0.5,
-      anchorY: 0.08,
+      anchorY: 0.08
+    };
+    const player = this.renderer.createSprite(playerTexture, {
+      ...actorSpriteOptions,
       assetId: "player-hunter-walk"
     });
     const farmer = this.renderer.createSprite(farmerTexture, {
-      width: 84,
-      height: 114,
-      z: 12,
-      anchorX: 0.5,
-      anchorY: 0.08,
+      ...actorSpriteOptions,
       assetId: "npc-farmer-vaclav"
     });
     this.renderer.bindEntity(this.playerEntity, player, "actors");
@@ -99,6 +99,23 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       scale: 42,
       z: 8
     });
+
+    const farmerTransform = this.app.world.get(this.farmerEntity, "transform");
+    const interactionRing = new THREE.Mesh(
+      new THREE.RingGeometry(45, 52, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0x9af2ad,
+        transparent: true,
+        opacity: 0.82,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide
+      })
+    );
+    interactionRing.name = "chlum-v7-farmer-interaction-ring";
+    interactionRing.position.set(farmerTransform.x, farmerTransform.y - 7, 4);
+    this.farmerInteractionRing = interactionRing;
+    this.renderer.add(interactionRing, "props");
 
     // Foreground occlusion is a dedicated render layer. These elements can cover
     // the lower part of actors and create depth without affecting collisions.
@@ -126,7 +143,19 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.add(foreground, "foreground");
   }
 
+  updateHud() {
+    super.updateHud();
+    if (!this.farmerInteractionRing) return;
+    const farmerInteraction = this.app.world.get(this.farmerEntity, "interaction");
+    this.farmerInteractionRing.visible = this.session.state.phase === "playing" && farmerInteraction?.enabled === true;
+  }
+
   destroyVisualWorld() {
+    if (this.farmerInteractionRing) {
+      this.renderer.remove(this.farmerInteractionRing);
+      this.renderer.disposeObject(this.farmerInteractionRing);
+      this.farmerInteractionRing = null;
+    }
     if (this.foregroundRoot) {
       this.renderer.remove(this.foregroundRoot);
       this.renderer.disposeObject(this.foregroundRoot);
@@ -141,7 +170,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       ...snapshot,
       runtime: {
         ...snapshot.runtime,
-        visualMode: this.visualMode
+        visualMode: this.visualMode,
+        farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true
       }
     };
   }
