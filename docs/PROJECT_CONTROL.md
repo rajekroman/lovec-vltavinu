@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#170 ACTIVE** | vede pouze schválený rozsah #170 a jeho integrační evidence |
+| A0 koordinace | **#172 ACTIVE** | vede pouze schválený rozsah #172 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#170 ACTIVE** | nahradit interní štítek hráčským označením |
+| A4 UI/mobil | **#172 ACTIVE** | situační doporučení ve stávajících varováních hrozeb |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #170 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #172 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -268,13 +268,23 @@ Stav: **COMPLETED / MERGED**, issue #168 a PR #169.
 
 ### #170 — Nahradit technický štítek na titulní obrazovce
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální distribuční UI polish balík.
+Stav: **COMPLETED / MERGED**, issue #170 a PR #171.
 
 - Base: `main@1cebeb0`; pracovní větev: `agent/player-facing-title-version`.
 - Povolený rozsah: statický a runtime text titulní obrazovky, kontraktový test a tento řídicí záznam.
 - Štítek zůstane na verzi `v6.0`, ale interní výraz `Modular Bootstrap` nahradí hráčské označení čtyř kanonických lokalit.
 - Nejsou povoleny změny release verze, layoutu, gameplay, dat, eventů, save systému, inventáře, rendereru ani assetů.
 - Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
+
+### #172 — Doplnit situační doporučení do varování hrozeb
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální obsahový feedback balík.
+
+- Base: `main@01abfc1`; pracovní větev: `agent/danger-guidance`.
+- Povolený rozsah: existující hlášky hrozeb tří scén, kontraktový test a tento řídicí záznam.
+- Chlum navede k obejití traktoru; Besednice a Slavia navádějí k zastavení osoby odnášející nález. Prahy a podmínky zobrazení hlášek se nemění.
+- Nejsou povoleny změny DangerSystemu, BossSystemu, tras, kolizí, dosahů, objective pravidel, eventů, save systému, inventáře ani rendereru.
+- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke; zpráva zůstává čitelná v portrait i landscape.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

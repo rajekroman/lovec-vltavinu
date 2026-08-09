@@ -414,7 +414,7 @@ export class ChlumScene {
       objectiveProgress: objective.progress,
       findings: this.session.state.findings.length,
       danger,
-      dangerMessage: danger >= 0.75 ? "TRAKTOR JE BLÍZKO" : "",
+      dangerMessage: danger >= 0.75 ? "TRAKTOR JE BLÍZKO · OBEJDI HO" : "",
       hint,
       actionReady: Boolean(available && !this.modal && this.session.state.phase === "playing"),
       actionLabel: available?.interaction.label ?? "AKCE",
