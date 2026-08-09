@@ -108,10 +108,19 @@ class FakeDocument {
 }
 
 class FakeEvents {
+  constructor() {
+    this.handlers = new Map();
+  }
+
   on(type, handler) {
-    this.type = type;
-    this.handler = handler;
-    return () => { this.handler = null; };
+    const handlers = this.handlers.get(type) ?? new Set();
+    handlers.add(handler);
+    this.handlers.set(type, handlers);
+    return () => handlers.delete(handler);
+  }
+
+  emit(type, payload) {
+    for (const handler of this.handlers.get(type) ?? []) handler(payload);
   }
 }
 
@@ -119,7 +128,7 @@ const createUiDocument = () => {
   const document = new FakeDocument();
   for (const id of [
     "app", "hud", "controls", "missionNumber", "placeLabel", "objectiveLabel", "objectiveProgress", "bagValue",
-    "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint",
+    "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint", "toast",
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo",
     "digHits", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
@@ -158,8 +167,7 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
     actionIcon: "!"
   };
 
-  assert.equal(events.type, "hud:model:changed");
-  events.handler({ revision: 7, model });
+  events.emit("hud:model:changed", { revision: 7, model });
 
   assert.equal(document.getElementById("placeLabel").textContent, "CHLUM");
   assert.equal(document.getElementById("objectiveLabel").textContent, "Promluv s Václavem");
@@ -184,10 +192,10 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
   assert.equal(document.getElementById("actionIcon").textContent, "!");
 
   document.getElementById("objectiveLabel").textContent = "sentinel";
-  events.handler({ revision: 7, model });
+  events.emit("hud:model:changed", { revision: 7, model });
   assert.equal(document.getElementById("objectiveLabel").textContent, "sentinel");
 
-  events.handler({
+  events.emit("hud:model:changed", {
     revision: 1,
     model: {
       missionNumber: 2,
@@ -204,6 +212,13 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
   assert.equal(document.getElementById("heatPill").classList.contains("detected"), false);
   assert.equal(document.getElementById("dangerBanner").getAttribute("aria-hidden"), "true");
   assert.equal(document.getElementById("actionButton").getAttribute("aria-disabled"), "true");
+
+  events.emit("finding:collected", { score: 90 });
+  assert.equal(document.getElementById("toast").textContent, "NÁLEZ ZAPSÁN · +90 BODŮ");
+  assert.equal(document.getElementById("toast").classList.contains("show"), true);
+  assert.equal(document.getElementById("toast").getAttribute("role"), "status");
+  events.emit("objective:complete", {});
+  assert.equal(document.getElementById("toast").textContent, "ÚKOL SPLNĚN");
 
   hud.dispose();
   assert.equal(document.getElementById("app").classList.contains("danger-state"), false);
