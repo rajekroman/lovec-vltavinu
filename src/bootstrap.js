@@ -11,7 +11,7 @@ import { ScreenController } from "./ui/ScreenController.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
-import { ChlumNesmenBridgeScene } from "./scenes/ChlumNesmenBridgeScene.js";
+import { ChlumV7Scene } from "./scenes/ChlumV7Scene.js";
 import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
 import { BesedniceScene } from "./scenes/BesedniceScene.js";
 import { SlaviaScene } from "./scenes/SlaviaScene.js";
@@ -79,7 +79,7 @@ app.assets.register("spritesheet", loadTexture, disposeTexture);
 app.assets.register("gltf", entry => gltfLoader.load(entry), disposeObject3D);
 app.assets.register("audio", entry => audio.load(entry));
 
-const chlum = new ChlumNesmenBridgeScene({
+const chlum = new ChlumV7Scene({
   app,
   events,
   renderer,
