@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#172 ACTIVE** | vede pouze schválený rozsah #172 a jeho integrační evidence |
+| A0 koordinace | **#174 ACTIVE** | vede pouze schválený rozsah #174 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#172 ACTIVE** | situační doporučení ve stávajících varováních hrozeb |
+| A4 UI/mobil | **#174 ACTIVE** | dialogová sémantika stávající nápovědy |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #172 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #174 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -278,13 +278,23 @@ Stav: **COMPLETED / MERGED**, issue #170 a PR #171.
 
 ### #172 — Doplnit situační doporučení do varování hrozeb
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální obsahový feedback balík.
+Stav: **COMPLETED / MERGED**, issue #172 a PR #173.
 
 - Base: `main@01abfc1`; pracovní větev: `agent/danger-guidance`.
 - Povolený rozsah: existující hlášky hrozeb tří scén, kontraktový test a tento řídicí záznam.
 - Chlum navede k obejití traktoru; Besednice a Slavia navádějí k zastavení osoby odnášející nález. Prahy a podmínky zobrazení hlášek se nemění.
 - Nejsou povoleny změny DangerSystemu, BossSystemu, tras, kolizí, dosahů, objective pravidel, eventů, save systému, inventáře ani rendereru.
 - Před sloučením: validátor, kompletní unit suite a relevantní browser smoke; zpráva zůstává čitelná v portrait i landscape.
+
+### #174 — Doplnit dialogovou sémantiku nápovědy
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální přístupnostní UI balík.
+
+- Base: `main@93b5b3a`; pracovní větev: `agent/help-modal-semantics`.
+- Povolený rozsah: stávající markup nápovědy, kontraktový test a tento řídicí záznam.
+- Nápověda získá `role="dialog"`, `aria-modal="true"`, vlastní název a popis z existujícího obsahu; vzhled ani ovládání se nemění.
+- Nejsou povoleny změny ScreenControlleru, navigace, inputu, gameplay, eventů, save systému, inventáře, rendereru ani assetů.
+- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
