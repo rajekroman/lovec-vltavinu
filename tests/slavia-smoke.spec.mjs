@@ -372,11 +372,12 @@ async function enterLevel(page, input, buttonText, kicker, scene) {
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe(scene);
 }
 
-async function completeNesmen(page, input) {
+async function completeNesmen(page, input, testInfo) {
   await moveTo(page, input, 280, 240, "permission");
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("JAN");
   await input.activateUi(page.locator("#dialogButton"));
+  await captureEvidence(page, testInfo, "nesmen-profile-clearings");
 
   const profiles = [{ x: 610, y: 430 }, { x: 930, y: 690 }, { x: 1210, y: 360 }];
   let totalHits = 0;
@@ -486,7 +487,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await startChlum(page, input);
   await completeChlum(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
-  await completeNesmen(page, input);
+  await completeNesmen(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
   await completeBesednice(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
