@@ -151,20 +151,20 @@ Stav: **COMPLETED**.
 
 Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen žádný otevřený produktový blocker ani schválený nový feature balík. A1–A7 proto nebyli znovu aktivováni bez konkrétního cíle.
 
-## 7. Stabilní stav agentů A0–A7
+## 7. Stav pracovních proudů po v6.0.0
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **INTAKE / STANDBY** | nový dispatch pouze po konkrétním zadání, reprodukovatelném incidentu nebo schváleném feature cíli |
+| A0 koordinace | **#154 ACTIVE** | vede pouze schválený rozsah #154 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
-| A2 gameplay/data | **STANDBY** | žádná větev/commit bez nového A0 issue s reprodukovatelným gameplay/data problémem nebo schváleným cílem |
-| A3 grafika/assety | **STANDBY** | žádná změna bez nového A0 issue |
+| A2 gameplay/data | **#154 ACTIVE (omezeně)** | pouze mapování nových environment texture ID do kanonických scén |
+| A3 grafika/assety | **#154 ACTIVE** | nové textury a manifest v rozsahu #154 |
 | A4 UI/mobil | **STANDBY** | žádná změna bez nového A0 issue |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Žádný z agentů nemá v terminálním stavu aktivní implementační větev nebo pracovní balík.
+Mimo výslovně povolený rozsah #154 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -180,7 +180,21 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 ## 9. Otevřená fronta
 
-**Žádná.**
+### #154 — Produkční redesign prostředí Nesměň, Besednice a Malše/KD Slavia
+
+Stav issue určuje GitHub; tento záznam vymezuje jediný aktivní, vlastníkem výslovně schválený feature balík po `v6.0.0`.
+
+- Base: `main@3c59933`; pracovní větev: `agent/environment-level-redesign`.
+- Povolený rozsah: levelové scény, asset manifest, distribuční cache, nové optimalizované textury prostředí, jejich kontraktové testy a tento řídicí záznam.
+- Nesměň: zachovat širokou hrací mýtinu a pískové hromady po kopání vltavínů; obvodové smrky jsou výrazně vyšší než hráč/NPC.
+- Besednice: samostatný široký písčitý lom s jílovými vrstvami.
+- Malše/KD Slavia: velká hratelná plocha u řeky; proporčně vysoká budova KD Slavia je na okraji levelu. Referenční architektonický motiv je neorenesanční fasáda KD Slavia v Českých Budějovicích.
+- Kontrakty beze změny: jeden Three.js renderer, ortografická kamera, žádný save systém, inventář ani druhý renderer. Service worker zůstává pouze distribuční cache.
+- Assetová povinnost: každý nový PNG má manifestové ID, relativní URL, rozměr, byte budget, SHA-256 a `disposeOwner`; musí být zahrnut v cache pro offline distribuci.
+- Povinné gate před sloučením: `tools/validate.mjs`, kompletní unit suite, Playwright desktop/mobile smoke a vizuální kontrola poměru stromů a budovy vůči hráči.
+- Aktuální evidence: validátor `0 chyb / 0 varování` a unit suite `167/167 PASS`. Mobile Playwright portrait skončil v headless timeoutu po dosažení Slavia fáze; vlastník dne 9. 8. 2026 výslovně schválil pokračování bez této automatické gate. Tento záznam je **owner-approved výjimka**, nikoli zpětné tvrzení, že selhaný běh byl automatický PASS.
+
+Distribuční připravenost tohoto balíku znamená zelené gate a sloučený PR do `main`; nevytváří ani nepřeznačuje historický tag `v6.0.0`. Vydání nového tagu nebo GitHub Release vyžaduje samostatné release issue, explicitní candidate SHA a vlastní QA/release gate podle §8.8.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
@@ -191,7 +205,7 @@ Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
 Bez takového vstupu A0 nevytváří umělé issue a A1–A7 zůstávají ve výše uvedeném stabilním stavu.
 
-## 10. Definition of Done terminálního post-release governance stavu
+## 10. Historická Definition of Done terminálního post-release governance stavu
 
 Terminální stav je přijat pouze pokud:
 

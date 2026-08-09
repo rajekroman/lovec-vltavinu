@@ -83,4 +83,4 @@ Po nasazení je nutné ověřit veřejnou URL na desktopu a iPhonu v portrait i 
 
 ## Release a certifikace
 
-Kanonický dokončovací balík je veden v issue #100. Formální QA evidence je vedena v issue #98. Release lze označit jako plně certifikovaný pouze po warm-upu a dvou bezprostředně následujících kompletně zelených bězích stejného nezměněného SHA.
+Historicky certifikovaný baseline je `v6.0.0`; kanonický dokončovací balík je veden v issue #100 a formální QA evidence v issue #98. Aktuální post-release změny a jejich distribuční bránu řídí `docs/PROJECT_CONTROL.md` a příslušný feature issue (nyní #154). Nový tag ani GitHub Release se nevytváří automaticky sloučením feature PR: vyžaduje samostatné release issue, explicitní candidate SHA a úplně zelenou QA matici stejného nezměněného SHA.

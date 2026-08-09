@@ -134,15 +134,16 @@ export class BesedniceScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
-    const [groundTexture, playerTexture, karelTexture] = await Promise.all([
-      this.texture("terrain-besednice-quarry"),
+    const [environmentTexture, playerTexture, karelTexture] = await Promise.all([
+      this.texture("terrain-besednice-clay-quarry-v1"),
       this.texture("player-hunter-walk"),
       this.texture("npc-rival-karel")
     ]);
-    groundTexture.repeat.set(7.5, 5.5);
+    environmentTexture.repeat.set(0.874, 1);
+    environmentTexture.offset.set(0.063, 0);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
-      new THREE.MeshBasicMaterial({ map: groundTexture, color: 0x8f7454 })
+      new THREE.MeshBasicMaterial({ map: environmentTexture })
     );
     ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
     root.add(ground);
