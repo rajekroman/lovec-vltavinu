@@ -212,6 +212,10 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
   assert.equal(document.getElementById("heatPill").classList.contains("detected"), false);
   assert.equal(document.getElementById("dangerBanner").getAttribute("aria-hidden"), "true");
   assert.equal(document.getElementById("actionButton").getAttribute("aria-disabled"), "true");
+  assert.equal(document.getElementById("actionButton").classList.contains("unavailable"), true);
+  assert.equal(document.getElementById("actionButton").getAttribute("aria-label"), "Akce není dostupná; přibliž se k cíli.");
+  assert.equal(document.getElementById("actionIcon").textContent, "↗");
+  assert.equal(document.getElementById("actionText").textContent, "PŘIBLIŽ SE");
 
   events.emit("finding:collected", { score: 90 });
   assert.equal(document.getElementById("toast").textContent, "NÁLEZ ZAPSÁN · +90 BODŮ");
