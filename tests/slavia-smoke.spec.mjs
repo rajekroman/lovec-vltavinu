@@ -307,11 +307,12 @@ async function startChlum(page, input) {
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe("chlum");
 }
 
-async function completeChlum(page, input) {
+async function completeChlum(page, input, testInfo) {
   await moveTo(page, input, 560, 410, "permission");
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
+  await captureEvidence(page, testInfo, "chlum-furrows-overview");
 
   let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
@@ -320,6 +321,7 @@ async function completeChlum(page, input) {
     await waitForTractorLeftOf(page);
     await moveAxisTo(page, input, "y", 720);
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
+    await captureEvidence(page, testInfo, "chlum-tractor-marker");
     await performAction(page, input);
     opened = true;
     break;
@@ -450,7 +452,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   page.on("response", response => { if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`); });
 
   await startChlum(page, input);
-  await completeChlum(page, input);
+  await completeChlum(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
   await completeNesmen(page, input);
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
