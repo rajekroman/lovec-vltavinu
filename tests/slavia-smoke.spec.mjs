@@ -109,11 +109,11 @@ async function expectReleasedInput(page) {
   }).toEqual({ move: 0, action: false, pause: false });
 }
 
-async function captureEvidence(page, testInfo, name) {
+async function captureEvidence(page, testInfo, name, scale = "device") {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
   const path = `${directory}/${name}.png`;
-  await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device" });
+  await page.screenshot({ path, animations: "disabled", caret: "hide", scale });
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
 
@@ -312,7 +312,7 @@ async function completeChlum(page, input, testInfo) {
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
-  await captureEvidence(page, testInfo, "chlum-furrows-overview");
+  await captureEvidence(page, testInfo, "chlum-furrows-overview", "css");
 
   let opened = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
@@ -321,7 +321,7 @@ async function completeChlum(page, input, testInfo) {
     await waitForTractorLeftOf(page);
     await moveAxisTo(page, input, "y", 720);
     if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
-    await captureEvidence(page, testInfo, "chlum-tractor-marker");
+    await captureEvidence(page, testInfo, "chlum-tractor-marker", "css");
     await performAction(page, input);
     opened = true;
     break;
