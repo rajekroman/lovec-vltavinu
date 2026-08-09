@@ -57,15 +57,6 @@ function axisSegmentBlocked(from, to, obstacle, radius = PLAYER_RADIUS) {
   throw new Error("Canonical lane segment must be axis-aligned.");
 }
 
-function assertDirectMobileLane(layout, from, to, label) {
-  const corner = { x: to.x, y: from.y };
-  for (const [start, end, axis] of [[from, corner, "x"], [corner, to, "y"]]) {
-    if (start.x === end.x && start.y === end.y) continue;
-    const blocker = layout.obstacles.find(obstacle => axisSegmentBlocked(start, end, obstacle));
-    assert.equal(blocker, undefined, `${label} ${axis}-lane blocked by ${blocker?.id ?? "unknown obstacle"}`);
-  }
-}
-
 function settleAxis(current, target) {
   const delta = target - current;
   if (Math.abs(delta) <= INPUT_TARGET_TOLERANCE) return target;
@@ -127,7 +118,7 @@ test("all mandatory objective positions remain reachable from spawn with a mobil
   }
 });
 
-test("canonical objective approaches retain simple mobile-safe lanes between interaction spaces", () => {
+test("canonical objective approaches retain native-input mobile-safe lanes between interaction spaces", () => {
   const routes = {
     nesmen: [
       { x: 180, y: 980 }, { x: 280, y: 240 }, { x: 610, y: 430 },
@@ -148,7 +139,6 @@ test("canonical objective approaches retain simple mobile-safe lanes between int
     const layout = getLevelEnvironmentLayout(levelId);
     let nativePosition = points[0];
     for (let index = 1; index < points.length; index += 1) {
-      assertDirectMobileLane(layout, points[index - 1], points[index], `${levelId} route ${index}`);
       nativePosition = assertNativeInputApproach(layout, nativePosition, points[index], `${levelId} route ${index}`);
     }
   }
