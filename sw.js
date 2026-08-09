@@ -1,4 +1,4 @@
-const CACHE = "lovec-vltavinu-slavia-v6-0-environment";
+const CACHE = "lovec-vltavinu-slavia-v6-1-release";
 const CORE = [
   "./", "./index.html", "./style.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/AudioRegistry.js",

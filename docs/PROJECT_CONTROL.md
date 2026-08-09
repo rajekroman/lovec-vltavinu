@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#176 ACTIVE** | vede pouze schválený rozsah #176 a jeho integrační evidence |
+| A0 koordinace | **#178 ACTIVE** | vede pouze schválený rozsah #178 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
-| A3 grafika/assety | **#176 ACTIVE** | sjednocená realistická sprite sada NPC a manifest |
-| A4 UI/mobil | **#176 ACTIVE** | společná renderovaná výška postav v kanonických scénách |
+| A3 grafika/assety | **COMPLETED / STANDBY** | #176 je sloučený; bez další změny assetů |
+| A4 UI/mobil | **COMPLETED / STANDBY** | #176 je sloučený; bez další mobilní změny |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
-| A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
-| A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
+| A6 QA | **#178 ACTIVE** | finální validace candidate SHA a evidence výsledků |
+| A7 release | **#178 ACTIVE** | nový samostatný tag/release `v6.1.0` po QA evidenci |
 
-Mimo výslovně povolený rozsah #176 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #178 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -298,7 +298,7 @@ Stav: **COMPLETED / MERGED**, issue #174 a PR #175.
 
 ### #176 — Sjednotit detailní grafiku hráče a NPC
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální graficko-integrační balík.
+Stav: **COMPLETED / MERGED**, issue #176 a PR #177.
 
 - Base: `main@382f887`; pracovní větev: `agent/character-visual-refresh`.
 - Povolený rozsah: versionované NPC PNG, jejich manifestové URL a metadata, produkční render postav čtyř scén, kontraktové testy a tento řídicí záznam.
@@ -306,6 +306,16 @@ Stav issue určuje GitHub; tento záznam vymezuje aktuální graficko-integračn
 - Ve všech čtyřech scénách jsou hráč a NPC vykresleni rozměrem `82 × 108` se shodným anchorem `0.5 / 0.08`. Kolize, dosahy a pravidla hry se nemění.
 - Každý nový PNG má relativní URL, rozměr `256 × 384`, byte budget, SHA-256 a `disposeOwner` v manifestu; pět nových runtime URL je zahrnuto v distribuční cache service workeru.
 - Před sloučením: validátor, kompletní unit suite, asset integrity testy a relevantní desktop/mobile vizuální smoke.
+
+### #178 — Finální QA a release kandidát po grafickém sjednocení
+
+Stav issue určuje GitHub; tento záznam vymezuje finální QA/release balík `v6.1.0`.
+
+- Candidate base: `main@9f880db1e4d2698d6c671238cf6737a48bd6ba31`; pracovní větev: `agent/final-release-validation`.
+- Lokálně prošly: validátor `0 chyb / 0 varování`, syntaxe všech modulů, úplná unit sada a Playwright desktop, iPhone portrait i iPhone landscape. GitHub Pages deploy candidate SHA skončil `success`.
+- GitHub Actions run `31300903064` skončil `5/6 PASS`; portrait full-flow překročil 480 s při souběžném běhu tří WebGL projektů, bez assetové nebo runtime chyby. Release balík proto stabilizuje pouze počet Playwright workerů na jeden a zachovává plnou matici projektů.
+- Historický tag `v6.0.0` zůstává neměnný. Nový tag `v6.1.0` bude vytvořen pouze na merge SHA tohoto release PR spolu s GitHub Release a uvedenou transparentní výjimkou.
+- Release metadata pouze mění hráčský štítek na `v6.1`; nevzniká save systém, inventář, nový renderer ani gameplay změna.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

@@ -5,7 +5,9 @@ const iphone13 = devices["iPhone 13"];
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
-  workers: process.env.CI ? 3 : 1,
+  // WebGL full-flow projects saturate a shared GitHub runner when launched together.
+  // Keep the release matrix deterministic; all projects still run in the same job.
+  workers: 1,
   retries: 0,
   timeout: 30_000,
   expect: { timeout: 8_000 },

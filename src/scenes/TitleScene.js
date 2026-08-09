@@ -12,7 +12,7 @@ export class TitleScene {
     const { signal } = this.controller;
     this.helpOpen = false;
     this.screens.showTitle();
-    this.document.querySelector(".version").textContent = "v6.0 · Čtyři lokality";
+    this.document.querySelector(".version").textContent = "v6.1 · Čtyři lokality";
 
     this.document.getElementById("playButton").addEventListener("click", event => {
       event.preventDefault();
