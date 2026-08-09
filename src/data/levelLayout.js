@@ -69,11 +69,11 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
     props: [
       { kind: "embankment", x: 170, y: 240, width: 280, height: 95, obstacleId: "besednice-north-west-val" },
       { kind: "embankment", x: 590, y: 190, width: 280, height: 88, obstacleId: "besednice-north-val" },
-      { kind: "profileWall", x: 1510, y: 180, width: 90, height: 160, obstacleId: "besednice-hedgehog-wall" },
+      { kind: "profileWall", x: 1545, y: 180, width: 55, height: 160, obstacleId: "besednice-hedgehog-wall" },
       { kind: "rockCluster", x: 280, y: 600, width: 125, height: 120, obstacleId: "besednice-west-rocks" },
       { kind: "quarryPit", x: 560, y: 700, width: 220, height: 105, obstacleId: "besednice-mid-pit" },
       { kind: "quarryPit", x: 720, y: 1060, width: 260, height: 70, obstacleId: "besednice-south-pit" },
-      { kind: "embankment", x: 1250, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
+      { kind: "embankment", x: 1285, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
       { kind: "rockCluster", x: 1010, y: 480, width: 120, height: 100, obstacleId: "besednice-central-rocks" },
       { kind: "rock", x: 1380, y: 710, scale: 1.12, obstacleId: "besednice-east-rock" },
       { kind: "scrub", x: 170, y: 400, scale: 1.05 },
@@ -85,11 +85,11 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
     obstacles: [
       { id: "besednice-north-west-val", x: 170, y: 240, width: 280, height: 95 },
       { id: "besednice-north-val", x: 590, y: 190, width: 280, height: 88 },
-      { id: "besednice-hedgehog-wall", x: 1510, y: 180, width: 90, height: 160 },
+      { id: "besednice-hedgehog-wall", x: 1545, y: 180, width: 55, height: 160 },
       { id: "besednice-west-rocks", x: 280, y: 600, width: 125, height: 120 },
       { id: "besednice-mid-pit", x: 560, y: 700, width: 220, height: 105 },
       { id: "besednice-south-pit", x: 720, y: 1060, width: 260, height: 70 },
-      { id: "besednice-east-val", x: 1250, y: 620, width: 175, height: 110 },
+      { id: "besednice-east-val", x: 1285, y: 620, width: 175, height: 110 },
       { id: "besednice-central-rocks", x: 1010, y: 480, width: 120, height: 100 },
       { id: "besednice-east-rock", x: 1348, y: 678, width: 64, height: 64 }
     ]
