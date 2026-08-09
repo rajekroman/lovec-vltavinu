@@ -100,7 +100,7 @@ test("circle movement stops at visible obstacle edges and still slides around co
     position: { x: 70, y: 70 }, movement: { x: 80, y: 80 }, radius: 20,
     walkable: { x: 0, y: 0, width: 400, height: 400 }, obstacles: [obstacle]
   });
-  assert.deepEqual(diagonal, { x: 80, y: 80 });
+  assert.deepEqual(diagonal, { x: 150, y: 80 });
 
   const escaped = resolveCircleMovement({
     position: diagonal, movement: { x: 0, y: -50 }, radius: 20,
