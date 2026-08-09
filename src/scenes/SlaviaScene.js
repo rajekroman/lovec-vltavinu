@@ -414,7 +414,7 @@ export class SlaviaScene {
       objectiveProgress: this.objectiveProgress(state) / 7,
       findings: this.session.state.findings.length,
       danger: state.phase === "thief-recovery" ? 0.7 : 0,
-      dangerMessage: state.phase === "thief-recovery" ? "Franta odnáší nejlepší nález" : "",
+      dangerMessage: state.phase === "thief-recovery" ? "FRANTA ODNÁŠÍ NÁLEZ · ZASTAV HO" : "",
       hint: this.availableInteraction?.interaction.label ?? labels[state.phase],
       actionReady: Boolean(this.availableInteraction && !this.modal && this.session.state.phase === "playing"),
       actionLabel: this.availableInteraction?.interaction.label ?? "AKCE",

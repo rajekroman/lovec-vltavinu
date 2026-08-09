@@ -481,7 +481,7 @@ export class BesedniceScene {
       objectiveProgress: objective.progress,
       findings: this.session.state.findings.length,
       danger: bossActive ? 0.65 : 0,
-      dangerMessage: bossActive ? "Karel má ježek" : "",
+      dangerMessage: bossActive ? "KAREL MÁ JEŽEK · ZASTAV HO" : "",
       hint,
       actionReady: Boolean(available && !this.modal && this.session.state.phase === "playing"),
       actionLabel: available?.interaction.label ?? "AKCE",
