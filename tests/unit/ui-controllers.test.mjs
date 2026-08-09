@@ -131,7 +131,7 @@ const createUiDocument = () => {
     "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint", "toast",
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo", "pausePlace", "pauseObjective", "pauseProgress",
-    "digHits", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
+    "digHits", "digHitCount", "digHitSymbols", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
     "resultScore", "resultStats"
   ]) document.add(id);
 
@@ -252,7 +252,9 @@ test("ScreenController exposes one-button dialog and exact-three dig overlay wit
     onAction() {}
   });
   assert.equal(screens.activeId, "digScreen");
-  assert.equal(document.getElementById("digHits").textContent, "◆ ◆ ◇");
+  assert.equal(document.getElementById("digHitCount").textContent, "ZÁSAHY 2/3");
+  assert.equal(document.getElementById("digHitSymbols").textContent, "◆ ◆ ◇");
+  assert.match(document.getElementById("digHits").getAttribute("aria-label"), /ZÁSAHY 2\/3/);
   assert.equal(document.getElementById("digMarker").style.left, "calc(50% - 5px)");
   assert.equal(document.getElementById("sweetZone").style.left, "40%");
   assert.equal(document.getElementById("sweetZone").style.width, "19.999999999999996%");

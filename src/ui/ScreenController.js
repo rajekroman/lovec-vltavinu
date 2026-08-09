@@ -93,8 +93,12 @@ export class ScreenController {
     if (sweetMin >= sweetMax) throw new RangeError("Dig sweet spot must satisfy sweetMin < sweetMax.");
 
     this.element("digInfo").textContent = String(options.info ?? "Klepni, když je ukazatel v zeleném poli.");
-    this.element("digHits").textContent = Array.from({ length: DIG_REQUIRED_HITS }, (_, index) => index < hits ? "◆" : "◇")
-      .join(" ");
+    const symbols = Array.from({ length: DIG_REQUIRED_HITS }, (_, index) => index < hits ? "◆" : "◇").join(" ");
+    const hitSummary = `ZÁSAHY ${hits}/${DIG_REQUIRED_HITS}`;
+    const hitsElement = this.element("digHits");
+    this.element("digHitCount").textContent = hitSummary;
+    this.element("digHitSymbols").textContent = symbols;
+    hitsElement.setAttribute("aria-label", `${hitSummary}; ${hits === DIG_REQUIRED_HITS ? "kopání dokončeno" : "drž rytmus pro další zásah"}`);
     this.element("digMarker").style.left = `calc(${marker * 100}% - 5px)`;
     const sweetZone = this.element("sweetZone");
     sweetZone.style.left = `${sweetMin * 100}%`;

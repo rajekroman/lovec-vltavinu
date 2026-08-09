@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#160 ACTIVE** | vede pouze schválený rozsah #160 a jeho integrační evidence |
+| A0 koordinace | **#162 ACTIVE** | vede pouze schválený rozsah #162 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
 | A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
 | A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
-| A4 UI/mobil | **#160 ACTIVE** | kontextový mission recap v existující pauze |
+| A4 UI/mobil | **#162 ACTIVE** | čitelný průběh tříúderového kopání ve stávajícím UI |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #160 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #162 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -218,13 +218,23 @@ Stav: **COMPLETED / MERGED**, issue #158 a PR #159.
 
 ### #160 — Kontextový přehled úkolu v pauze
 
-Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený pause-recap balík.
+Stav: **COMPLETED / MERGED**, issue #160 a PR #161.
 
 - Base: `main@e3c335a0b039709c4041940899d6202ee5acd7a6`; pracovní větev: `agent/pause-mission-recap`.
 - Povolený rozsah: stávající pauzový panel, UI model scén, kontraktové testy a tento řídicí záznam.
 - Pauza ukáže lokalitu, aktuální objective a normalizovaný procentní postup z existujícího snapshotu; návrat a menu zůstávají beze změny.
 - Nejsou povoleny nové akce, změny objektivů, event payloadů, save systému, inventáře ani rendereru.
 - Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke.
+
+### #162 — Čitelný průběh rytmického kopání
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený UI balík pro kopání.
+
+- Base: `main@ff83475551a55457fbeb39a0fdf07adda0585a0e`; pracovní větev: `agent/dig-progress-clarity`.
+- Povolený rozsah: existující kopací UI, jeho přístupnost, kontraktové testy a tento řídicí záznam.
+- Rozhraní ukáže přesný počet zásahů `0/3` až `3/3` vedle dosavadních drahokamových symbolů; živý popis sdělí hráči další krok bez nové interakce.
+- Doslovné pravidlo tří úspěšných rytmických zásahů se nemění. Nejsou povoleny nové akce, objective pravidla, event payloady, save systém, inventář ani druhý renderer.
+- Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; text nesmí zakrývat ovládání v portrait ani landscape.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
