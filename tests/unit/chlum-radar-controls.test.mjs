@@ -23,6 +23,7 @@ test("Chlum uses action-driven radar and never opens the digging minigame", () =
 test("the full-flow test reveals Chlum by radar and keeps rhythmic digging in Nesměň", () => {
   assert.match(smoke, /toHaveAttribute\("aria-label", "RADAR"\)/);
   assert.match(smoke, /revealed = activeRuntime\(await runtimeSnapshot\(page\)\)\?\.searched === true/);
+  assert.match(smoke, /captureEvidence\(page, testInfo, "chlum-radar-finding"\)/);
   assert.match(smoke, /async function completeNesmen/);
   assert.match(smoke, /for \(let hit = 1; hit <= 3; hit\+\+\) await successfulDigHit/);
 });
