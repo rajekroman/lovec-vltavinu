@@ -46,7 +46,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "tree", x: 466, y: 540, scale: 1.45, obstacleId: "nesmen-landmark-tree" },
       { kind: "root", x: 520, y: 790, width: 145, height: 30, rotation: -0.16, obstacleId: "nesmen-root" },
       { kind: "stump", x: 455, y: 735, scale: 0.88, obstacleId: "nesmen-stump-west" },
-      { kind: "stump", x: 1130, y: 530, scale: 0.94, obstacleId: "nesmen-stump-east" },
+      { kind: "stump", x: 1050, y: 530, scale: 0.94, obstacleId: "nesmen-stump-east" },
       { kind: "sandMound", x: 610, y: 430, scale: 1.0 },
       { kind: "sandMound", x: 930, y: 690, scale: 1.0 },
       { kind: "sandMound", x: 1210, y: 360, scale: 1.0 },
@@ -62,7 +62,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { id: "nesmen-landmark-tree", x: 430, y: 504, width: 72, height: 72 },
       { id: "nesmen-root", x: 520, y: 790, width: 145, height: 30 },
       { id: "nesmen-stump-west", x: 433, y: 713, width: 44, height: 44 },
-      { id: "nesmen-stump-east", x: 1107, y: 507, width: 46, height: 46 }
+      { id: "nesmen-stump-east", x: 1027, y: 507, width: 46, height: 46 }
     ]
   },
   besednice: {
@@ -73,7 +73,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { kind: "rockCluster", x: 280, y: 600, width: 125, height: 120, obstacleId: "besednice-west-rocks" },
       { kind: "quarryPit", x: 560, y: 700, width: 220, height: 105, obstacleId: "besednice-mid-pit" },
       { kind: "quarryPit", x: 720, y: 1060, width: 260, height: 70, obstacleId: "besednice-south-pit" },
-      { kind: "embankment", x: 1285, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
+      { kind: "embankment", x: 1250, y: 620, width: 175, height: 110, obstacleId: "besednice-east-val" },
       { kind: "rockCluster", x: 1010, y: 480, width: 120, height: 100, obstacleId: "besednice-central-rocks" },
       { kind: "rock", x: 1380, y: 710, scale: 1.12, obstacleId: "besednice-east-rock" },
       { kind: "scrub", x: 170, y: 400, scale: 1.05 },
@@ -89,7 +89,7 @@ export const LEVEL_ENVIRONMENT_LAYOUTS = deepFreeze({
       { id: "besednice-west-rocks", x: 280, y: 600, width: 125, height: 120 },
       { id: "besednice-mid-pit", x: 560, y: 700, width: 220, height: 105 },
       { id: "besednice-south-pit", x: 720, y: 1060, width: 260, height: 70 },
-      { id: "besednice-east-val", x: 1285, y: 620, width: 175, height: 110 },
+      { id: "besednice-east-val", x: 1250, y: 620, width: 175, height: 110 },
       { id: "besednice-central-rocks", x: 1010, y: 480, width: 120, height: 100 },
       { id: "besednice-east-rock", x: 1348, y: 678, width: 64, height: 64 }
     ]
