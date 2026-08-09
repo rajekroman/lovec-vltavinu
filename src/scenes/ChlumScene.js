@@ -410,6 +410,7 @@ export class ChlumScene {
       missionNumber: this.level.order + 1,
       placeLabel: this.level.name,
       objective: objective.text,
+      objectiveProgress: objective.progress,
       findings: this.session.state.findings.length,
       danger,
       dangerMessage: danger >= 0.75 ? "TRAKTOR JE BLÍZKO" : "",

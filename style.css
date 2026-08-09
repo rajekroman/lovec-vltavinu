@@ -58,7 +58,7 @@ html,body{background:#080d0a;color:var(--ink)}
 .hud-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px}
 .mission-panel{display:flex;align-items:stretch;min-width:0;height:48px;max-width:min(68vw,470px);background:linear-gradient(150deg,rgba(17,24,20,.92),rgba(6,11,8,.88));border:1px solid rgba(225,231,221,.12);border-left:3px solid #70947a;border-radius:10px;overflow:hidden;box-shadow:0 9px 26px rgba(0,0,0,.3)}
 .mission-index{display:grid;place-items:center;width:42px;flex:0 0 42px;background:rgba(126,164,135,.13);font-size:18px;font-weight:900;color:#c8d6c9;border-right:1px solid rgba(255,255,255,.07)}
-.mission-copy{min-width:0;padding:7px 11px}.mission-copy small{display:block;color:#9eb8a4;font-size:8px;letter-spacing:.19em;font-weight:900}.mission-copy strong{display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:760}
+.mission-copy{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;min-width:0;padding:7px 11px}.mission-copy small{display:block;color:#9eb8a4;font-size:8px;letter-spacing:.19em;font-weight:900}.mission-copy strong{grid-column:1/-1;display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:760}.objective-progress{align-self:start;color:#b9d3bf;font-size:7px;letter-spacing:.13em;font-weight:900;white-space:nowrap}
 .system-panel{display:flex;align-items:center;gap:5px;pointer-events:auto}.system-panel .bag-pill,.system-panel .icon-button{height:42px;border-radius:9px;background:linear-gradient(150deg,rgba(17,24,20,.92),rgba(6,11,8,.88));border-color:rgba(225,231,221,.12)}
 .system-panel .bag-pill{min-width:54px;justify-content:center}.system-panel .icon-button{min-width:42px}
 .danger-meter{position:absolute;top:calc(61px + var(--safe-t));left:calc(9px + var(--safe-l));right:calc(9px + var(--safe-r));height:30px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;padding:5px 9px;background:rgba(8,12,10,.84);border:1px solid rgba(222,228,218,.1);border-radius:8px;backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.24);transition:border-color .18s,background .18s,transform .18s}
@@ -83,7 +83,7 @@ html,body{background:#080d0a;color:var(--ink)}
 button{-webkit-tap-highlight-color:transparent}
 .action-button,.move-zone,.icon-button{will-change:transform}
 @media(orientation:landscape) and (max-height:520px){
-  .hud{padding-top:calc(5px + var(--safe-t))}.mission-panel{height:42px;max-width:48vw}.mission-index{width:36px;flex-basis:36px}.mission-copy{padding:5px 9px}.system-panel .bag-pill,.system-panel .icon-button{height:38px}
+  .hud{padding-top:calc(5px + var(--safe-t))}.mission-panel{height:42px;max-width:48vw}.mission-index{width:36px;flex-basis:36px}.mission-copy{padding:5px 9px}.mission-copy strong{margin-top:1px}.objective-progress{font-size:6px}.system-panel .bag-pill,.system-panel .icon-button{height:38px}
   .danger-meter{top:calc(51px + var(--safe-t));height:26px}.boss-hud{top:calc(82px + var(--safe-t));padding:6px 10px}.boss-hud i{margin-top:4px}.danger-banner{top:calc(116px + var(--safe-t))}
   .controls{padding-bottom:calc(7px + var(--safe-b));padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}.move-zone{width:108px;height:108px}.stick{width:50px;height:50px}.action-button{width:82px;height:82px}.action-button span{font-size:27px}
   .hint{bottom:calc(88px + var(--safe-b))}.combo{top:calc(84px + var(--safe-t))}

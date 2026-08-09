@@ -155,16 +155,16 @@ Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen ž�
 
 | Role | Stav | Další povolená akce |
 |---|---|---|
-| A0 koordinace | **#154 ACTIVE** | vede pouze schválený rozsah #154 a jeho integrační evidence |
+| A0 koordinace | **#156 ACTIVE** | vede pouze schválený rozsah #156 a jeho integrační evidence |
 | A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
-| A2 gameplay/data | **#154 ACTIVE (omezeně)** | pouze mapování nových environment texture ID do kanonických scén |
-| A3 grafika/assety | **#154 ACTIVE** | nové textury a manifest v rozsahu #154 |
-| A4 UI/mobil | **STANDBY** | žádná změna bez nového A0 issue |
+| A2 gameplay/data | **#156 ACTIVE (omezeně)** | poskytuje stávající objective snapshot do UI modelu bez změny pravidel |
+| A3 grafika/assety | **COMPLETED / STANDBY** | #154 je sloučený; žádná další assetová změna bez nového issue |
+| A4 UI/mobil | **#156 ACTIVE** | zpřístupněný objective progress v existujícím HUDu |
 | A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
 | A6 QA | **STANDBY / QA RESERVE** | nový audit/certifikace pouze na explicitní A0 dispatch |
 | A7 release | **COMPLETED / RELEASE STANDBY** | #104 historicky completed; nový tag/release pouze přes nový A0 release issue |
 
-Mimo výslovně povolený rozsah #154 žádný proud nemá aktivní implementační větev ani pracovní balík.
+Mimo výslovně povolený rozsah #156 žádný proud nemá aktivní implementační větev ani pracovní balík.
 
 ## 8. Aktuální integrační pravidla
 
@@ -182,7 +182,7 @@ Mimo výslovně povolený rozsah #154 žádný proud nemá aktivní implementač
 
 ### #154 — Produkční redesign prostředí Nesměň, Besednice a Malše/KD Slavia
 
-Stav issue určuje GitHub; tento záznam vymezuje jediný aktivní, vlastníkem výslovně schválený feature balík po `v6.0.0`.
+Stav: **COMPLETED / MERGED**, issue #154 a PR #155. Tento záznam zůstává jako auditní evidence schváleného feature balíku po `v6.0.0`.
 
 - Base: `main@3c59933`; pracovní větev: `agent/environment-level-redesign`.
 - Povolený rozsah: levelové scény, asset manifest, distribuční cache, nové optimalizované textury prostředí, jejich kontraktové testy a tento řídicí záznam.
@@ -195,6 +195,16 @@ Stav issue určuje GitHub; tento záznam vymezuje jediný aktivní, vlastníkem 
 - Aktuální evidence: validátor `0 chyb / 0 varování` a unit suite `167/167 PASS`. Mobile Playwright portrait skončil v headless timeoutu po dosažení Slavia fáze; vlastník dne 9. 8. 2026 výslovně schválil pokračování bez této automatické gate. Tento záznam je **owner-approved výjimka**, nikoli zpětné tvrzení, že selhaný běh byl automatický PASS.
 
 Distribuční připravenost tohoto balíku znamená zelené gate a sloučený PR do `main`; nevytváří ani nepřeznačuje historický tag `v6.0.0`. Vydání nového tagu nebo GitHub Release vyžaduje samostatné release issue, explicitní candidate SHA a vlastní QA/release gate podle §8.8.
+
+### #156 — Jednotná čitelnost postupu úkolem v HUDu
+
+Stav issue určuje GitHub; tento záznam vymezuje aktuální, vlastníkem schválený gameplay-clarity balík.
+
+- Base: `main@22d20418c06378228773cc594d2ee0a4773dd18a`; pracovní větev: `agent/final-gameplay-polish`.
+- Povolený rozsah: stávající HUD, UI model scén, související markup/CSS, kontraktové testy a tento řídicí záznam.
+- Hráč u každé kanonické kapitoly uvidí normalizovaný postup stávajícího objective systému v procentech a jako přístupný `progressbar`.
+- Nejsou povoleny nové akce, změna objective pravidel, save systém, inventář, druhý renderer ani změna eventových payloadů.
+- Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke; layout nesmí omezit touch targety v portrait ani landscape.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 
