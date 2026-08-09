@@ -319,7 +319,7 @@ Stav: **COMPLETED / RELEASED** jako `v6.1.0` na merge SHA `745109103722646b69ad5
 
 ### #180 — Integrace redesignu prostředí bez prostoru mimo mapu
 
-Stav: **ACTIVE**, cílem je nový sloučený kandidát na `main`, který je přímým potomkem `v6.0.0` i `v6.1.0`.
+Stav: **COMPLETED / MERGED** na `main@ce5a4a95624d21727aae5613dfb3c406681ce760` (PR #181).
 
 - Base: `main@745109103722646b69ad5b514d66f9882662ecb9`; pracovní větev: `agent/environment-runtime-visibility-fix`.
 - Reprodukce na desktopu `1280 × 720` ukázala při okrajových spawnech Nesměně a Besednice velkou černou plochu mimo level bounds; nové environment textury byly načtené, ale kamera nebyla omezená podle velikosti viewportu a zoomu.
@@ -330,6 +330,34 @@ Stav: **ACTIVE**, cílem je nový sloučený kandidát na `main`, který je př�
 - Každý level definuje vlastní `walkable` zónu. Pohyb se omezuje na pole, lesní mýtinu, dno lomu a dlážděné okolí KD Slavia; spawn Slavie byl přesunut z řeky na nábřežní plochu. Všechny povinné cíle zůstávají validovaně dosažitelné.
 - Kontrakty beze změny: jeden `WebGLRenderer`, ortografická kamera, čtyři kapitoly, jedna kontextová akce, přesně tři zásahy, žádný nový save systém ani inventář.
 - Povinná gate: validátor, syntaxe modulů, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a vizuální kontrola všech čtyř map. Nový release vyžaduje samostatné release issue a nový nepohyblivý tag; `v6.0.0` ani `v6.1.0` se nepřepisují.
+
+### #182 — Release v6.2.0 po integraci prostředí
+
+Stav: **ACTIVE**, releasový kandidát bude přesně označen merge SHA releasového PR; tento kandidát je přímým potomkem `v6.0.0`, `v6.1.0` a #180.
+
+- Povolený rozsah: pouze číslo verze v balíčku a titulní obrazovce, verzovaný název distribuční cache, odpovídající kontraktový test a aktualizace tohoto řídicího záznamu.
+- Gameplay, data, render kontrakty, assety a ovládání se nemění.
+- Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a deploy GitHub Pages stejného SHA.
+- Nový tag bude `v6.2.0`; historické tagy `v6.0.0` a `v6.1.0` zůstávají neměnné.
+
+### #190 — Rozlišit povrchové hledání v Chlumu a kopání v Nesměni
+
+Stav: **ACTIVE**, issue #190; pracovní větev `agent/chlum-surface-search` z `main@0175ff8`.
+
+- Chlum po Václavově povolení používá jediné kontextové tlačítko jako radar. Puls radaru hlásí sílu signálu, v dosahu odhalí povrchový vltavín a další kontextová akce nález sebere.
+- Chlum nepoužívá `DigSystem`, kopací modal ani stav rytmických zásahů. Nesměň zachovává tři kopané a následně zahrnuté profily; přesně tři úspěšné rytmické zásahy zůstávají beze změny.
+- Mobil používá existující dotykový joystick a akční tlačítko; desktop zachovává WASD/šipky a `E`. Obě varianty vedou přes jediný `InputManager`.
+- Session-only skóre a nálezy, Václav, traktor, jeden renderer a přechod Chlum → Nesměň zůstávají zachované. Nevzniká inventář ani save systém.
+- Povinná gate: validátor, syntaxe, kompletní unit sada a full-flow smoke na desktopu, iPhone portrait i landscape.
+
+### #192 — Release v6.3.0 po radarové integraci
+
+Stav: **ACTIVE**, issue #192; pracovní větev `agent/release-v6-3` z `main@916c297`.
+
+- Release navazuje na #189 (stabilizace QA vstupu) a #191 (povrchové hledání radarem v Chlumu).
+- Distribuční metadata jsou sladěna na `v6.3`: package verze, titulní obrazovka a service-worker cache.
+- Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada a zelená GitHub Actions matice.
+- Nový nepohyblivý tag bude `v6.3.0`; historické tagy `v6.0.0`, `v6.1.0` a `v6.2.0` zůstávají neměnné.
 
 Další práce smí vzniknout pouze z jednoho z těchto vstupů:
 

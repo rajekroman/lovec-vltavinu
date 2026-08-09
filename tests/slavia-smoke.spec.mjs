@@ -20,7 +20,7 @@ function activeRuntime(state) {
 
 function digHitCount(state) {
   const runtime = activeRuntime(state);
-  return Number(state.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+  return Number(runtime?.totalDigHits);
 }
 
 async function touchLocator(page, locator) {
@@ -45,6 +45,7 @@ async function touchLocator(page, locator) {
 
 function createInputDriver(page, testInfo) {
   const desktop = testInfo.project.metadata?.inputMode === "desktop";
+  let moveZoneBox = null;
 
   async function activateUi(locator) {
     await expect(locator).toBeVisible();
@@ -66,19 +67,33 @@ function createInputDriver(page, testInfo) {
       const key = axis === "x"
         ? (direction > 0 ? "ArrowRight" : "ArrowLeft")
         : (direction > 0 ? "ArrowUp" : "ArrowDown");
+      let active = true;
+      let repeatError = null;
       await page.keyboard.down(key);
-      return async () => page.keyboard.up(key);
+      const repeatTimer = setInterval(() => {
+        if (!active) return;
+        page.keyboard.down(key).catch(error => { repeatError ??= error; });
+      }, 250);
+      return async () => {
+        if (!active) return;
+        active = false;
+        clearInterval(repeatTimer);
+        await page.keyboard.up(key);
+        if (repeatError) throw repeatError;
+      };
     }
 
     const zone = page.locator("#moveZone");
-    await expect(zone).toBeVisible();
-    const box = await zone.boundingBox();
-    expect(box).not.toBeNull();
-    if (!box) throw new Error("Mobile joystick has no bounding box.");
+    if (!moveZoneBox) {
+      await expect(zone).toBeVisible();
+      moveZoneBox = await zone.boundingBox();
+      expect(moveZoneBox).not.toBeNull();
+    }
+    if (!moveZoneBox) throw new Error("Mobile joystick has no bounding box.");
 
-    const radius = Math.max(1, Math.min(box.width, box.height) / 2);
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
+    const radius = Math.max(1, Math.min(moveZoneBox.width, moveZoneBox.height) / 2);
+    const centerX = moveZoneBox.x + moveZoneBox.width / 2;
+    const centerY = moveZoneBox.y + moveZoneBox.height / 2;
     const x = Math.round(centerX + (axis === "x" ? direction * radius * 0.98 : 0));
     const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.98 : 0));
     const client = await page.context().newCDPSession(page);
@@ -106,7 +121,7 @@ async function expectReleasedInput(page) {
       action: Boolean(input.actions.action?.down),
       pause: Boolean(input.actions.pause?.down)
     };
-  }).toEqual({ move: 0, action: false, pause: false });
+  }, { timeout: 20_000 }).toEqual({ move: 0, action: false, pause: false });
 }
 
 async function captureEvidence(page, testInfo, name) {
@@ -125,6 +140,7 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind 
   const delta = target - player[axis];
   if (Math.abs(delta) <= TARGET_TOLERANCE) return;
   const direction = Math.sign(delta);
+  const movementTimeout = input.desktop ? timeout : timeout + 30_000;
 
   await page.evaluate(async ({ axisName, targetValue, tolerance, moveDirection, timeoutMs, expectedKind }) => {
     const { app } = await import("./src/bootstrap.js");
@@ -160,17 +176,31 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind 
     targetValue: target,
     tolerance: TARGET_TOLERANCE,
     moveDirection: direction,
-    timeoutMs: timeout,
+    timeoutMs: movementTimeout,
     expectedKind: stopKind
   });
 
-  const release = await input.holdAxis(axis, direction);
   let movement = null;
+  let release = null;
+  const movementDeadline = Date.now() + movementTimeout + 2_000;
   try {
-    await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: timeout + 2_000 });
-    movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
+    while (!movement?.done) {
+      release = await input.holdAxis(axis, direction);
+      const holdWindow = input.desktop
+        ? Math.max(1, movementDeadline - Date.now())
+        : Math.min(8_000, Math.max(1, movementDeadline - Date.now()));
+      try {
+        await page.waitForFunction(() => window.__slaviaQaMovement?.done === true, null, { timeout: holdWindow });
+      } catch (error) {
+        if (input.desktop || Date.now() >= movementDeadline) throw error;
+      } finally {
+        await release().catch(() => {});
+        release = null;
+      }
+      movement = await page.evaluate(() => ({ ...window.__slaviaQaMovement }));
+    }
   } finally {
-    await release().catch(() => {});
+    await release?.().catch(() => {});
     await page.evaluate(async () => {
       const { app } = await import("./src/bootstrap.js");
       app.start();
@@ -243,7 +273,7 @@ async function pauseLoopAtDigSweetSpot(page, expectedTotal, timeout = 10_000) {
       const monitor = () => {
         const state = window.__lovecRuntime?.snapshot?.();
         const runtime = state?.[state.scene]?.runtime;
-        const total = Number(state?.scene === "chlum" ? runtime?.digHits : runtime?.totalDigHits);
+        const total = Number(runtime?.totalDigHits);
         if (total >= target) {
           app.stop();
           resolve();
@@ -307,26 +337,28 @@ async function startChlum(page, input) {
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe("chlum");
 }
 
-async function completeChlum(page, input) {
+async function completeChlum(page, input, testInfo) {
   await moveTo(page, input, 560, 410, "permission");
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
 
-  let opened = false;
+  let revealed = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
     await moveAxisTo(page, input, "x", 1020);
     await moveAxisTo(page, input, "y", 410);
     await waitForTractorLeftOf(page);
     await moveAxisTo(page, input, "y", 720);
-    if (activeRuntime(await runtimeSnapshot(page))?.available?.kind !== "dig") continue;
-    await performAction(page, input);
-    opened = true;
+    await expect(page.locator("#actionButton")).toHaveAttribute("aria-label", "RADAR");
+    if (!input.desktop) await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "false");
+    await input.contextualAction();
+    await expectReleasedInput(page);
+    revealed = activeRuntime(await runtimeSnapshot(page))?.searched === true;
+    if (!revealed) continue;
+    await captureEvidence(page, testInfo, "chlum-radar-finding");
     break;
   }
-  expect(opened).toBe(true);
-  await expect(page.locator("#digScreen")).toHaveClass(/visible/);
-  for (let hit = 1; hit <= 3; hit++) await successfulDigHit(page, input, hit);
+  expect(revealed).toBe(true);
   await moveTo(page, input, 1042, 732, "collect");
   await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
@@ -452,7 +484,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   page.on("response", response => { if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`); });
 
   await startChlum(page, input);
-  await completeChlum(page, input);
+  await completeChlum(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
   await completeNesmen(page, input);
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");

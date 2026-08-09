@@ -135,6 +135,10 @@ Dočasné `game.js`, `runtime-stability.js`, Canvas renderer a legacy save soubo
 
 `LEVEL_ORDER` je přesně `chlum`, `nesmen`, `besednice`, `slavia`.
 
+Chlum po získání povolení zpřístupní globální kontextovou akci `RADAR`. Opakované stisknutí stejného akčního vstupu hlásí sílu signálu; v dosahu skrytého cíle odhalí povrchový vltavín a akce se u nálezu změní na `SEBRAT`. Chlum neotevírá kopací modal. Rytmické kopání se třemi úspěšnými zásahy začíná až v Nesměni a používá tentýž kontextový vstup.
+
+Na zařízení s dotykem ovládá pohyb `#moveZone` a akci `#actionButton`. Klávesnicový vstup zůstává WASD/šipky pro pohyb a `E` pro kontextovou akci; oba adaptéry zapisují pouze do jednoho sdíleného `InputManageru`.
+
 ### Entity specification
 
 ```js

@@ -14,7 +14,7 @@ const EXPECTED_IDS = [
   "finding-vltavin-nesmen",
   "terrain-nesmen-forest-floor",
   "terrain-nesmen-sand-profile",
-  "terrain-nesmen-excavated-sand-v1",
+  "terrain-nesmen-reference-clearing-v2",
   "model-nesmen-profile-marker",
   "model-nesmen-tree-stump"
 ];

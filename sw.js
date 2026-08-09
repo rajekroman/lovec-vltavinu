@@ -1,4 +1,4 @@
-const CACHE = "lovec-vltavinu-slavia-v6-1-release";
+const CACHE = "lovec-vltavinu-slavia-v6-3-release";
 const CORE = [
   "./", "./index.html", "./style.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/AudioRegistry.js",
@@ -11,7 +11,7 @@ const CORE = [
   "./src/input/DomInputAdapter.js", "./src/ui/ScreenController.js", "./src/ui/HudController.js", "./src/scenes/TitleScene.js", "./src/scenes/ChlumScene.js", "./src/scenes/ChlumNesmenBridgeScene.js", "./src/scenes/NesmenScene.js", "./src/scenes/NesmenRestorationScene.js", "./src/scenes/NesmenBesedniceBridgeScene.js", "./src/scenes/BesedniceScene.js", "./src/scenes/SlaviaScene.js",
   "./assets/manifests/assets.json", "./assets/sprites/player/hunter-walk-sheet.png", "./assets/sprites/npcs/farmer-vaclav-v2.png", "./assets/sprites/npcs/rival-karel-v2.png", "./assets/sprites/npcs/forester-jan-v2.png", "./assets/sprites/npcs/expert-eva-v2.png", "./assets/sprites/npcs/thief-franta-v2.png",
   "./assets/sprites/findings/vltavin-common.png", "./assets/sprites/findings/vltavin-rare.png", "./assets/sprites/findings/vltavin-standard.png", "./assets/sprites/findings/vltavin-nesmen.png", "./assets/sprites/findings/vltavin-besednice-hedgehog.png",
-  "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/nesmen-forest-floor.png", "./assets/textures/terrain/nesmen-sand-profile.png", "./assets/textures/terrain/nesmen-excavated-sand-v1.png", "./assets/textures/terrain/besednice-quarry.png", "./assets/textures/terrain/besednice-clay-quarry-v1.png", "./assets/textures/terrain/slavia-malse-exterior-v1.png",
+  "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/nesmen-forest-floor.png", "./assets/textures/terrain/nesmen-sand-profile.png", "./assets/textures/terrain/nesmen-reference-clearing-v2.png", "./assets/textures/terrain/besednice-quarry.png", "./assets/textures/terrain/besednice-clay-quarry-v1.png", "./assets/textures/terrain/slavia-malse-exterior-v1.png",
   "./assets/models/chlum/tractor-no-driver.glb", "./assets/models/chlum/hay-bale.glb", "./assets/models/chlum/field-marker.glb", "./assets/models/chlum/field-fence-segment.glb",
   "./assets/models/nesmen/profile-marker.glb", "./assets/models/nesmen/tree-stump.glb", "./assets/models/besednice/trace-marker.glb", "./assets/models/besednice/hedgehog-marker.glb", "./assets/models/besednice/quarry-rock.glb", "./assets/models/slavia/kd-slavia.glb", "./assets/models/slavia/document-folder.glb",
   "./assets/audio/journey-loop.mp3", "./assets/audio/dig-hit.mp3", "./assets/audio/finding-chime.mp3", "./assets/audio/danger-pulse.mp3", "./assets/audio/LICENSE.md"
