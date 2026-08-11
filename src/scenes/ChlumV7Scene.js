@@ -4,6 +4,7 @@ import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
 const V7_STYLESHEET_ID = "lovec-v7-visual-theme";
+const V7_ROOT_CLASS = "v7-visual-rebuild";
 
 export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   const width = Math.max(1, Number(viewportWidth) || 1);
@@ -61,7 +62,6 @@ export function createChlumV7Moldavite(THREE) {
 
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
-  documentRef.documentElement?.classList?.add("v7-visual-rebuild");
   if (documentRef.getElementById(V7_STYLESHEET_ID)) return true;
   const link = documentRef.createElement("link");
   link.id = V7_STYLESHEET_ID;
@@ -78,6 +78,17 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
     this.visualMode = "uninitialized";
+  }
+
+  async enter(context) {
+    const root = globalThis.document?.documentElement;
+    root?.classList?.add(V7_ROOT_CLASS);
+    try {
+      return await super.enter(context);
+    } catch (error) {
+      root?.classList?.remove(V7_ROOT_CLASS);
+      throw error;
+    }
   }
 
   async createVisualWorld() {
@@ -241,6 +252,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.foregroundRoot = null;
     }
     super.destroyVisualWorld();
+  }
+
+  async exit(context) {
+    globalThis.document?.documentElement?.classList?.remove(V7_ROOT_CLASS);
+    return super.exit(context);
   }
 
   snapshot() {
