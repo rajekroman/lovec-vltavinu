@@ -13,6 +13,20 @@ const farmerPosition = getLevelTarget("chlum", "farmer-vaclav")?.positions[0];
 const searchPosition = getLevelTarget("chlum", "chlum-search-site")?.positions[0];
 if (!level || !farmerPosition || !searchPosition || !getDialogueDefinition("chlum-permission")) throw new Error("Chlum canonical data is incomplete.");
 
+const playerWalkDirections = {
+  down: [0, 1, 2, 3],
+  left: [4, 5, 6, 7],
+  right: [8, 9, 10, 11],
+  up: [12, 13, 14, 15]
+};
+
+const playerIdleDirections = {
+  down: [0],
+  left: [4],
+  right: [8],
+  up: [12]
+};
+
 const entities = [
   {
     id: "player",
@@ -20,8 +34,8 @@ const entities = [
       transform: { ...level.spawn, rotation: 0, scale: 1 },
       sprite: { assetId: "player-hunter-walk", layer: "actors", frame: 0, columns: 4, rows: 4, flipX: false },
       animation: {
-        clip: "walk",
-        frames: [0, 1, 2, 3],
+        clip: "idle",
+        frames: [0],
         fps: 6,
         loop: true,
         playing: false,
@@ -33,7 +47,23 @@ const entities = [
         motionThreshold: 0.001,
         resetOnIdle: true,
         direction: "down",
-        directionFrames: { down: [0, 1, 2, 3], left: [4, 5, 6, 7], right: [8, 9, 10, 11], up: [12, 13, 14, 15] }
+        directionFrames: playerIdleDirections,
+        motionClip: "walk",
+        idleClip: "idle",
+        clips: {
+          idle: {
+            frames: [0],
+            fps: 1,
+            loop: true,
+            directionFrames: playerIdleDirections
+          },
+          walk: {
+            frames: [0, 1, 2, 3],
+            fps: 6,
+            loop: true,
+            directionFrames: playerWalkDirections
+          }
+        }
       },
       collider: { shape: "circle", radius: 18, layer: "player", mask: ["hazard"] },
       player: { speed: 220 }
