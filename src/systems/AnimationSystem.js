@@ -157,7 +157,7 @@ export class AnimationSystem {
     const requestedClip = moving ? animation.motionClip : animation.idleClip;
     if (requestedClip) this.setClip(animation, requestedClip);
 
-    const directional = selectDirectionalFrames(animation, sprite, x, y);
+    const directional = (moving || Boolean(requestedClip)) && selectDirectionalFrames(animation, sprite, x, y);
     if (!directional && moving && Math.abs(x) >= threshold) sprite.flipX = x < 0;
     if (moving) this.play(animation);
     else this.pause(animation, { reset: options.resetOnIdle !== false });
