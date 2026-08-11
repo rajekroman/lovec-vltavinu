@@ -6,6 +6,7 @@ import {
   resetBoundedCameraFollow,
   setBoundedCameraCenter
 } from "../../src/render/CameraBounds.js";
+import { resolveChlumV7CameraZoom } from "../../src/scenes/ChlumV7Scene.js";
 
 test("desktop camera stays inside a level at an edge spawn", () => {
   const center = resolveBoundedCameraCenter({
@@ -153,4 +154,21 @@ test("renderer adapter preserves immediate mode for simple render adapters", () 
   assert.deepEqual(calls, [[center.x, center.y, 0.9]]);
   assert.ok(center.x > 711 && center.x < 712);
   assert.equal(center.y, 700);
+});
+
+test("V7 Chlum camera keeps portrait calm and tightens wide compositions", () => {
+  const portrait = resolveChlumV7CameraZoom(390, 844);
+  const desktop = resolveChlumV7CameraZoom(1280, 720);
+  const landscape = resolveChlumV7CameraZoom(844, 390);
+
+  assert.equal(portrait, 1.02);
+  assert.equal(desktop, 1.16);
+  assert.equal(landscape, 1.24);
+  assert.ok(landscape > desktop);
+  assert.ok(desktop > portrait);
+});
+
+test("V7 Chlum camera profile is deterministic for invalid viewport metadata", () => {
+  assert.equal(resolveChlumV7CameraZoom(0, 0), 1.08);
+  assert.equal(resolveChlumV7CameraZoom(undefined, undefined), 1.08);
 });
