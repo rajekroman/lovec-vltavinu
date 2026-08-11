@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as THREE from "../../vendor/three.module.min.js";
 import { prepareTerrainPlateTexture } from "../../src/render/HybridRenderer.js";
+import { createChlumV7Moldavite } from "../../src/scenes/ChlumV7Scene.js";
 
 const makeTexture = () => ({
   channel: -1,
@@ -36,4 +38,20 @@ test("terrain plates clamp edges and never repeat the authored image", () => {
 
   assert.equal(source.wrapS, "repeat");
   assert.deepEqual([source.repeat.x, source.repeat.y], [4, 3]);
+});
+
+test("Chlum V7 moldavite uses a deterministic Three.js mesh instead of the legacy finding sprite", () => {
+  const moldavite = createChlumV7Moldavite(THREE);
+
+  assert.equal(moldavite.isMesh, true);
+  assert.equal(moldavite.name, "chlum-v7-moldavite-finding");
+  assert.equal(moldavite.userData.assetId, "procedural-chlum-moldavite-v7");
+  assert.equal(moldavite.userData.findingVisual, "moldavite");
+  assert.equal(moldavite.material.isMeshStandardMaterial, true);
+  assert.ok(moldavite.geometry.attributes.position.count > 0);
+  assert.deepEqual([moldavite.scale.x, moldavite.scale.y, moldavite.scale.z], [12, 10, 7]);
+  assert.equal(moldavite.position.z, 14);
+
+  moldavite.geometry.dispose();
+  moldavite.material.dispose();
 });
