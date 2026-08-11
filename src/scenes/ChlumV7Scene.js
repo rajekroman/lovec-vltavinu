@@ -43,7 +43,7 @@ export function createChlumV7Moldavite(THREE) {
   const material = new THREE.MeshStandardMaterial({
     color: 0x315f38,
     emissive: 0x0b2011,
-    emissiveIntensity: 0.2,
+    emissiveIntensity: 0.24,
     roughness: 0.5,
     metalness: 0.02,
     transparent: true,
@@ -54,7 +54,7 @@ export function createChlumV7Moldavite(THREE) {
   mesh.position.z = 14;
   mesh.rotation.x = 0.28;
   mesh.rotation.y = -0.36;
-  mesh.scale.set(12, 10, 7);
+  mesh.scale.set(5, 4, 3);
   mesh.userData.assetId = "procedural-chlum-moldavite-v7";
   mesh.userData.findingVisual = "moldavite";
   return mesh;
@@ -222,14 +222,27 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
-  setCameraToPlayer() {
+  updateGameplay(dt, time, input) {
+    const player = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
+    const before = player ? { x: player.x, y: player.y } : null;
+    super.updateGameplay(dt, time, input);
+    if (!player || !before) return;
+
+    const returnedToSpawn = player.x === this.level.spawn.x && player.y === this.level.spawn.y;
+    const teleported = before.x !== player.x || before.y !== player.y;
+    const wasAwayFromSpawn = before.x !== this.level.spawn.x || before.y !== this.level.spawn.y;
+    if (returnedToSpawn && teleported && wasAwayFromSpawn) this.setCameraToPlayer({ snap: true });
+  }
+
+  setCameraToPlayer(options = {}) {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
     const zoom = resolveChlumV7CameraZoom(this.renderer.width, this.renderer.height);
     setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, zoom, {
       deadZoneRatio: 0.06,
       damping: 0.18,
-      snapDistanceRatio: 0.55
+      snapDistanceRatio: 0.55,
+      ...options
     });
   }
 
