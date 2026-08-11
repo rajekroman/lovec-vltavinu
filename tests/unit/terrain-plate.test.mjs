@@ -49,7 +49,7 @@ test("Chlum V7 moldavite uses a deterministic Three.js mesh instead of the legac
   assert.equal(moldavite.userData.findingVisual, "moldavite");
   assert.equal(moldavite.material.isMeshStandardMaterial, true);
   assert.ok(moldavite.geometry.attributes.position.count > 0);
-  assert.deepEqual([moldavite.scale.x, moldavite.scale.y, moldavite.scale.z], [12, 10, 7]);
+  assert.deepEqual([moldavite.scale.x, moldavite.scale.y, moldavite.scale.z], [5, 4, 3]);
   assert.equal(moldavite.position.z, 14);
 
   moldavite.geometry.dispose();
