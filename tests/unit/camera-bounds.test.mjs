@@ -140,6 +140,36 @@ test("renderer adapter snaps on first target then follows smoothly", () => {
   assert.equal(resetBoundedCameraFollow(renderer), true);
 });
 
+test("renderer adapter explicit snap bypasses dead-zone and damping for short resets", () => {
+  const renderer = {
+    viewHeight: 720,
+    width: 1280,
+    height: 720,
+    camera: { position: { x: 0, y: 0 } },
+    setCameraCenter(x, y, zoom) {
+      this.camera.position.x = x;
+      this.camera.position.y = y;
+      this.camera.zoom = zoom;
+    }
+  };
+  const bounds = { x: 0, y: 0, width: 2600, height: 1800 };
+
+  setBoundedCameraCenter(renderer, bounds, 1000, 900, 1);
+  const snapped = setBoundedCameraCenter(renderer, bounds, 1200, 900, 1, { snap: true });
+  const target = resolveBoundedCameraCenter({
+    bounds,
+    x: 1200,
+    y: 900,
+    viewHeight: 720,
+    viewportWidth: 1280,
+    viewportHeight: 720,
+    zoom: 1
+  });
+
+  assert.deepEqual(snapped, target);
+  assert.deepEqual([renderer.camera.position.x, renderer.camera.position.y, renderer.camera.zoom], [target.x, target.y, 1]);
+});
+
 test("renderer adapter preserves immediate mode for simple render adapters", () => {
   const calls = [];
   const renderer = {
