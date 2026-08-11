@@ -17,7 +17,10 @@ export function createAnimation(options = {}) {
     motionThreshold: Math.max(0, Number(options.motionThreshold) || 0.001),
     resetOnIdle: options.resetOnIdle !== false,
     direction: options.direction ?? "down",
-    directionFrames: options.directionFrames ?? null
+    directionFrames: options.directionFrames ?? null,
+    clips: options.clips ?? null,
+    motionClip: options.motionClip ?? null,
+    idleClip: options.idleClip ?? null
   };
 }
 
@@ -27,6 +30,40 @@ const resetAnimation = animation => {
   animation.completed = false;
   animation.frame = animation.frames[0];
 };
+
+const getClipDefinition = (animation, clip) => {
+  if (!animation?.clips || typeof animation.clips !== "object") return null;
+  const definition = animation.clips[clip];
+  if (!definition || typeof definition !== "object") return null;
+  const frames = Array.isArray(definition.frames) && definition.frames.length
+    ? definition.frames
+    : null;
+  const directionFrames = definition.directionFrames && typeof definition.directionFrames === "object"
+    ? definition.directionFrames
+    : null;
+  if (!frames && !directionFrames) return null;
+  return { ...definition, frames, directionFrames };
+};
+
+export function setAnimationClip(animation, clip, options = {}) {
+  if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
+  if (typeof clip !== "string" || !clip.trim()) throw new TypeError("Animation clip must be a non-empty string.");
+  const nextClip = clip.trim();
+  const definition = getClipDefinition(animation, nextClip);
+  if (!definition) return false;
+
+  const changed = animation.clip !== nextClip;
+  animation.clip = nextClip;
+  if (definition.frames) animation.frames = definition.frames;
+  animation.directionFrames = definition.directionFrames;
+  if (Number(definition.fps) > 0) animation.fps = Number(definition.fps);
+  if (typeof definition.loop === "boolean") animation.loop = definition.loop;
+
+  if (changed || options.restart === true) resetAnimation(animation);
+  if (typeof options.playing === "boolean") animation.playing = options.playing;
+  else if (typeof definition.playing === "boolean") animation.playing = definition.playing;
+  return true;
+}
 
 export const resolveCardinalDirection = (x, y, fallback = "down") => {
   if (Math.abs(x) > Math.abs(y)) return x < 0 ? "left" : "right";
@@ -105,6 +142,10 @@ export class AnimationSystem {
     return animation;
   }
 
+  setClip(animation, clip, options = {}) {
+    return setAnimationClip(animation, clip, options);
+  }
+
   setMotion(animation, sprite, move, options = {}) {
     if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
     if (!sprite || typeof sprite !== "object") throw new TypeError("Animation motion binding requires a sprite component.");
@@ -113,8 +154,11 @@ export class AnimationSystem {
     const threshold = Math.max(0, Number(options.threshold) || 0.001);
     const moving = Math.hypot(x, y) >= threshold;
 
-    const directional = moving && selectDirectionalFrames(animation, sprite, x, y);
-    if (!directional && Math.abs(x) >= threshold) sprite.flipX = x < 0;
+    const requestedClip = moving ? animation.motionClip : animation.idleClip;
+    if (requestedClip) this.setClip(animation, requestedClip);
+
+    const directional = selectDirectionalFrames(animation, sprite, x, y);
+    if (!directional && moving && Math.abs(x) >= threshold) sprite.flipX = x < 0;
     if (moving) this.play(animation);
     else this.pause(animation, { reset: options.resetOnIdle !== false });
     sprite.frame = animation.frame;
