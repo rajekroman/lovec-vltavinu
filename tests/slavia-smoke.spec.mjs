@@ -45,7 +45,6 @@ async function touchLocator(page, locator) {
 
 function createInputDriver(page, testInfo) {
   const desktop = testInfo.project.metadata?.inputMode === "desktop";
-  let moveZoneBox = null;
 
   async function activateUi(locator) {
     await expect(locator).toBeVisible();
@@ -84,11 +83,9 @@ function createInputDriver(page, testInfo) {
     }
 
     const zone = page.locator("#moveZone");
-    if (!moveZoneBox) {
-      await expect(zone).toBeVisible();
-      moveZoneBox = await zone.boundingBox();
-      expect(moveZoneBox).not.toBeNull();
-    }
+    await expect(zone).toBeVisible();
+    const moveZoneBox = await zone.boundingBox();
+    expect(moveZoneBox).not.toBeNull();
     if (!moveZoneBox) throw new Error("Mobile joystick has no bounding box.");
 
     const radius = Math.max(1, Math.min(moveZoneBox.width, moveZoneBox.height) / 2);
