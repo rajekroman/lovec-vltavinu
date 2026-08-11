@@ -176,3 +176,134 @@ test("unknown optional clip leaves the current animation untouched", () => {
   assert.equal(animation.clip, "idle");
   assert.deepEqual(animation.frames, [0]);
 });
+
+test("action clip has priority over motion until it completes", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    direction: "down",
+    directionFrames: { down: [0] },
+    motionClip: "walk",
+    idleClip: "idle",
+    actionClip: null,
+    actionInterruptible: false,
+    clips: {
+      idle: { frames: [0], fps: 1, loop: true, directionFrames: { down: [0] } },
+      walk: { frames: [1, 2], fps: 8, loop: true, directionFrames: { down: [1, 2], right: [3, 4] } },
+      search: { frames: [20, 21, 22], fps: 10, loop: false }
+    }
+  };
+  const sprite = { frame: 0, flipX: false };
+
+  assert.equal(system.playAction(animation, "search"), true);
+  assert.equal(animation.clip, "search");
+  assert.equal(animation.actionClip, "search");
+
+  system.setMotion(animation, sprite, { x: 1, y: 0 });
+  assert.equal(animation.clip, "search");
+  assert.equal(animation.actionClip, "search");
+
+  system.updateAnimation(animation, 0.31);
+  assert.equal(animation.completed, true);
+  assert.equal(animation.playing, false);
+
+  system.setMotion(animation, sprite, { x: 1, y: 0 });
+  assert.equal(animation.actionClip, null);
+  assert.equal(animation.clip, "walk");
+  assert.equal(animation.direction, "right");
+  assert.equal(animation.playing, true);
+});
+
+test("missing semantic action clip is a safe no-op", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    actionClip: null,
+    clips: { idle: { frames: [0], fps: 1, loop: true } }
+  };
+
+  assert.equal(system.playAction(animation, "pick-up"), false);
+  assert.equal(animation.clip, "idle");
+  assert.equal(animation.actionClip, null);
+  assert.deepEqual(animation.frames, [0]);
+});
+
+test("single-frame non-loop action completes deterministically", () => {
+  const events = [];
+  const system = new AnimationSystem({ events: { emit: (name, payload) => events.push([name, payload]) } });
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    actionClip: null,
+    clips: {
+      idle: { frames: [0], fps: 1, loop: true },
+      caught: { frames: [7], fps: 5, loop: false }
+    }
+  };
+
+  assert.equal(system.playAction(animation, "caught"), true);
+  assert.equal(animation.playing, true);
+  system.updateAnimation(animation, 0.21, 42);
+
+  assert.equal(animation.frame, 7);
+  assert.equal(animation.completed, true);
+  assert.equal(animation.playing, false);
+  assert.deepEqual(events, [["animation:complete", { entity: 42, clip: "caught" }]]);
+});
+
+test("interruptible action yields to real movement", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    direction: "down",
+    directionFrames: { down: [0] },
+    motionClip: "walk",
+    idleClip: "idle",
+    actionClip: null,
+    actionInterruptible: false,
+    clips: {
+      idle: { frames: [0], fps: 1, loop: true, directionFrames: { down: [0] } },
+      walk: { frames: [1, 2], fps: 8, loop: true, directionFrames: { down: [1, 2], right: [3, 4] } },
+      talk: { frames: [10, 11], fps: 6, loop: false }
+    }
+  };
+  const sprite = { frame: 0, flipX: false };
+
+  assert.equal(system.playAction(animation, "talk", { interruptible: true }), true);
+  system.setMotion(animation, sprite, { x: 1, y: 0 });
+
+  assert.equal(animation.actionClip, null);
+  assert.equal(animation.clip, "walk");
+  assert.equal(animation.direction, "right");
+});
