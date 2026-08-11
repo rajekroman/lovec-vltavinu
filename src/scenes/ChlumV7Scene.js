@@ -15,6 +15,50 @@ export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   return 1.08;
 }
 
+function moldaviteNoise(x, y, z) {
+  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+export function createChlumV7Moldavite(THREE) {
+  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
+    throw new TypeError("Chlum V7 moldavite requires Three.js mesh primitives.");
+  }
+
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.attributes?.position;
+  if (!position?.getX || !position?.setXYZ) throw new TypeError("Chlum V7 moldavite geometry must expose positions.");
+
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const radial = 0.82 + moldaviteNoise(x, y, z) * 0.24;
+    position.setXYZ(index, x * radial * 1.08, y * radial * 0.9, z * radial * 0.72);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals?.();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x315f38,
+    emissive: 0x0b2011,
+    emissiveIntensity: 0.2,
+    roughness: 0.5,
+    metalness: 0.02,
+    transparent: true,
+    opacity: 0.96
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "chlum-v7-moldavite-finding";
+  mesh.position.z = 14;
+  mesh.rotation.x = 0.28;
+  mesh.rotation.y = -0.36;
+  mesh.scale.set(12, 10, 7);
+  mesh.userData.assetId = "procedural-chlum-moldavite-v7";
+  mesh.userData.findingVisual = "moldavite";
+  return mesh;
+}
+
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
   documentRef.documentElement?.classList?.add("v7-visual-rebuild");
@@ -163,18 +207,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
-    this.texture("finding-vltavin-standard").then(texture => {
-      if (this.findingEntity === null) return;
-      const sprite = this.renderer.createSprite(texture, {
-        width: 22,
-        height: 22,
-        z: 14,
-        anchorX: 0.5,
-        anchorY: 0.2,
-        assetId: "finding-vltavin-standard"
-      });
-      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
-    });
+    const moldavite = createChlumV7Moldavite(this.THREE);
+    this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
   setCameraToPlayer() {
