@@ -53,6 +53,7 @@ const lifecycle = new AbortController();
 
 function resize() {
   renderer.resizeToElement(canvas);
+  app.scenes.activeScene?.setCameraToPlayer?.();
 }
 
 const inputAdapter = new DomInputAdapter({
