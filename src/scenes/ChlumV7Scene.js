@@ -1,8 +1,19 @@
 import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
+import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
 const V7_STYLESHEET_ID = "lovec-v7-visual-theme";
+
+export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
+  const width = Math.max(1, Number(viewportWidth) || 1);
+  const height = Math.max(1, Number(viewportHeight) || 1);
+  const aspect = width / height;
+  if (aspect >= 2) return 1.24;
+  if (aspect >= 1.5) return 1.16;
+  if (aspect <= 0.75) return 1.02;
+  return 1.08;
+}
 
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
@@ -143,6 +154,40 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.add(foreground, "foreground");
   }
 
+  spawnFinding() {
+    if (this.findingEntity !== null) return;
+    const searchTransform = this.app.world.get(this.searchEntity, "transform");
+    this.findingEntity = this.app.world.createEntity({
+      transform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
+      previousTransform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
+      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
+    });
+    this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
+    this.texture("finding-vltavin-standard").then(texture => {
+      if (this.findingEntity === null) return;
+      const sprite = this.renderer.createSprite(texture, {
+        width: 22,
+        height: 22,
+        z: 14,
+        anchorX: 0.5,
+        anchorY: 0.2,
+        assetId: "finding-vltavin-standard"
+      });
+      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    });
+  }
+
+  setCameraToPlayer() {
+    if (this.playerEntity === null) return;
+    const transform = this.app.world.get(this.playerEntity, "transform");
+    const zoom = resolveChlumV7CameraZoom(this.renderer.width, this.renderer.height);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, zoom, {
+      deadZoneRatio: 0.06,
+      damping: 0.18,
+      snapDistanceRatio: 0.55
+    });
+  }
+
   updateHud() {
     super.updateHud();
     if (!this.farmerInteractionRing) return;
@@ -171,6 +216,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       runtime: {
         ...snapshot.runtime,
         visualMode: this.visualMode,
+        cameraZoom: this.renderer.camera?.zoom ?? null,
         farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true
       }
     };
