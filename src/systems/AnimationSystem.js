@@ -20,7 +20,9 @@ export function createAnimation(options = {}) {
     directionFrames: options.directionFrames ?? null,
     clips: options.clips ?? null,
     motionClip: options.motionClip ?? null,
-    idleClip: options.idleClip ?? null
+    idleClip: options.idleClip ?? null,
+    actionClip: options.actionClip ?? null,
+    actionInterruptible: options.actionInterruptible === true
   };
 }
 
@@ -146,6 +148,20 @@ export class AnimationSystem {
     return setAnimationClip(animation, clip, options);
   }
 
+  playAction(animation, clip, options = {}) {
+    if (!setAnimationClip(animation, clip, { restart: options.restart !== false, playing: true })) return false;
+    animation.actionClip = clip.trim();
+    animation.actionInterruptible = options.interruptible === true;
+    return true;
+  }
+
+  clearAction(animation) {
+    if (!animation?.actionClip) return false;
+    animation.actionClip = null;
+    animation.actionInterruptible = false;
+    return true;
+  }
+
   setMotion(animation, sprite, move, options = {}) {
     if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
     if (!sprite || typeof sprite !== "object") throw new TypeError("Animation motion binding requires a sprite component.");
@@ -153,6 +169,15 @@ export class AnimationSystem {
     const y = Number(move?.y) || 0;
     const threshold = Math.max(0, Number(options.threshold) || 0.001);
     const moving = Math.hypot(x, y) >= threshold;
+
+    if (animation.actionClip) {
+      const actionStillActive = animation.clip === animation.actionClip && !animation.completed;
+      if (actionStillActive && !(animation.actionInterruptible && moving)) {
+        sprite.frame = animation.frame;
+        return moving;
+      }
+      this.clearAction(animation);
+    }
 
     const requestedClip = moving ? animation.motionClip : animation.idleClip;
     if (requestedClip) this.setClip(animation, requestedClip);
@@ -166,11 +191,21 @@ export class AnimationSystem {
   }
 
   updateAnimation(animation, dt, entity = null) {
-    if (!animation.playing || animation.completed || animation.frames.length < 2) return false;
+    if (!animation.playing || animation.completed) return false;
     const frameDuration = 1 / animation.fps;
     animation.elapsed += Math.max(0, dt);
-    let changed = false;
 
+    if (animation.frames.length < 2) {
+      if (!animation.loop && animation.elapsed >= frameDuration) {
+        animation.completed = true;
+        animation.playing = false;
+        animation.elapsed = 0;
+        this.events?.emit("animation:complete", { entity, clip: animation.clip });
+      }
+      return false;
+    }
+
+    let changed = false;
     while (animation.elapsed >= frameDuration && animation.playing) {
       animation.elapsed -= frameDuration;
       if (animation.index < animation.frames.length - 1) {
