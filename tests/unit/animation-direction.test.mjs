@@ -222,6 +222,42 @@ test("action clip has priority over motion until it completes", () => {
   assert.equal(animation.playing, true);
 });
 
+test("directional action clip resolves current facing before the next motion tick", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "idle",
+    frames: [8],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 8,
+    direction: "right",
+    directionFrames: { right: [8] },
+    actionClip: null,
+    clips: {
+      idle: { frames: [8], fps: 1, loop: true, directionFrames: { right: [8] } },
+      "pick-up": {
+        fps: 10,
+        loop: false,
+        directionFrames: {
+          down: [20, 21],
+          right: [30, 31]
+        }
+      }
+    }
+  };
+
+  assert.equal(system.playAction(animation, "pick-up"), true);
+  assert.equal(animation.clip, "pick-up");
+  assert.deepEqual(animation.frames, [30, 31]);
+  assert.equal(animation.frame, 30);
+  assert.equal(animation.direction, "right");
+  assert.equal(animation.playing, true);
+});
+
 test("missing semantic action clip is a safe no-op", () => {
   const system = new AnimationSystem();
   const animation = {
