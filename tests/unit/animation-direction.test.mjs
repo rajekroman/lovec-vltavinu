@@ -3,7 +3,8 @@ import test from "node:test";
 import {
   AnimationSystem,
   resolveCardinalDirection,
-  resolveEightWayDirection
+  resolveEightWayDirection,
+  setAnimationClip
 } from "../../src/systems/AnimationSystem.js";
 
 test("cardinal resolver preserves legacy four-direction behavior", () => {
@@ -80,4 +81,70 @@ test("four-direction sheets remain valid when a diagonal is requested", () => {
 
   assert.equal(animation.direction, "up");
   assert.deepEqual(animation.frames, [6, 7]);
+});
+
+test("clip registry switches between directional walk and idle poses", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    direction: "down",
+    directionFrames: { down: [0], right: [8] },
+    motionClip: "walk",
+    idleClip: "idle",
+    clips: {
+      idle: {
+        frames: [0],
+        fps: 1,
+        loop: true,
+        directionFrames: { down: [0], right: [8] }
+      },
+      walk: {
+        frames: [0, 1, 2, 3],
+        fps: 6,
+        loop: true,
+        directionFrames: { down: [0, 1, 2, 3], right: [8, 9, 10, 11] }
+      }
+    }
+  };
+  const sprite = { frame: 0, flipX: false };
+
+  system.setMotion(animation, sprite, { x: 1, y: 0 });
+  assert.equal(animation.clip, "walk");
+  assert.equal(animation.direction, "right");
+  assert.deepEqual(animation.frames, [8, 9, 10, 11]);
+  assert.equal(animation.playing, true);
+
+  system.setMotion(animation, sprite, { x: 0, y: 0 });
+  assert.equal(animation.clip, "idle");
+  assert.equal(animation.direction, "right");
+  assert.deepEqual(animation.frames, [8]);
+  assert.equal(animation.frame, 8);
+  assert.equal(animation.playing, false);
+});
+
+test("unknown optional clip leaves the current animation untouched", () => {
+  const animation = {
+    clip: "idle",
+    frames: [0],
+    fps: 1,
+    loop: true,
+    playing: false,
+    index: 0,
+    elapsed: 0,
+    completed: false,
+    frame: 0,
+    clips: { idle: { frames: [0], fps: 1, loop: true } }
+  };
+
+  assert.equal(setAnimationClip(animation, "search"), false);
+  assert.equal(animation.clip, "idle");
+  assert.deepEqual(animation.frames, [0]);
 });
