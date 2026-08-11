@@ -83,6 +83,34 @@ test("four-direction sheets remain valid when a diagonal is requested", () => {
   assert.deepEqual(animation.frames, [6, 7]);
 });
 
+test("legacy directional animations keep their original idle reset semantics", () => {
+  const system = new AnimationSystem();
+  const animation = {
+    clip: "walk",
+    frames: [0, 1],
+    fps: 8,
+    loop: true,
+    playing: true,
+    index: 1,
+    elapsed: 0,
+    completed: false,
+    frame: 1,
+    direction: "right",
+    directionFrames: {
+      down: [0, 1],
+      right: [2, 3]
+    }
+  };
+  const sprite = { frame: 1, flipX: false };
+
+  system.setMotion(animation, sprite, { x: 0, y: 0 });
+
+  assert.equal(animation.direction, "right");
+  assert.deepEqual(animation.frames, [0, 1]);
+  assert.equal(animation.frame, 0);
+  assert.equal(animation.playing, false);
+});
+
 test("clip registry switches between directional walk and idle poses", () => {
   const system = new AnimationSystem();
   const animation = {
