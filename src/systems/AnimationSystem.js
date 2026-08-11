@@ -47,6 +47,16 @@ const getClipDefinition = (animation, clip) => {
   return { ...definition, frames, directionFrames };
 };
 
+const resolveDefinitionFrames = (definition, direction) => {
+  if (definition.frames) return definition.frames;
+  const preferred = definition.directionFrames?.[direction];
+  if (Array.isArray(preferred) && preferred.length) return preferred;
+  for (const frames of Object.values(definition.directionFrames ?? {})) {
+    if (Array.isArray(frames) && frames.length) return frames;
+  }
+  return null;
+};
+
 export function setAnimationClip(animation, clip, options = {}) {
   if (!animation?.frames?.length) throw new TypeError("Invalid animation component.");
   if (typeof clip !== "string" || !clip.trim()) throw new TypeError("Animation clip must be a non-empty string.");
@@ -55,8 +65,10 @@ export function setAnimationClip(animation, clip, options = {}) {
   if (!definition) return false;
 
   const changed = animation.clip !== nextClip;
+  const resolvedFrames = resolveDefinitionFrames(definition, animation.direction);
+  if (!resolvedFrames) return false;
   animation.clip = nextClip;
-  if (definition.frames) animation.frames = definition.frames;
+  animation.frames = resolvedFrames;
   animation.directionFrames = definition.directionFrames;
   if (Number(definition.fps) > 0) animation.fps = Number(definition.fps);
   if (typeof definition.loop === "boolean") animation.loop = definition.loop;
