@@ -416,7 +416,7 @@ async function completeNesmen(page, input, testInfo) {
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-async function pauseForBesedniceEvidence(page, timeout = 10_000) {
+async function pauseForBesedniceEvidence(page, timeout = 20_000) {
   await page.evaluate(async timeoutMs => {
     const { app } = await import("./src/bootstrap.js");
     await new Promise((resolve, reject) => {

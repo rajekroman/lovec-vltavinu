@@ -121,6 +121,7 @@ test("desktop and mobile smoke use project-native normalized input", () => {
   assert.doesNotMatch(slaviaSmoke, /let moveZoneBox = null/);
   assert.match(slaviaSmoke, /const moveZoneBox = await zone\.boundingBox\(\)/);
   assert.match(slaviaSmoke, /const movementTimeout = input\.desktop \? timeout : timeout \+ 30_000/);
+  assert.match(slaviaSmoke, /pauseForBesedniceEvidence\(page, timeout = 20_000\)/);
   assert.match(slaviaSmoke, /Date\.now\(\) \+ movementTimeout \+ 2_000/);
   assert.match(slaviaSmoke, /Math\.min\(8_000, Math\.max\(1, movementDeadline - Date\.now\(\)\)\)/);
   assert.match(slaviaSmoke, /while \(!movement\?\.done\)/);
