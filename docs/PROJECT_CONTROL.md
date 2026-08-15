@@ -1,21 +1,21 @@
 # PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.16.0 · 15. 8. 2026**  
+Revize: **2.17.0 · 15. 8. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr aktuální práce. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická release evidence a nepohyblivé tagy zůstávají auditovatelné v Git historii, uzavřených issues/PR a GitHub Releases a touto revizí se zpětně nepřepisují.
 
 ## 1. Aktuální ověřená realita
 
-- Jediný publikovatelný základ je `main@6c30c05467d2faaa31b1c2d550799cb0a4071622`.
-- Tento `main` obnovuje ověřený produkční strom v6.3 a zůstává jediným release základem, dokud nebude výslovně schválen nový release.
+- Jediný publikovatelný základ je `main@53715811443eff26653007b1b9fcbfe57721e8f4`, vzniklý merge PR #210.
+- Tento `main` zachovává ověřený produkční strom v6.3 a přidává pouze governance synchronizaci V7; zůstává jediným release základem, dokud nebude výslovně schválen nový release.
 - Aktuální veřejný release `v6.3.0` existuje samostatně a jeho release target je `f16d5e2aaf7c47752de4c6e6f903924d485837c3`.
 - Produkční runtime zachovává jeden Three.js `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden `InputManager`, jeden manifest-driven `AssetLoader` a jednu in-memory `GameSession`.
 - Kanonické levely zůstávají přesně `chlum → nesmen → besednice → slavia`.
-- Nový schválený produktový cíl je issue **#207 — V7 visual rebuild**.
+- Schválený produktový cíl je issue **#207 — V7 visual rebuild**.
 - První a jediný aktivní V7 milestone je **Chlum visual vertical slice**.
-- Autoritativní implementační větev je **PR #208 / `v7/visual-rebuild`**, založená z `main@6c30c05467d2faaa31b1c2d550799cb0a4071622`.
-- Governance synchronizaci tohoto registru vlastní **#209 / `agent/v7-governance-sync`**.
+- Autoritativní implementační větev je **PR #208 / `v7/visual-rebuild`**, původně založená z `main@6c30c05467d2faaa31b1c2d550799cb0a4071622`.
+- Governance synchronizace **#209 / PR #210 je COMPLETED / MERGED**; nový A0 refresh aktuálního checkpointu vlastní **#211 / `agent/v7-governance-refresh`**.
 - Nesměň, Besednice a Slavia jsou pro V7 vizuální přestavbu **FROZEN**, dokud A0 výslovně neschválí hotový Chlum baseline.
 
 ## 2. Neměnné architektonické a produktové invarianty
@@ -47,8 +47,8 @@ Porušení kteréhokoli bodu je blocker.
 
 | Role / balík | Stav | Povolená akce |
 |---|---|---|
-| A0 koordinace | **#209 ACTIVE** | synchronizace governance, review #208, evidence a rozhodnutí o Chlum gate |
-| V7 Chlum #207 / PR #208 | **ACTIVE / DRAFT** | pouze Chlum vertical slice podle §4–§6 |
+| A0 koordinace | **#211 ACTIVE** | governance refresh, review #208, evidence a rozhodnutí o Chlum gate |
+| V7 Chlum #207 / PR #208 | **ACTIVE / DRAFT** | pouze Chlum vertical slice podle §4–§7 |
 | A1 architektura | **STANDBY** | žádná samostatná větev; pouze již autorizované malé změny uvnitř #208 |
 | A2 gameplay/data | **STANDBY** | gameplay flow Chlumu se nesmí redesignovat; jen kompatibilní vazba V7 scény v #208 |
 | A3 grafika/assety | **SINGLE-STREAM #208** | pouze produkční Chlum terrain/actor/occlusion assety v autoritativním PR #208 |
@@ -96,12 +96,14 @@ PR #208 smí měnit pouze to, co je nutné pro tento Chlum vertical slice:
 - Václav V7 assety pod `assets/sprites/npcs/`;
 - existující Chlum modely/occlusion assety pouze pokud jsou nutné pro vizuální integraci;
 - `sw.js` pouze pro cache nových lokálních runtime URL;
+- `tools/validate.mjs` pouze pro validaci explicitně autorizovaných Chlum V7 asset metadat;
 - cílené unit/contract testy a existující full-flow Playwright test jako regresní důkaz.
 
-Aktuální změněné soubory PR #208 jsou evidovány jako:
+Aktuální změněné soubory PR #208 na headu `c94af7eab1dac338efded9b794c073aaba17a77d` jsou evidovány jako:
 
 - `assets/manifests/assets.json`;
-- `assets/sprites/npcs/farmer-vaclav-v7.svg`;
+- `assets/sprites/npcs/farmer-vaclav-v7.png`;
+- `assets/textures/terrain/chlum-plate-v7.png`;
 - `assets/textures/terrain/chlum-plate-v7.svg`;
 - `docs/V7_VISUAL_CONTRACT.md`;
 - `src/bootstrap.js`;
@@ -116,7 +118,9 @@ Aktuální změněné soubory PR #208 jsou evidovány jako:
 - `tests/unit/besednice-production-contract.test.mjs`;
 - `tests/unit/camera-bounds.test.mjs`;
 - `tests/unit/character-visual-contract.test.mjs`;
+- `tests/unit/chlum-assets.test.mjs`;
 - `tests/unit/terrain-plate.test.mjs`;
+- `tools/validate.mjs`;
 - `v7.css`.
 
 Další cesta je povolena jen tehdy, pokud je přímo Chlum-only a A0 ji před změnou zapíše do #207 nebo #208.
@@ -149,41 +153,53 @@ Chlum musí splnit všechny následující body:
 
 ## 6. Aktuální checkpoint #208
 
-Autoritativní technický checkpoint před touto governance revizí:
+Autoritativní technický checkpoint této governance revize:
 
-- head: `c37a0313c00ddcbf392e09d7025b7cde5ccc4337`;
-- PR #208: **OPEN / DRAFT**;
-- workflow `31894469575` / run #1408:
-  - Static and unit validation: **SUCCESS**;
-  - Desktop and mobile Playwright matrix: **SUCCESS**;
-- předchozí přesný unit stav na V7 větvi dosáhl 208 testů a po aktualizaci charakterového kontraktu je statická/unit job gate zelená;
-- browser matrix pokrývá desktop, iPhone portrait a iPhone landscape.
+- head: `c94af7eab1dac338efded9b794c073aaba17a77d`;
+- PR #208: **OPEN / DRAFT / MERGEABLE**;
+- workflow `31900365409` / run #1413: **SUCCESS**;
+- validator: **0 errors / 0 warnings**;
+- JavaScript syntax validation: **PASS**;
+- unit suite: **209/209 PASS**;
+- Playwright matrix: **6/6 PASS**;
+- desktop Chromium full four-level flow: **PASS**;
+- iPhone portrait real-touch input/lifecycle: **PASS**;
+- iPhone portrait full four-level flow: **PASS**;
+- iPhone landscape full four-level flow: **PASS**;
+- statický artifact: `9250904902`, digest `sha256:d58e7acb67028f45890c312e0cb9a71980ac8b81feb0d2a45aaacef7b6aa5360`;
+- Playwright artifact: `9251041281`, digest `sha256:b304ae60a245efcd5decfac7b912d996cb2bbc96081d35ffba323379792ad4cb`.
+
+### Produkční asset checkpoint
+
+- `assets/textures/terrain/chlum-plate-v7.png` je repository-owned raster terrain plate 1600×1200, 3,717,520 bytes, manifest budget 4,000,000 bytes, textureMax 2048, SHA-256 `1937dc52adafdb49b51779988bd33316cbe1311582a1105cf69d7ff8e13c3fda`;
+- `assets/sprites/npcs/farmer-vaclav-v7.png` je transparentní bitmap 384×512, 166,177 bytes, manifest budget 200,000 bytes, textureMax 512, SHA-256 `837759db87c4e0e351ce0b7904cd1aacb57ec5c21aff5296f54940ba563a33e8`;
+- oba assety mají manifest ID, relativní lokální URL a `LevelScene:chlum` dispose ownership;
+- hlavní repeat-pattern blocker terrain plate je odstraněn;
+- Václav už není plochý SVG placeholder vedle realističtějšího hunteru.
 
 ### Vizuální verdict
 
-**NENÍ SCHVÁLENO.** Technická zelená gate neznamená splnění V7 art gate.
+**ČÁSTEČNĚ SCHVÁLENO / CELÝ CHLUM JEŠTĚ NENÍ APPROVED.** Technická zelená gate neznamená splnění celé V7 art gate.
 
-Aktuální provizorní `chlum-plate-v7.svg` odstranil původní dominantní repeat pattern, ale nedosahuje požadované referenční produkční kvality. Vizuální evidence zároveň ukázala kompoziční problém v portrait režimu s nevyužitou/prázdnou plochou. Současné SVG terrain/Václav assety proto nejsou finální produkční baseline.
-
-PR #208 musí zůstat **DRAFT**.
+Terrain plate, základní Chlum kompozice a produkční Václav checkpoint prošly screenshot review na desktopu, iPhone portrait a iPhone landscape. PR #208 však musí zůstat **DRAFT**, protože ještě chybí úplná produkční action-art sada hunteru, finální vizuální integrace traktoru a finální foreground/occlusion obsah. Tyto body jsou explicitní blocker před A0 visual approval.
 
 ## 7. Povinná dokončovací brána PR #208
 
 Před změnou PR #208 na ready musí existovat na jednom exact headu:
 
-1. repository-owned produkční Chlum terrain plate jako stabilní lokální raster asset, bez expirované remote URL;
-2. manifestový záznam s unikátním ID, relativní URL, rozměrem, byte budgetem, SHA-256 a `disposeOwner`;
-3. produkční hunter art v konzistentní perspektivě a měřítku;
-4. produkční Václav art ve stejném vizuálním jazyce;
-5. skutečné action frames/clipy podle §5.5, nikoli pouze programová změna názvu klipu nad stejným placeholder framem;
-6. přirozeně integrovaný traktor a foreground/occlusion;
-7. bez viditelného repeat patternu, tile seams nebo generické plochy;
-8. bez prázdného/černého prostoru mimo herní kompozici v desktopu ani mobilu;
-9. validátor `0 chyb / 0 varování`;
-10. kompletní unit suite PASS;
-11. Playwright full-flow PASS na desktopu, iPhone portrait a iPhone landscape;
-12. vizuální screenshot evidence minimálně pro Chlum na `1280×720`, `390×844` a `844×390`;
-13. A0 vizuální review = **APPROVED**;
+1. repository-owned produkční Chlum terrain plate jako stabilní lokální raster asset, bez expirované remote URL — **SPLNĚNO na `c94af7ea…`**;
+2. manifestový záznam s unikátním ID, relativní URL, rozměrem, byte budgetem, SHA-256 a `disposeOwner` — **SPLNĚNO pro terrain a Václava**;
+3. produkční hunter art v konzistentní perspektivě a měřítku — **ROZPRACOVÁNO / gate neuzavřena**;
+4. produkční Václav art ve stejném vizuálním jazyce — **SPLNĚNO na `c94af7ea…`**;
+5. skutečné action frames/clipy podle §5.5, nikoli pouze programová změna názvu klipu nad stejným placeholder framem — **BLOCKER**;
+6. přirozeně integrovaný traktor a foreground/occlusion — **BLOCKER**;
+7. bez viditelného repeat patternu, tile seams nebo generické plochy — **terrain checkpoint PASS**;
+8. bez prázdného/černého prostoru mimo herní kompozici v desktopu ani mobilu — **checkpoint PASS**;
+9. validátor `0 chyb / 0 varování` — **PASS na run #1413**;
+10. kompletní unit suite PASS — **209/209 PASS**;
+11. Playwright full-flow PASS na desktopu, iPhone portrait a iPhone landscape — **6/6 PASS**;
+12. vizuální screenshot evidence minimálně pro Chlum na `1280×720`, `390×844` a `844×390` — **checkpoint evidence PASS**;
+13. A0 vizuální review = **PENDING po final hunter/tractor/foreground headu**;
 14. až potom ready-for-review a případný merge.
 
 Automatický merge feature PR je zakázán.
@@ -191,9 +207,10 @@ Automatický merge feature PR je zakázán.
 ## 8. Integrační pořadí V7
 
 ```text
-#209 governance sync
+#209 / PR #210 governance sync — COMPLETED
+→ #211 governance checkpoint refresh
 → dokončit a vizuálně schválit Chlum v #207 / PR #208
-→ A0 review + merge #208
+→ A0 review + případný merge #208
 → aktualizovat PROJECT_CONTROL na nový main SHA
 → samostatný V7 Nesměň issue/PR
 → vizuální approval Nesměně
