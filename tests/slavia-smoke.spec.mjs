@@ -95,15 +95,27 @@ function createInputDriver(page, testInfo) {
     const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.98 : 0));
     const client = await page.context().newCDPSession(page);
     let active = true;
+    let repeatError = null;
+    let repeatPromise = Promise.resolve();
+    const touchPoint = { x, y, radiusX: 4, radiusY: 4, force: 1 };
     await client.send("Input.dispatchTouchEvent", {
       type: "touchStart",
-      touchPoints: [{ x, y, radiusX: 4, radiusY: 4, force: 1 }]
+      touchPoints: [touchPoint]
     });
+    const repeatTimer = setInterval(() => {
+      if (!active) return;
+      repeatPromise = repeatPromise
+        .then(() => client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [touchPoint] }))
+        .catch(error => { repeatError ??= error; });
+    }, 250);
     return async () => {
       if (!active) return;
       active = false;
+      clearInterval(repeatTimer);
+      await repeatPromise;
       await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }).catch(() => {});
       await client.detach().catch(() => {});
+      if (repeatError) throw repeatError;
     };
   }
 

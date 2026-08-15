@@ -37,4 +37,5 @@ test("mobile keeps the touch joystick and action button while desktop keeps keyb
   assert.match(input, /const ACTION_KEYS = new Set\(\["Space", "Enter", "KeyE"\]\)/);
   assert.match(input, /this\.listen\(moveZone, "pointerdown"/);
   assert.match(input, /this\.listen\(action, "pointerdown"/);
+  assert.match(smoke, /type: "touchMove", touchPoints: \[touchPoint\]/);
 });
