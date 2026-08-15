@@ -135,7 +135,7 @@ else {
   }
   chlumAssetCount = assetManifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum").length;
   nesmenAssetCount = assetManifest.filter(entry => entry.preload === "level:nesmen").length;
-  if (chlumAssetCount !== 12) fail(`Chlum/common preload musí obsahovat 12 assetů; nalezeno: ${chlumAssetCount}.`);
+  if (chlumAssetCount !== 14) fail(`Chlum/common preload musí obsahovat 14 assetů; nalezeno: ${chlumAssetCount}.`);
   if (nesmenAssetCount !== 7) fail(`Nesměň preload musí obsahovat 7 assetů; nalezeno: ${nesmenAssetCount}.`);
 }
 

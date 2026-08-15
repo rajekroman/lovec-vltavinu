@@ -12,6 +12,8 @@ const chlumManifest = manifest.filter(entry => entry.preload === "common" || ent
 const EXPECTED_IDS = [
   "player-hunter-walk",
   "npc-farmer-vaclav",
+  "hazard-chlum-tractor-v7",
+  "foreground-chlum-wet-verge-v7",
   "finding-vltavin-common",
   "finding-vltavin-rare",
   "finding-vltavin-standard",
@@ -76,6 +78,7 @@ test("Chlum PNG and GLB files match declared technical constraints", () => {
       const height = buffer.readUInt32BE(20);
       assert.deepEqual({ width, height }, entry.dimensions, entry.id);
       assert.ok(Math.max(width, height) <= entry.budget.textureMax, entry.id);
+      if (entry.transparent === true) assert.ok([4, 6].includes(buffer[25]), `${entry.id} must preserve PNG alpha`);
     } else if (entry.url.endsWith(".glb")) {
       assert.equal(buffer.subarray(0, 4).toString("ascii"), "glTF", entry.id);
       assert.equal(buffer.readUInt32LE(4), 2, entry.id);
@@ -135,4 +138,14 @@ test("ChlumScene používá manifest preload bez ručních seznamů a type overr
   assert.doesNotMatch(source, /TEXTURE_IDS|MODEL_IDS/);
   assert.doesNotMatch(source, /\.load\(\{\s*\.\.\.entry,\s*type:/);
   assert.match(source, /selectPreload\(this\.level\.assetGroups\)/);
+});
+
+test("Chlum V7 renders the tractor and foreground from authored transparent sprites", () => {
+  const source = fs.readFileSync(path.join(root, "src/scenes/ChlumV7Scene.js"), "utf8");
+  assert.match(source, /this\.texture\("hazard-chlum-tractor-v7"\)/);
+  assert.match(source, /this\.texture\("foreground-chlum-wet-verge-v7"\)/);
+  assert.match(source, /assetId: "hazard-chlum-tractor-v7"/);
+  assert.match(source, /sprite\.flipX = patrol\.direction < 0/);
+  assert.match(source, /foreground\.name = "chlum-v7-foreground-occlusion"/);
+  assert.doesNotMatch(source, /modelFactory\.bind\(this\.tractorEntity/);
 });

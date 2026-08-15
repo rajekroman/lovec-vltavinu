@@ -77,6 +77,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     ensureV7Theme();
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
+    this.tractorSprite = null;
     this.visualMode = "uninitialized";
   }
 
@@ -99,10 +100,12 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const plateAssetId = this.assetEntries.has(V7_PLATE_ASSET) ? V7_PLATE_ASSET : FALLBACK_PLATE_ASSET;
     this.visualMode = plateAssetId === V7_PLATE_ASSET ? "terrain-plate-v7" : "terrain-plate-fallback";
 
-    const [plateTexture, playerTexture, farmerTexture] = await Promise.all([
+    const [plateTexture, playerTexture, farmerTexture, tractorTexture, foregroundTexture] = await Promise.all([
       this.texture(plateAssetId),
       this.texture("player-hunter-walk"),
-      this.texture("npc-farmer-vaclav")
+      this.texture("npc-farmer-vaclav"),
+      this.texture("hazard-chlum-tractor-v7"),
+      this.texture("foreground-chlum-wet-verge-v7")
     ]);
 
     const plate = this.renderer.createTerrainPlate(plateTexture, {
@@ -158,13 +161,25 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     });
     marker.visible = false;
 
-    this.modelFactory.bind(this.tractorEntity, this.model("model-chlum-tractor-no-driver"), {
-      assetId: "model-chlum-tractor-no-driver",
-      layer: "actors",
-      rotationX: Math.PI / 2,
-      scale: 42,
-      z: 8
+    const tractor = this.renderer.createSprite(tractorTexture, {
+      width: 210,
+      height: 140,
+      z: 14,
+      anchorX: 0.5,
+      anchorY: 0.08,
+      assetId: "hazard-chlum-tractor-v7"
     });
+    this.app.world.add(this.tractorEntity, "sprite", {
+      assetId: "hazard-chlum-tractor-v7",
+      layer: "actors",
+      frame: 0,
+      columns: 1,
+      rows: 1,
+      flipX: false
+    });
+    this.app.world.get(this.tractorEntity, "transform").rotation = 0;
+    this.tractorSprite = tractor;
+    this.renderer.bindEntity(this.tractorEntity, tractor, "actors");
 
     const farmerTransform = this.app.world.get(this.farmerEntity, "transform");
     const interactionRing = new THREE.Mesh(
@@ -183,28 +198,36 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.farmerInteractionRing = interactionRing;
     this.renderer.add(interactionRing, "props");
 
-    // Foreground occlusion is a dedicated render layer. These elements can cover
-    // the lower part of actors and create depth without affecting collisions.
+    // Foreground occlusion is a dedicated render layer. Authored wet vegetation
+    // can cover the lower part of actors and create depth without affecting collisions.
     const foreground = new THREE.Group();
     foreground.name = "chlum-v7-foreground-occlusion";
-    foreground.add(this.modelFactory.clone(this.model("model-chlum-field-fence-segment"), {
-      assetId: "model-chlum-field-fence-segment",
-      x: 250,
-      y: 270,
+    const nearVerge = this.renderer.createSprite(foregroundTexture, {
+      x: 350,
+      y: 300,
       z: 30,
-      rotationX: Math.PI / 2,
-      rotationZ: -0.08,
-      scale: 54
-    }));
-    foreground.add(this.modelFactory.clone(this.model("model-chlum-field-fence-segment"), {
-      assetId: "model-chlum-field-fence-segment",
-      x: 490,
-      y: 285,
+      width: 430,
+      height: 286,
+      anchorX: 0.5,
+      anchorY: 0.08,
+      assetId: "foreground-chlum-wet-verge-v7"
+    });
+    nearVerge.name = "chlum-v7-near-wet-verge";
+    foreground.add(nearVerge);
+
+    const farVerge = this.renderer.createSprite(foregroundTexture, {
+      x: 1370,
+      y: 1020,
       z: 30,
-      rotationX: Math.PI / 2,
-      rotationZ: 0.04,
-      scale: 54
-    }));
+      width: 330,
+      height: 220,
+      anchorX: 0.5,
+      anchorY: 0.08,
+      assetId: "foreground-chlum-wet-verge-v7"
+    });
+    farVerge.name = "chlum-v7-far-wet-verge";
+    farVerge.scale.x *= -1;
+    foreground.add(farVerge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
   }
@@ -232,6 +255,16 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const teleported = before.x !== player.x || before.y !== player.y;
     const wasAwayFromSpawn = before.x !== this.level.spawn.x || before.y !== this.level.spawn.y;
     if (returnedToSpawn && teleported && wasAwayFromSpawn) this.setCameraToPlayer({ snap: true });
+  }
+
+  updateMovement(dt, time, input) {
+    super.updateMovement(dt, time, input);
+    if (this.tractorEntity === null) return;
+    const transform = this.app.world.get(this.tractorEntity, "transform");
+    const patrol = this.app.world.get(this.tractorEntity, "patrol");
+    const sprite = this.app.world.get(this.tractorEntity, "sprite");
+    if (transform) transform.rotation = 0;
+    if (sprite && patrol) sprite.flipX = patrol.direction < 0;
   }
 
   setCameraToPlayer(options = {}) {
@@ -264,6 +297,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.tractorSprite = null;
     super.destroyVisualWorld();
   }
 

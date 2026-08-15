@@ -125,7 +125,7 @@ async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
   const path = `${directory}/${name}.png`;
-  await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device" });
+  await page.screenshot({ path, animations: "disabled", caret: "hide", scale: "device", timeout: 15_000 });
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
 
