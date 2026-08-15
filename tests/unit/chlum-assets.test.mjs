@@ -11,6 +11,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "assets/manifests/as
 const chlumManifest = manifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum");
 const EXPECTED_IDS = [
   "player-hunter-walk",
+  "player-hunter-actions-v7",
   "npc-farmer-vaclav",
   "hazard-chlum-tractor-v7",
   "foreground-chlum-wet-verge-v7",
@@ -148,4 +149,19 @@ test("Chlum V7 renders the tractor and foreground from authored transparent spri
   assert.match(source, /sprite\.flipX = patrol\.direction < 0/);
   assert.match(source, /foreground\.name = "chlum-v7-foreground-occlusion"/);
   assert.doesNotMatch(source, /modelFactory\.bind\(this\.tractorEntity/);
+});
+
+test("Chlum V7 wires every required hunter action pose through the animation controller", () => {
+  const source = fs.readFileSync(path.join(root, "src/scenes/ChlumV7Scene.js"), "utf8");
+  assert.match(source, /this\.texture\("player-hunter-actions-v7"\)/);
+  for (const clip of ["search", "pick-up", "talk", "caught", "dig", "celebration"]) {
+    assert.match(source, new RegExp(`["']?${clip}["']?: Object\\.freeze`), clip);
+  }
+  assert.match(source, /this\.app\.animations\.playAction\(animation, clip/);
+  assert.match(source, /syncSpriteVisual\(this\.playerActionSprite/);
+  assert.match(source, /this\.playHunterAction\("search"/);
+  assert.match(source, /this\.playHunterAction\("pick-up"/);
+  assert.match(source, /this\.playHunterAction\("talk"/);
+  assert.match(source, /this\.playHunterAction\("caught"/);
+  assert.match(source, /this\.playHunterAction\("celebration"/);
 });

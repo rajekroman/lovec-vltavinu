@@ -1,10 +1,19 @@
 import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { syncSpriteVisual } from "../render/ThreeRenderer.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
 const V7_STYLESHEET_ID = "lovec-v7-visual-theme";
 const V7_ROOT_CLASS = "v7-visual-rebuild";
+const HUNTER_ACTION_CLIPS = Object.freeze({
+  search: Object.freeze({ frames: Object.freeze([0]), fps: 2.5, loop: false }),
+  "pick-up": Object.freeze({ frames: Object.freeze([1]), fps: 2.2, loop: false }),
+  talk: Object.freeze({ frames: Object.freeze([2]), fps: 1.6, loop: false }),
+  caught: Object.freeze({ frames: Object.freeze([3]), fps: 2.5, loop: false }),
+  dig: Object.freeze({ frames: Object.freeze([4]), fps: 2.5, loop: false }),
+  celebration: Object.freeze({ frames: Object.freeze([5]), fps: 1.8, loop: false })
+});
 
 export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   const width = Math.max(1, Number(viewportWidth) || 1);
@@ -78,6 +87,9 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
     this.tractorSprite = null;
+    this.playerWalkSprite = null;
+    this.playerActionSprite = null;
+    this.findingActionStage = null;
     this.visualMode = "uninitialized";
   }
 
@@ -92,6 +104,12 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     }
   }
 
+  instantiateWorld() {
+    super.instantiateWorld();
+    const animation = this.app.world.get(this.playerEntity, "animation");
+    animation.clips = { ...animation.clips, ...HUNTER_ACTION_CLIPS };
+  }
+
   async createVisualWorld() {
     const THREE = this.THREE;
     const root = new THREE.Group();
@@ -100,9 +118,10 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const plateAssetId = this.assetEntries.has(V7_PLATE_ASSET) ? V7_PLATE_ASSET : FALLBACK_PLATE_ASSET;
     this.visualMode = plateAssetId === V7_PLATE_ASSET ? "terrain-plate-v7" : "terrain-plate-fallback";
 
-    const [plateTexture, playerTexture, farmerTexture, tractorTexture, foregroundTexture] = await Promise.all([
+    const [plateTexture, playerTexture, playerActionTexture, farmerTexture, tractorTexture, foregroundTexture] = await Promise.all([
       this.texture(plateAssetId),
       this.texture("player-hunter-walk"),
+      this.texture("player-hunter-actions-v7"),
       this.texture("npc-farmer-vaclav"),
       this.texture("hazard-chlum-tractor-v7"),
       this.texture("foreground-chlum-wet-verge-v7")
@@ -145,12 +164,27 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       ...actorSpriteOptions,
       assetId: "player-hunter-walk"
     });
+    const playerAction = this.renderer.createSprite(playerActionTexture, {
+      width: actorSpriteOptions.height,
+      height: actorSpriteOptions.height,
+      z: actorSpriteOptions.z,
+      anchorX: actorSpriteOptions.anchorX,
+      anchorY: actorSpriteOptions.anchorY,
+      assetId: "player-hunter-actions-v7"
+    });
+    playerAction.visible = false;
+    const playerGroup = new THREE.Group();
+    playerGroup.name = "chlum-v7-player-visuals";
+    playerGroup.add(player, playerAction);
+    this.playerWalkSprite = player;
+    this.playerActionSprite = playerAction;
     const farmer = this.renderer.createSprite(farmerTexture, {
       ...actorSpriteOptions,
       assetId: "npc-farmer-vaclav"
     });
-    this.renderer.bindEntity(this.playerEntity, player, "actors");
+    this.renderer.bindEntity(this.playerEntity, playerGroup, "actors");
     this.renderer.bindEntity(this.farmerEntity, farmer, "actors");
+    this.syncPlayerActionVisual();
 
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
       assetId: "model-chlum-field-marker",
@@ -245,6 +279,65 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
+  playHunterAction(clip, options = {}) {
+    const animation = this.app.world.get(this.playerEntity, "animation");
+    const played = this.app.animations.playAction(animation, clip, options);
+    if (played) this.syncPlayerActionVisual();
+    return played;
+  }
+
+  syncPlayerActionVisual() {
+    if (!this.playerWalkSprite || !this.playerActionSprite || this.playerEntity === null) return false;
+    const animation = this.app.world.get(this.playerEntity, "animation");
+    const sprite = this.app.world.get(this.playerEntity, "sprite");
+    const actionVisible = Boolean(animation?.actionClip);
+    this.playerWalkSprite.visible = !actionVisible;
+    this.playerActionSprite.visible = actionVisible;
+    if (actionVisible) {
+      syncSpriteVisual(this.playerActionSprite, {
+        frame: animation.frame,
+        columns: 3,
+        rows: 2,
+        flipX: false
+      });
+    } else {
+      syncSpriteVisual(this.playerWalkSprite, sprite);
+    }
+    return actionVisible;
+  }
+
+  showPermissionDialog() {
+    this.playHunterAction("talk", { interruptible: true });
+    super.showPermissionDialog();
+  }
+
+  activateRadar() {
+    if (this.radarEnabled && !this.surfaceSearched) this.playHunterAction("search", { interruptible: true });
+    super.activateRadar();
+  }
+
+  collectFinding() {
+    if (this.findingEntity === null) return;
+    this.findingActionStage = "pick-up";
+    this.playHunterAction("pick-up");
+    super.collectFinding();
+  }
+
+  showResult() {
+    const animation = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "animation");
+    if (this.findingActionStage === "pick-up") {
+      if (animation?.actionClip) return;
+      this.findingActionStage = "celebration";
+      this.playHunterAction("celebration");
+      return;
+    }
+    if (this.findingActionStage === "celebration") {
+      if (animation?.actionClip) return;
+      this.findingActionStage = null;
+    }
+    super.showResult();
+  }
+
   updateGameplay(dt, time, input) {
     const player = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
     const before = player ? { x: player.x, y: player.y } : null;
@@ -254,7 +347,10 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const returnedToSpawn = player.x === this.level.spawn.x && player.y === this.level.spawn.y;
     const teleported = before.x !== player.x || before.y !== player.y;
     const wasAwayFromSpawn = before.x !== this.level.spawn.x || before.y !== this.level.spawn.y;
-    if (returnedToSpawn && teleported && wasAwayFromSpawn) this.setCameraToPlayer({ snap: true });
+    if (returnedToSpawn && teleported && wasAwayFromSpawn) {
+      this.playHunterAction("caught");
+      this.setCameraToPlayer({ snap: true });
+    }
   }
 
   updateMovement(dt, time, input) {
@@ -265,6 +361,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const sprite = this.app.world.get(this.tractorEntity, "sprite");
     if (transform) transform.rotation = 0;
     if (sprite && patrol) sprite.flipX = patrol.direction < 0;
+  }
+
+  updateAnimations(dt) {
+    super.updateAnimations(dt);
+    this.syncPlayerActionVisual();
   }
 
   setCameraToPlayer(options = {}) {
@@ -298,6 +399,9 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.foregroundRoot = null;
     }
     this.tractorSprite = null;
+    this.playerWalkSprite = null;
+    this.playerActionSprite = null;
+    this.findingActionStage = null;
     super.destroyVisualWorld();
   }
 
