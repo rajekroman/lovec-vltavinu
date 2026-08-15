@@ -1,385 +1,254 @@
-# PROJECT_CONTROL.md — terminální post-release řídicí registr
+# PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.15.0 · 8. 8. 2026**  
+Revize: **2.16.0 · 15. 8. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
-Tento dokument je autoritativní stavový registr projektu. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická release evidence se nesmí zpětně přepisovat novými post-release změnami.
+Tento dokument je jediný autoritativní stavový registr aktuální práce. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická release evidence a nepohyblivé tagy zůstávají auditovatelné v Git historii, uzavřených issues/PR a GitHub Releases a touto revizí se zpětně nepřepisují.
 
-Tato revize je záměrně **terminální stavový snapshot** po dokončení post-release governance sekvence. Nehardcoduje SHA vlastního budoucího merge commitu a neudržuje umělý „aktivní“ koordinační issue. Pokud vznikne nový schválený feature cíl nebo reprodukovatelný incident, další práce začne novým explicitním A0 issue s base SHA, větví, povolenými cestami, acceptance criteria a testy.
+## 1. Aktuální ověřená realita
 
-## 1. Aktuální stabilní stav
+- Jediný publikovatelný základ je `main@6c30c05467d2faaa31b1c2d550799cb0a4071622`.
+- Tento `main` obnovuje ověřený produkční strom v6.3 a zůstává jediným release základem, dokud nebude výslovně schválen nový release.
+- Aktuální veřejný release `v6.3.0` existuje samostatně a jeho release target je `f16d5e2aaf7c47752de4c6e6f903924d485837c3`.
+- Produkční runtime zachovává jeden Three.js `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden `InputManager`, jeden manifest-driven `AssetLoader` a jednu in-memory `GameSession`.
+- Kanonické levely zůstávají přesně `chlum → nesmen → besednice → slavia`.
+- Nový schválený produktový cíl je issue **#207 — V7 visual rebuild**.
+- První a jediný aktivní V7 milestone je **Chlum visual vertical slice**.
+- Autoritativní implementační větev je **PR #208 / `v7/visual-rebuild`**, založená z `main@6c30c05467d2faaa31b1c2d550799cb0a4071622`.
+- Governance synchronizaci tohoto registru vlastní **#209 / `agent/v7-governance-sync`**.
+- Nesměň, Besednice a Slavia jsou pro V7 vizuální přestavbu **FROZEN**, dokud A0 výslovně neschválí hotový Chlum baseline.
 
-- Vydaná a formálně certifikovaná verze: **6.0.0**.
-- Neměnný release baseline a tag target: `v6.0.0@6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9`.
-- Poslední stabilní `main` před tímto terminálním closeout balíkem: `3874bd56c4f1104a74b5aac5865646bbe7424c71`.
-- `v6.0.0 → main` před tímto closeoutem: **ahead 2 / behind 0**.
-- Tyto dva post-release commity mění pouze:
-  - `docs/ARCHITECTURE_CONTRACT.md` — PR #120;
-  - `docs/PROJECT_CONTROL.md` — PR #121.
-- Produkční `src/**`, assety, manifest, testy a workflow se po v6.0.0 nezměnily.
-- Otevřený produktový backlog po dokončení post-release governance: **žádný**.
-- Otevřený blocker nebo critical defect: **žádný doložený**.
-- Žádný nový release není aktivní.
+## 2. Neměnné architektonické a produktové invarianty
 
-Přesný budoucí tip `main` po merge této terminální revize se záměrně nehardcoduje. Autoritou pro aktuální tip je vždy repository branch `main`; tento dokument popisuje stabilní stav a integrační pravidla, nikoli vlastní commit identitu.
+| Oblast | Závazné rozhodnutí |
+|---|---|
+| Repozitář | pouze `rajekroman/lovec-vltavinu` |
+| Produkční větev | pouze `main` |
+| Runtime | ES moduly + Three.js |
+| Renderer | právě jeden `WebGLRenderer` |
+| Kamera | právě jedna `OrthographicCamera` spravovaná renderer vrstvou |
+| Simulace | jeden fixed-step loop, 60 Hz, max delta 100 ms, max 5 substepů |
+| Session | jedna in-memory `GameSession` |
+| Produkční vstup | pouze `src/bootstrap.js` |
+| Assety | pouze manifest-driven preload z `assets/manifests/assets.json` |
+| UI | HTML/CSS overlay, není autoritou gameplay stavu |
+| Levely | Chlum → Nesměň → Besednice → Slavia |
+| Ovládání | směrový vstup + jedno kontextové tlačítko `AKCE` |
+| Chlum | povrchové hledání/radar, bez kopacího modalu |
+| Nesměň | rytmické kopání, přesně 3 úspěšné zásahy |
+| Persistence | žádný nový save systém ani localStorage gameplay stav |
+| Inventář | žádné inventářové UI ani správa předmětů |
+| Legacy | žádný návrat Canvas gameplay runtime, `game.js`, `runtime-stability.js` ani legacy save cesty |
+| Release | nový tag/release pouze ze schváleného `main` po samostatné QA/release gate |
 
-## 2. Neměnná release identita v6.0.0
+Porušení kteréhokoli bodu je blocker.
 
-- Finálně certifikovaný SHA: `6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9`.
-- Skutečný git tag: `v6.0.0`, target přesně na certifikovaný SHA.
-- GitHub Release: **Lovec vltavínů 6.0.0**.
-- Release URL: `https://github.com/rajekroman/lovec-vltavinu/releases/tag/v6.0.0`.
-- GitHub Pages: `https://rajekroman.github.io/lovec-vltavinu/`.
-- Pages/public mobile smoke: **PASS**.
-- Release blocker při uzavření v6.0.0: **žádný**.
-- Finální master issue #100: **COMPLETED**.
-- Finální certifikační issue #106: **COMPLETED**.
-- Release issue #104: **COMPLETED**.
-- Umbrella trackery #7 a #8: **COMPLETED**.
+## 3. Aktuální pracovní proudy
 
-Post-release práce nesmí retagovat `v6.0.0`, měnit jeho Release objekt ani vydávat novější `main` za původní certifikovaný release SHA.
-
-## 3. Historická formální certifikace v6.0.0
-
-Certifikace proběhla na jediném nezměněném SHA `6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9`:
-
-| Fáze | Run ID | Výsledek |
-|---|---:|---|
-| warm-up | `30601983659` | SUCCESS |
-| cert-1 | `30602468712` | SUCCESS |
-| cert-2 | `30602880009` | SUCCESS |
-
-V každém běhu byly oba workflow joby SUCCESS. Certifikační kontrakt zahrnoval:
-
-- validátor `0 chyb / 0 varování`;
-- unit testy `167/167 PASS`;
-- renderer ownership `5/5 PASS`;
-- Playwright `6/6 PASS`;
-- desktop canonical full-flow + čistý restart;
-- audio lifecycle;
-- iPhone portrait touch/input + full-flow + lifecycle;
-- iPhone landscape full-flow + restart.
-
-### Certifikační artefakty a digesty
-
-- warm-up static `8782231552`, 5831 B, `sha256:7e8d553132bd10300260f67d16e128c9a124f72aa889f3b45f73f83bba50b645`;
-- warm-up Playwright `8782350880`, 32112911 B, `sha256:14d1aa9b34cc6bf70a2462a721161cf2b2d9a83cb1ac6e73495bbad741fcd8a3`;
-- cert-1 static `8782396987`, 5839 B, `sha256:d30ea6c79d2e5dfd92cc681e7a80c764d5b59e24b55b35e381bd83f157dac8e1`;
-- cert-1 Playwright `8782519777`, 32102538 B, `sha256:c479c652cd83cc7d2248677653d42c942e6435aa50c50ce6995753c9cf7e97e2`;
-- cert-2 static `8782539257`, 5855 B, `sha256:0775ce902624fcec6a14f05130e9a197ae1aa5ed90bb1a3010510f26210c9076`;
-- cert-2 Playwright `8782664148`, 32070860 B, `sha256:421b505091ba0cd0b77d022e1adf75a6acaac8ebe629d104124337f85d110013`.
-
-Nezávislý A6 audit #114 tuto sérii znovu ověřil jako **PASS** bez blocker/critical vady.
-
-## 4. Ověřený produktový kontrakt v6.0.0
-
-- Produkční vstup je pouze `src/bootstrap.js`.
-- Runtime používá ES moduly, Three.js, jeden `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden loader, jeden input systém a jednu in-memory `GameSession`.
-- Renderer ownership je staticky vynucen: jediný konstrukční bod `THREE.WebGLRenderer`, žádné produkční `new HybridRenderer`, jediný potomek `ThreeRenderer` a právě jedna instance `ThreeRenderer` v bootstrapu.
-- Kanonické kapitoly jsou přesně `chlum → nesmen → besednice → slavia`.
-- Průchod končí výsledkem poroty a idempotentním čistým restartem.
-- Gameplay stav se neukládá do `localStorage` ani IndexedDB; cílový runtime nemá save systém ani inventářové UI.
-- `game.js`, `runtime-stability.js`, Canvas gameplay runtime a legacy save cesta nejsou součástí produkčního stromu.
-- Audio se odemyká uživatelským gestem a pokrývá mute/unmute, background/foreground a `pagehide` lifecycle.
-- Service worker slouží pouze jako distribuční cache.
-- Runtime asset autorita je `assets/manifests/assets.json`; `src/data` nemá paralelní asset registry.
-
-## 5. Finální read-only audity A1–A6
-
-Před release byly proti certifikovanému SHA provedeny samostatné read-only audity:
-
-| Issue | Oblast | Výsledek |
+| Role / balík | Stav | Povolená akce |
 |---|---|---|
-| #109 | architektura a runtime invarianty | **PASS** |
-| #110 | gameplay/data a průchod kapitolami | **PASS** |
-| #111 | assety a manifest | **PASS** |
-| #112 | UI a mobilní ovládání | **PASS** |
-| #113 | audio, lifecycle a výkon | **PASS** |
-| #114 | finální QA a certifikační evidence | **PASS** |
-
-Tyto audity jsou historická release evidence. Post-release dokumentační změny je zpětně nemění ani znovu necertifikují v6.0.0.
-
-## 6. Dokončené post-release změny po v6.0.0
-
-### #115 / PR #120 — ARCHITECTURE_CONTRACT sync
-
-Stav: **COMPLETED / MERGED**.
-
-- base: `main@6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9`;
-- A1 head: `f0a0c232229ec08edf82327d0c2b7bace3ad9de3`;
-- merge / nový main: `97828c3973d5c2166a69b94118421dfe9507c0fc`;
-- změněna pouze `docs/ARCHITECTURE_CONTRACT.md` (`+1/-2`);
-- odstraněna stale položka `src/data/assets.js`;
-- `assets/manifests/assets.json` zapsán jako skutečná manifestová autorita;
-- runtime a release baseline beze změny.
-
-Validace PR #120, workflow #1174 / run `31203304631`:
-
-- `Static and unit validation`: SUCCESS;
-- validátor `0/0`;
-- unit `167/167`;
-- renderer ownership `5/5`;
-- `Desktop and mobile Playwright matrix`: SUCCESS;
-- Playwright `6/6 PASS (8.1m)`;
-- static artifact `9003689666`, 5856 B, `sha256:f2b4e81be834ea3652aaa08c088f2909aaace475048cebbb0e162ea0b6dce764`;
-- Playwright artifact `9003943435`, 32104424 B, `sha256:29503c73f6122d2b7f6e5ba1fa23a4ca26d97f3979cbad9b825ae9ad893f3e74`.
-
-### #116 / PR #121 — PROJECT_CONTROL post-release sync
-
-Stav: **COMPLETED / MERGED**.
-
-- base: `main@97828c3973d5c2166a69b94118421dfe9507c0fc`;
-- A0 head: `4dd5d091ad39bcbca32e5f018c5dbc38de07d0df`;
-- merge / nový main: `3874bd56c4f1104a74b5aac5865646bbe7424c71`;
-- změněna pouze `docs/PROJECT_CONTROL.md` (`+148/-136`);
-- release baseline zůstal nezměněn.
-
-Validace PR #121, workflow #1178 / run `31204456359`:
-
-- `Static and unit validation`: SUCCESS, job `92951985728`;
-- validátor `0 chyb / 0 varování`;
-- unit `167/167 PASS`;
-- renderer ownership PASS;
-- `Desktop and mobile Playwright matrix`: SUCCESS, job `92951985660`;
-- Playwright `6/6 PASS (7.9m)`;
-- static artifact `9004131830`, 5841 B, `sha256:decbc94a3c3488b06b52647b39fb4a9698d5978957605d118fbdc91e813bb4e2`;
-- Playwright artifact `9004377649`, 32137614 B, `sha256:e838341e0525dd18a984f9f4099e8ce5187ea0e92f25aabdcd9ad0c3624250fd`.
-
-### #118 — A0 post-release orchestrace
-
-Stav: **COMPLETED**.
-
-Po integraci #115 a #116 byla živá fronta znovu vyhodnocena. Nebyl nalezen žádný otevřený produktový blocker ani schválený nový feature balík. A1–A7 proto nebyli znovu aktivováni bez konkrétního cíle.
-
-## 7. Stav pracovních proudů po v6.0.0
-
-| Role | Stav | Další povolená akce |
-|---|---|---|
-| A0 koordinace | **#178 ACTIVE** | vede pouze schválený rozsah #178 a jeho integrační evidence |
-| A1 architektura | **COMPLETED / STANDBY** | nová změna pouze přes nové A0 issue |
-| A2 gameplay/data | **COMPLETED / STANDBY** | #156 je sloučený; žádná další gameplay/data změna bez nového issue |
-| A3 grafika/assety | **COMPLETED / STANDBY** | #176 je sloučený; bez další změny assetů |
-| A4 UI/mobil | **COMPLETED / STANDBY** | #176 je sloučený; bez další mobilní změny |
-| A5 audio/výkon | **STANDBY** | žádná změna bez nového A0 issue |
-| A6 QA | **#178 ACTIVE** | finální validace candidate SHA a evidence výsledků |
-| A7 release | **#178 ACTIVE** | nový samostatný tag/release `v6.1.0` po QA evidenci |
-
-Mimo výslovně povolený rozsah #178 žádný proud nemá aktivní implementační větev ani pracovní balík.
-
-## 8. Aktuální integrační pravidla
-
-1. `main` zůstává jediná zveřejnitelná větev.
-2. Žádný agent nesmí měnit cizí modul bez konkrétního A0 issue.
-3. Nový pracovní balík musí uvést base SHA, větev, povolené a zakázané cesty, acceptance criteria a povinné testy.
-4. Release `v6.0.0` je historicky uzavřený a nesmí se kvůli post-release práci recertifikovat, retagovat ani přepisovat.
-5. Dokumentační post-release commit nevytváří novou vydanou verzi hry.
-6. A1–A7 zůstávají STANDBY, dokud není doložen konkrétní nový produktový backlog, schválený feature cíl nebo reprodukovatelný incident.
-7. Při produkční vadě A0 vytvoří samostatný issue a přiřadí vlastníka podle hranic v `AGENTS.md`; A0 neopravuje cizí feature modul v governance PR.
-8. Nový release musí mít samostatný release issue, explicitní candidate SHA a vlastní QA/release gate. `v6.0.0` není pohyblivý tag.
-9. Uzavřené release issue #100/#104 ani dokončené governance issue #115/#116/#118 se nesmějí používat jako nový aktivní pracovní prostor.
-
-## 9. Otevřená fronta
-
-### #154 — Produkční redesign prostředí Nesměň, Besednice a Malše/KD Slavia
-
-Stav: **COMPLETED / MERGED**, issue #154 a PR #155. Tento záznam zůstává jako auditní evidence schváleného feature balíku po `v6.0.0`.
-
-- Base: `main@3c59933`; pracovní větev: `agent/environment-level-redesign`.
-- Povolený rozsah: levelové scény, asset manifest, distribuční cache, nové optimalizované textury prostředí, jejich kontraktové testy a tento řídicí záznam.
-- Nesměň: zachovat širokou hrací mýtinu a pískové hromady po kopání vltavínů; obvodové smrky jsou výrazně vyšší než hráč/NPC.
-- Besednice: samostatný široký písčitý lom s jílovými vrstvami.
-- Malše/KD Slavia: velká hratelná plocha u řeky; proporčně vysoká budova KD Slavia je na okraji levelu. Referenční architektonický motiv je neorenesanční fasáda KD Slavia v Českých Budějovicích.
-- Kontrakty beze změny: jeden Three.js renderer, ortografická kamera, žádný save systém, inventář ani druhý renderer. Service worker zůstává pouze distribuční cache.
-- Assetová povinnost: každý nový PNG má manifestové ID, relativní URL, rozměr, byte budget, SHA-256 a `disposeOwner`; musí být zahrnut v cache pro offline distribuci.
-- Povinné gate před sloučením: `tools/validate.mjs`, kompletní unit suite, Playwright desktop/mobile smoke a vizuální kontrola poměru stromů a budovy vůči hráči.
-- Aktuální evidence: validátor `0 chyb / 0 varování` a unit suite `167/167 PASS`. Mobile Playwright portrait skončil v headless timeoutu po dosažení Slavia fáze; vlastník dne 9. 8. 2026 výslovně schválil pokračování bez této automatické gate. Tento záznam je **owner-approved výjimka**, nikoli zpětné tvrzení, že selhaný běh byl automatický PASS.
-
-Distribuční připravenost tohoto balíku znamená zelené gate a sloučený PR do `main`; nevytváří ani nepřeznačuje historický tag `v6.0.0`. Vydání nového tagu nebo GitHub Release vyžaduje samostatné release issue, explicitní candidate SHA a vlastní QA/release gate podle §8.8.
-
-### #156 — Jednotná čitelnost postupu úkolem v HUDu
-
-Stav: **COMPLETED / MERGED**, issue #156 a PR #157.
-
-- Base: `main@22d20418c06378228773cc594d2ee0a4773dd18a`; pracovní větev: `agent/final-gameplay-polish`.
-- Povolený rozsah: stávající HUD, UI model scén, související markup/CSS, kontraktové testy a tento řídicí záznam.
-- Hráč u každé kanonické kapitoly uvidí normalizovaný postup stávajícího objective systému v procentech a jako přístupný `progressbar`.
-- Nejsou povoleny nové akce, změna objective pravidel, save systém, inventář, druhý renderer ani změna eventových payloadů.
-- Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke; layout nesmí omezit touch targety v portrait ani landscape.
-
-### #158 — Milníková zpětná vazba pro nálezy a splněné cíle
-
-Stav: **COMPLETED / MERGED**, issue #158 a PR #159.
-
-- Base: `main@3afd6484aa5204dd3924ff8a490870ec8e4dd17f`; pracovní větev: `agent/progress-milestone-feedback`.
-- Povolený rozsah: existující toast UI, jeho přístupnost, kontraktové testy a tento řídicí záznam.
-- Toast naslouchá pouze platným eventům `finding:collected` a `objective:complete`; nepřidává payload ani gameplay pravidla.
-- Zobrazení je neinteraktivní, s bezpečným restartem timeoutu a nevytváří persistentní stav.
-- Před sloučením: validátor, unit suite a relevantní browser smoke.
-
-### #160 — Kontextový přehled úkolu v pauze
-
-Stav: **COMPLETED / MERGED**, issue #160 a PR #161.
-
-- Base: `main@e3c335a0b039709c4041940899d6202ee5acd7a6`; pracovní větev: `agent/pause-mission-recap`.
-- Povolený rozsah: stávající pauzový panel, UI model scén, kontraktové testy a tento řídicí záznam.
-- Pauza ukáže lokalitu, aktuální objective a normalizovaný procentní postup z existujícího snapshotu; návrat a menu zůstávají beze změny.
-- Nejsou povoleny nové akce, změny objektivů, event payloadů, save systému, inventáře ani rendereru.
-- Před sloučením: validátor, unit suite a relevantní desktop/mobile smoke.
-
-### #162 — Čitelný průběh rytmického kopání
-
-Stav: **COMPLETED / MERGED**, issue #162 a PR #163.
-
-- Base: `main@ff83475551a55457fbeb39a0fdf07adda0585a0e`; pracovní větev: `agent/dig-progress-clarity`.
-- Povolený rozsah: existující kopací UI, jeho přístupnost, kontraktové testy a tento řídicí záznam.
-- Rozhraní ukáže přesný počet zásahů `0/3` až `3/3` vedle dosavadních drahokamových symbolů; živý popis sdělí hráči další krok bez nové interakce.
-- Doslovné pravidlo tří úspěšných rytmických zásahů se nemění. Nejsou povoleny nové akce, objective pravidla, event payloady, save systém, inventář ani druhý renderer.
-- Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; text nesmí zakrývat ovládání v portrait ani landscape.
-
-### #164 — Rozlišit připravenou a nedostupnou kontextovou akci
-
-Stav: **COMPLETED / MERGED**, issue #164 a PR #165.
-
-- Base: `main@6ea1409`; pracovní větev: `agent/contextual-action-clarity`.
-- Povolený rozsah: stávající HUD kontextové akce, její přístupnost, kontraktové testy a tento řídicí záznam.
-- Mimo dosah ukáže stávající tlačítko ztlumený stav `PŘIBLIŽ SE` se srozumitelným ARIA popisem; po přiblížení se obnoví konkrétní label dosavadní jediné akce.
-- Nejsou povoleny nové akce nebo touch targety, změny InteractionSystemu, objective/kopacích pravidel, event payloadů, save systému, inventáře ani rendereru.
-- Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; rozměr ovládání se nesmí změnit v portrait ani landscape.
-
-### #166 — Aktualizovat onboarding podle kanonického ovládání
-
-Stav: **COMPLETED / MERGED**, issue #166 a PR #167.
-
-- Base: `main@ea7ae63`; pracovní větev: `agent/onboarding-action-clarity`.
-- Povolený rozsah: stávající onboarding, jeho kontraktový test a tento řídicí záznam.
-- Úvodní karta popisuje pohyb, přiblížení k cíli a jediné kontextové tlačítko, přesně tři rytmické zásahy při kopání a bezpečné vyhnutí se hrozbě.
-- Text nesmí odkazovat na legacy běh, kombo ani ztrátu předmětu. Nejsou povoleny změny vstupů, gameplay pravidel, eventů, save systému, inventáře ani rendereru.
-- Před sloučením: validátor, kompletní unit suite a relevantní desktop/mobile smoke; karta musí zůstat stručná a použitelná v portrait i landscape.
-
-### #168 — Umožnit zavření nápovědy klávesou Escape
-
-Stav: **COMPLETED / MERGED**, issue #168 a PR #169.
-
-- Base: `main@7ef624a`; pracovní větev: `agent/modal-focus-polish`.
-- Povolený rozsah: lifecycle titulní scény, kontraktový test a tento řídicí záznam.
-- Klávesa Escape zavře pouze právě otevřenou obrazovku nápovědy a vrátí titulní obrazovku, která už zajišťuje fokus na první akční prvek.
-- Nejsou povoleny změny ScreenControlleru, gameplay vstupů, pravidel, eventů, save systému, inventáře ani rendereru.
-- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
-
-### #170 — Nahradit technický štítek na titulní obrazovce
-
-Stav: **COMPLETED / MERGED**, issue #170 a PR #171.
-
-- Base: `main@1cebeb0`; pracovní větev: `agent/player-facing-title-version`.
-- Povolený rozsah: statický a runtime text titulní obrazovky, kontraktový test a tento řídicí záznam.
-- Štítek zůstane na verzi `v6.0`, ale interní výraz `Modular Bootstrap` nahradí hráčské označení čtyř kanonických lokalit.
-- Nejsou povoleny změny release verze, layoutu, gameplay, dat, eventů, save systému, inventáře, rendereru ani assetů.
-- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
-
-### #172 — Doplnit situační doporučení do varování hrozeb
-
-Stav: **COMPLETED / MERGED**, issue #172 a PR #173.
-
-- Base: `main@01abfc1`; pracovní větev: `agent/danger-guidance`.
-- Povolený rozsah: existující hlášky hrozeb tří scén, kontraktový test a tento řídicí záznam.
-- Chlum navede k obejití traktoru; Besednice a Slavia navádějí k zastavení osoby odnášející nález. Prahy a podmínky zobrazení hlášek se nemění.
-- Nejsou povoleny změny DangerSystemu, BossSystemu, tras, kolizí, dosahů, objective pravidel, eventů, save systému, inventáře ani rendereru.
-- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke; zpráva zůstává čitelná v portrait i landscape.
-
-### #174 — Doplnit dialogovou sémantiku nápovědy
-
-Stav: **COMPLETED / MERGED**, issue #174 a PR #175.
-
-- Base: `main@93b5b3a`; pracovní větev: `agent/help-modal-semantics`.
-- Povolený rozsah: stávající markup nápovědy, kontraktový test a tento řídicí záznam.
-- Nápověda získá `role="dialog"`, `aria-modal="true"`, vlastní název a popis z existujícího obsahu; vzhled ani ovládání se nemění.
-- Nejsou povoleny změny ScreenControlleru, navigace, inputu, gameplay, eventů, save systému, inventáře, rendereru ani assetů.
-- Před sloučením: validátor, kompletní unit suite a relevantní browser smoke.
-
-### #176 — Sjednotit detailní grafiku hráče a NPC
-
-Stav: **COMPLETED / MERGED**, issue #176 a PR #177.
-
-- Base: `main@382f887`; pracovní větev: `agent/character-visual-refresh`.
-- Povolený rozsah: versionované NPC PNG, jejich manifestové URL a metadata, produkční render postav čtyř scén, kontraktové testy a tento řídicí záznam.
-- Nové NPC jsou realistické pre-renderované 3D sprity ve stejném detailním materiálovém stylu jako hlavní postava. Stabilní manifestová ID odkazují na nové `*-v2.png`; původní PNG zůstávají beze změny.
-- Ve všech čtyřech scénách jsou hráč a NPC vykresleni rozměrem `82 × 108` se shodným anchorem `0.5 / 0.08`. Kolize, dosahy a pravidla hry se nemění.
-- Každý nový PNG má relativní URL, rozměr `256 × 384`, byte budget, SHA-256 a `disposeOwner` v manifestu; pět nových runtime URL je zahrnuto v distribuční cache service workeru.
-- Před sloučením: validátor, kompletní unit suite, asset integrity testy a relevantní desktop/mobile vizuální smoke.
-
-### #178 — Finální QA a release kandidát po grafickém sjednocení
-
-Stav: **COMPLETED / RELEASED** jako `v6.1.0` na merge SHA `745109103722646b69ad5b514d66f9882662ecb9`.
-
-- Candidate base: `main@9f880db1e4d2698d6c671238cf6737a48bd6ba31`; pracovní větev: `agent/final-release-validation`.
-- Lokálně prošly: validátor `0 chyb / 0 varování`, syntaxe všech modulů, úplná unit sada a Playwright desktop, iPhone portrait i iPhone landscape. GitHub Pages deploy candidate SHA skončil `success`.
-- GitHub Actions run `31300903064` skončil `5/6 PASS`; portrait full-flow překročil 480 s při souběžném běhu tří WebGL projektů, bez assetové nebo runtime chyby. Release balík proto stabilizuje pouze počet Playwright workerů na jeden a zachovává plnou matici projektů.
-- Historický tag `v6.0.0` zůstává neměnný. Tag `v6.1.0` byl vytvořen na merge SHA release PR spolu s GitHub Release a uvedenou transparentní výjimkou.
-- Release metadata pouze mění hráčský štítek na `v6.1`; nevzniká save systém, inventář, nový renderer ani gameplay změna.
-
-### #180 — Integrace redesignu prostředí bez prostoru mimo mapu
-
-Stav: **COMPLETED / MERGED** na `main@ce5a4a95624d21727aae5613dfb3c406681ce760` (PR #181).
-
-- Base: `main@745109103722646b69ad5b514d66f9882662ecb9`; pracovní větev: `agent/environment-runtime-visibility-fix`.
-- Reprodukce na desktopu `1280 × 720` ukázala při okrajových spawnech Nesměně a Besednice velkou černou plochu mimo level bounds; nové environment textury byly načtené, ale kamera nebyla omezená podle velikosti viewportu a zoomu.
-- Čistý výpočet `CameraBounds` omezuje střed jediné ortografické kamery uvnitř mapy a je zapojen do všech čtyř produkčních scén.
-- Nesměň, Besednice a Slavia zachovávají environment assety `*-v1`; odstraněny jsou pouze rušivé dekorativní překryvy, které zakrývaly detailní podklady. Kanonický model KD Slavia zůstává načtený a navázaný na cílovou entitu, ale fasádu vizuálně poskytuje správně škálovaný environment plate.
-- Do této větve jsou přeneseny také dosud nesloučené commity Chlum brázd `17d9f14` a `91736be`; při konfliktu byl zachován kompletní novější manifest z `main` a aktualizován jen záznam `terrain-chlum-furrows`.
-- Hlavní postava nyní volí skutečnou čtyřsměrovou řadu realistického sprite sheetu (čelo, levý bok, pravý bok, záda) při `6 fps`; při zastavení stojí v posledním směru místo návratu do čelní pózy.
-- Každý level definuje vlastní `walkable` zónu. Pohyb se omezuje na pole, lesní mýtinu, dno lomu a dlážděné okolí KD Slavia; spawn Slavie byl přesunut z řeky na nábřežní plochu. Všechny povinné cíle zůstávají validovaně dosažitelné.
-- Kontrakty beze změny: jeden `WebGLRenderer`, ortografická kamera, čtyři kapitoly, jedna kontextová akce, přesně tři zásahy, žádný nový save systém ani inventář.
-- Povinná gate: validátor, syntaxe modulů, kompletní unit sada, desktop/iPhone portrait/iPhone landscape full-flow smoke a vizuální kontrola všech čtyř map. Nový release vyžaduje samostatné release issue a nový nepohyblivý tag; `v6.0.0` ani `v6.1.0` se nepřepisují.
-
-### #182 — Release v6.2.0 po integraci prostředí
-
-Stav: **COMPLETED / RELEASED** jako `v6.2.0` na merge SHA `0175ff8483b24de73e835d005cb60d1338c0a491` (PR #183).
-
-- Povolený rozsah: pouze číslo verze v balíčku a titulní obrazovce, verzovaný název distribuční cache, odpovídající kontraktový test a aktualizace tohoto řídicího záznamu.
-- Gameplay, data, render kontrakty, assety a ovládání se nemění.
-- Validátor a syntaxe prošly bez chyb; úplná unit sada prošla 183/183; desktop, iPhone portrait a iPhone landscape full-flow smoke prošly; GitHub Pages deploy stejného SHA skončil úspěšně.
-- Release URL: `https://github.com/rajekroman/lovec-vltavinu/releases/tag/v6.2.0`; historické tagy `v6.0.0` a `v6.1.0` zůstávají neměnné.
-
-### #190 — Rozlišit povrchové hledání v Chlumu a kopání v Nesměni
-
-Stav: **ACTIVE**, issue #190; pracovní větev `agent/chlum-surface-search` z `main@0175ff8`.
-
-- Chlum po Václavově povolení používá jediné kontextové tlačítko jako radar. Puls radaru hlásí sílu signálu, v dosahu odhalí povrchový vltavín a další kontextová akce nález sebere.
-- Chlum nepoužívá `DigSystem`, kopací modal ani stav rytmických zásahů. Nesměň zachovává tři kopané a následně zahrnuté profily; přesně tři úspěšné rytmické zásahy zůstávají beze změny.
-- Mobil používá existující dotykový joystick a akční tlačítko; desktop zachovává WASD/šipky a `E`. Obě varianty vedou přes jediný `InputManager`.
-- Session-only skóre a nálezy, Václav, traktor, jeden renderer a přechod Chlum → Nesměň zůstávají zachované. Nevzniká inventář ani save systém.
-- Povinná gate: validátor, syntaxe, kompletní unit sada a full-flow smoke na desktopu, iPhone portrait i landscape.
-
-### #192 — Release v6.3.0 po radarové integraci
-
-Stav: **ACTIVE**, issue #192; pracovní větev `agent/release-v6-3` z `main@916c297`.
-
-- Release navazuje na #189 (stabilizace QA vstupu) a #191 (povrchové hledání radarem v Chlumu).
-- Distribuční metadata jsou sladěna na `v6.3`: package verze, titulní obrazovka a service-worker cache.
-- Před vytvořením tagu je nutný úspěšný validátor, syntaxe, kompletní unit sada a zelená GitHub Actions matice.
-- Nový nepohyblivý tag bude `v6.3.0`; historické tagy `v6.0.0`, `v6.1.0` a `v6.2.0` zůstávají neměnné.
-
-Další práce smí vzniknout pouze z jednoho z těchto vstupů:
-
-- explicitní nový produktový/feature požadavek vlastníka;
-- konkrétní reprodukovatelný incident nebo defect;
-- nový release cíl;
-- nutná governance změna vyvolaná skutečnou změnou projektu, nikoli snahou vytížit agenty.
-
-Bez takového vstupu A0 nevytváří umělé issue a A1–A7 zůstávají ve výše uvedeném stabilním stavu.
-
-## 10. Historická Definition of Done terminálního post-release governance stavu
-
-Terminální stav je přijat pouze pokud:
-
-- release v6.0.0 historie zůstává auditovatelná a neměnná;
-- tag `v6.0.0` stále míří na `6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9`;
-- #100, #106, #104, #7 a #8 jsou completed;
-- audity #109–#114 jsou PASS;
-- #115 / PR #120 jsou completed/merged;
-- #116 / PR #121 jsou completed/merged;
-- #118 je completed;
-- po post-release governance není otevřený produktový blocker ani schválený feature backlog;
-- A0–A7 nejsou bez konkrétního důvodu aktivováni;
-- terminální registr nepředstírá znalost SHA vlastního budoucího merge commitu;
-- další práce musí začít novým A0 issue podle pravidel výše.
+| A0 koordinace | **#209 ACTIVE** | synchronizace governance, review #208, evidence a rozhodnutí o Chlum gate |
+| V7 Chlum #207 / PR #208 | **ACTIVE / DRAFT** | pouze Chlum vertical slice podle §4–§6 |
+| A1 architektura | **STANDBY** | žádná samostatná větev; pouze již autorizované malé změny uvnitř #208 |
+| A2 gameplay/data | **STANDBY** | gameplay flow Chlumu se nesmí redesignovat; jen kompatibilní vazba V7 scény v #208 |
+| A3 grafika/assety | **SINGLE-STREAM #208** | pouze produkční Chlum terrain/actor/occlusion assety v autoritativním PR #208 |
+| A4 UI/mobil | **SINGLE-STREAM #208** | pouze V7 Chlum HUD/composition v autoritativním PR #208 |
+| A5 audio/výkon | **STANDBY** | bez změny audia; výkon pouze regresně sledovat |
+| A6 QA | **SUPPORT #208** | validátor, unit, desktop + iPhone portrait/landscape a vizuální evidence |
+| A7 release | **BLOCKED** | žádný V7 release před schválením všech čtyř levelů a samostatnou release gate |
+| V7 Nesměň | **FROZEN** | bez implementace do schválení Chlumu |
+| V7 Besednice | **FROZEN** | bez implementace do schválení Chlumu |
+| V7 Slavia | **FROZEN** | bez implementace do schválení Chlumu |
+
+Issue #207 výslovně zakazuje návrat k osmi paralelním neslučitelným implementacím. Proto je PR #208 jediný autoritativní integrační proud pro první V7 vertical slice a role A1/A3/A4/A6 do něj dodávají pouze izolované změny bez vlastních konkurenčních finálních větví.
+
+## 4. Přidělený rozsah #207 / PR #208 — pouze Chlum
+
+### 4.1 Cíl
+
+Předělat Chlum do referenčního stylu detailní jihočeské 2.5D/3D diorámy při zachování současného Three.js/WebGL/ortografického runtime a existujícího gameplay flow:
+
+```text
+Václav
+→ povolení
+→ povrchové hledání / radar
+→ odhalení nálezu
+→ sebrání
+→ dokončení Chlumu
+→ existující přechod do Nesměně
+```
+
+### 4.2 Povolené oblasti
+
+PR #208 smí měnit pouze to, co je nutné pro tento Chlum vertical slice:
+
+- `docs/V7_VISUAL_CONTRACT.md`;
+- `src/render/CameraBounds.js`;
+- `src/render/HybridRenderer.js` v rozsahu terrain plate / foreground layer adaptace bez druhého rendereru;
+- `src/systems/AnimationSystem.js` v rozsahu zpětně kompatibilních directional/action clipů;
+- `src/scenes/ChlumV7Scene.js`;
+- nezbytnou kompatibilní Chlum registraci v `src/bootstrap.js`;
+- Chlum-only data vazby v `src/data/chlum.js` bez změny objective pravidel;
+- `v7.css` a pouze Chlum-scoped HUD styling;
+- `assets/manifests/assets.json` pouze pro Chlum V7 assety;
+- Chlum terrain assety pod `assets/textures/terrain/`;
+- hunter V7 atlas/sprite assety pod `assets/sprites/player/`;
+- Václav V7 assety pod `assets/sprites/npcs/`;
+- existující Chlum modely/occlusion assety pouze pokud jsou nutné pro vizuální integraci;
+- `sw.js` pouze pro cache nových lokálních runtime URL;
+- cílené unit/contract testy a existující full-flow Playwright test jako regresní důkaz.
+
+Aktuální změněné soubory PR #208 jsou evidovány jako:
+
+- `assets/manifests/assets.json`;
+- `assets/sprites/npcs/farmer-vaclav-v7.svg`;
+- `assets/textures/terrain/chlum-plate-v7.svg`;
+- `docs/V7_VISUAL_CONTRACT.md`;
+- `src/bootstrap.js`;
+- `src/data/chlum.js`;
+- `src/render/CameraBounds.js`;
+- `src/render/HybridRenderer.js`;
+- `src/scenes/ChlumV7Scene.js`;
+- `src/systems/AnimationSystem.js`;
+- `sw.js`;
+- `tests/slavia-smoke.spec.mjs`;
+- `tests/unit/animation-direction.test.mjs`;
+- `tests/unit/besednice-production-contract.test.mjs`;
+- `tests/unit/camera-bounds.test.mjs`;
+- `tests/unit/character-visual-contract.test.mjs`;
+- `tests/unit/terrain-plate.test.mjs`;
+- `v7.css`.
+
+Další cesta je povolena jen tehdy, pokud je přímo Chlum-only a A0 ji před změnou zapíše do #207 nebo #208.
+
+### 4.3 Zakázané oblasti
+
+- žádný V7 redesign `NesmenScene`, `BesedniceScene` nebo `SlaviaScene`;
+- žádné nové Nesměň/Besednice/Slavia production assety v tomto PR;
+- žádná změna pořadí levelů;
+- žádný nový quest, pátý level, inventář, save, persistence nebo import/export;
+- žádný druhý renderer, Canvas runtime, paralelní kamera, paralelní loop nebo druhá session;
+- žádná změna event payloadů bez samostatného architektonického issue;
+- žádný release/tag/Pages release z PR #208;
+- žádné vydávání placeholderu nebo provizorního generovaného assetu za finální produkční art.
+
+## 5. V7 Chlum vizuální kontrakt
+
+Chlum musí splnit všechny následující body:
+
+1. hlavní vzhled mapy tvoří jedna nebo několik autorsky komponovaných **nerepetitivních terrain plate** vrstev; opakovaná textura nesmí být hlavní vizuál;
+2. kamera kontinuálně sleduje hráče, používá dead-zone/damping a nikdy neukáže prostor mimo bounds;
+3. desktop, iPhone portrait a iPhone landscape používají stejný world scale a pouze kompoziční tuning;
+4. hráč a Václav mají konzistentní perspektivu, světlo, měřítko a materiálový styl s prostředím;
+5. minimálně `idle` a `walk` jsou čitelné; produkční gate navíc vyžaduje reálné action art pro `search/look-down`, `pick-up`, `dig`, `talk/interact`, `caught/hit` a krátkou finding/celebration reakci, pokud jsou v Chlumu použity;
+6. traktor je čitelný pohybující se hazard a vizuálně sedí do brázd;
+7. foreground/occlusion prvky mohou hráče částečně překrývat a vytvářejí hloubku;
+8. HUD je kompaktní, Chlum-scoped a neblokuje klíčové herní prvky;
+9. Chlum gameplay flow zůstává funkční a dosažitelný bez debug URL nebo konzole;
+10. pozdější levely zůstávají funkčně regresně zelené, ale jejich V7 vizuál se v tomto milestone nemění.
+
+## 6. Aktuální checkpoint #208
+
+Autoritativní technický checkpoint před touto governance revizí:
+
+- head: `c37a0313c00ddcbf392e09d7025b7cde5ccc4337`;
+- PR #208: **OPEN / DRAFT**;
+- workflow `31894469575` / run #1408:
+  - Static and unit validation: **SUCCESS**;
+  - Desktop and mobile Playwright matrix: **SUCCESS**;
+- předchozí přesný unit stav na V7 větvi dosáhl 208 testů a po aktualizaci charakterového kontraktu je statická/unit job gate zelená;
+- browser matrix pokrývá desktop, iPhone portrait a iPhone landscape.
+
+### Vizuální verdict
+
+**NENÍ SCHVÁLENO.** Technická zelená gate neznamená splnění V7 art gate.
+
+Aktuální provizorní `chlum-plate-v7.svg` odstranil původní dominantní repeat pattern, ale nedosahuje požadované referenční produkční kvality. Vizuální evidence zároveň ukázala kompoziční problém v portrait režimu s nevyužitou/prázdnou plochou. Současné SVG terrain/Václav assety proto nejsou finální produkční baseline.
+
+PR #208 musí zůstat **DRAFT**.
+
+## 7. Povinná dokončovací brána PR #208
+
+Před změnou PR #208 na ready musí existovat na jednom exact headu:
+
+1. repository-owned produkční Chlum terrain plate jako stabilní lokální raster asset, bez expirované remote URL;
+2. manifestový záznam s unikátním ID, relativní URL, rozměrem, byte budgetem, SHA-256 a `disposeOwner`;
+3. produkční hunter art v konzistentní perspektivě a měřítku;
+4. produkční Václav art ve stejném vizuálním jazyce;
+5. skutečné action frames/clipy podle §5.5, nikoli pouze programová změna názvu klipu nad stejným placeholder framem;
+6. přirozeně integrovaný traktor a foreground/occlusion;
+7. bez viditelného repeat patternu, tile seams nebo generické plochy;
+8. bez prázdného/černého prostoru mimo herní kompozici v desktopu ani mobilu;
+9. validátor `0 chyb / 0 varování`;
+10. kompletní unit suite PASS;
+11. Playwright full-flow PASS na desktopu, iPhone portrait a iPhone landscape;
+12. vizuální screenshot evidence minimálně pro Chlum na `1280×720`, `390×844` a `844×390`;
+13. A0 vizuální review = **APPROVED**;
+14. až potom ready-for-review a případný merge.
+
+Automatický merge feature PR je zakázán.
+
+## 8. Integrační pořadí V7
+
+```text
+#209 governance sync
+→ dokončit a vizuálně schválit Chlum v #207 / PR #208
+→ A0 review + merge #208
+→ aktualizovat PROJECT_CONTROL na nový main SHA
+→ samostatný V7 Nesměň issue/PR
+→ vizuální approval Nesměně
+→ samostatný V7 Besednice issue/PR
+→ vizuální approval Besednice
+→ samostatný V7 Slavia issue/PR
+→ celoproduktový QA
+→ samostatná release issue / candidate SHA / dvě zelené gate
+→ release pouze z main
+```
+
+Žádný další level nesmí přeskočit Chlum approval.
+
+## 9. Historická release identita — neměnit
+
+| Release | Stav / známý target |
+|---|---|
+| `v6.0.0` | historicky certifikovaný release; target `6e2fec8a63928bc182cffcc1a61ad966dc3b9ec9` |
+| `v6.1.0` | historický release po sjednocení grafiky; merge SHA `745109103722646b69ad5b514d66f9882662ecb9` |
+| `v6.2.0` | historický release prostředí; merge SHA `0175ff8483b24de73e835d005cb60d1338c0a491` |
+| `v6.3.0` | aktuální pre-V7 release; GitHub Release target `f16d5e2aaf7c47752de4c6e6f903924d485837c3` |
+
+V7 práce nesmí retagovat žádný z těchto tagů ani zpětně měnit jejich release evidence.
+
+## 10. Povinné reportování pracovního chatu
+
+Před změnou musí chat uvést:
+
+```text
+Identifikátor úkolu:
+Role:
+Přidělená oblast:
+Načtené revize AGENTS / PROJECT_CONTROL / ARCHITECTURE_CONTRACT:
+Base SHA:
+Větev:
+Závislosti:
+Možné konflikty:
+```
+
+Po změně musí dodat:
+
+```text
+HANDOFF
+Dokončený úkol:
+Issue / PR / větev:
+Base SHA / head SHA:
+Vytvořené nebo změněné soubory:
+Změněné kontrakty:
+Technická rozhodnutí:
+Testy a výsledky:
+Mobilní důkaz:
+Výkon a asset budget:
+Známé problémy:
+Potvrzení: bez save / inventáře / druhého runtime:
+Doporučený následující krok:
+```
+
+Označení „hotovo“ je povoleno pouze pro konkrétní ověřitelný výstup.
