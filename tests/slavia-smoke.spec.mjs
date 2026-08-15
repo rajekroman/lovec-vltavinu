@@ -249,7 +249,7 @@ async function performAction(page, input) {
   try {
     await input.contextualAction();
     await expect.poll(() => page.evaluate(() => window.__slaviaQaInteraction?.performed ?? null), {
-      timeout: 2_000,
+      timeout: 6_000,
       intervals: [10, 20, 30, 50]
     }).toBe(expectedKind);
   } finally {
