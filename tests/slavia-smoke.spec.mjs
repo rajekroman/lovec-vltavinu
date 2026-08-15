@@ -369,7 +369,7 @@ async function enterLevel(page, input, buttonText, kicker, scene) {
   await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe(scene);
 }
 
-async function completeNesmen(page, input) {
+async function completeNesmen(page, input, testInfo) {
   await moveTo(page, input, 280, 240, "permission");
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("JAN");
@@ -380,6 +380,14 @@ async function completeNesmen(page, input) {
   for (let index = 0; index < profiles.length; index++) {
     const profile = profiles[index];
     await moveTo(page, input, profile.x, profile.y, "dig");
+    if (index === 0) {
+      const state = await runtimeSnapshot(page);
+      expect(state.nesmen.runtime.visualMode).toBe("layered-forest-v7");
+      expect(state.nesmen.runtime.loadedAssets).toContain("terrain-nesmen-forest-plate-v7");
+      expect(state.nesmen.runtime.loadedAssets).toContain("foreground-nesmen-forest-edge-v7");
+      expect(state.nesmen.runtime.cameraZoom).toBeGreaterThan(0.9);
+      await captureEvidence(page, testInfo, "nesmen-layered-forest");
+    }
     await performAction(page, input);
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
     for (let hit = 0; hit < 3; hit++) await successfulDigHit(page, input, ++totalHits);
@@ -483,7 +491,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await startChlum(page, input);
   await completeChlum(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
-  await completeNesmen(page, input);
+  await completeNesmen(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
   await completeBesednice(page, input, testInfo);
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");

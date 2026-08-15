@@ -8,9 +8,20 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
-const REFERENCE_CLEARING = Object.freeze({ width: 1800, height: 1200, cameraZoom: 0.75 });
+const V7_PLATE_ASSET = "terrain-nesmen-forest-plate-v7";
+const V7_FOREGROUND_ASSET = "foreground-nesmen-forest-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export function resolveNesmenV7CameraZoom(viewportWidth, viewportHeight) {
+  const width = Math.max(1, Number(viewportWidth) || 1);
+  const height = Math.max(1, Number(viewportHeight) || 1);
+  const aspect = width / height;
+  if (aspect >= 2) return 1.12;
+  if (aspect >= 1.5) return 1.04;
+  if (aspect <= 0.75) return 0.94;
+  return 1;
+}
 
 export class NesmenScene {
   constructor(options) {
@@ -23,6 +34,8 @@ export class NesmenScene {
     this.level = getLevelDefinition("nesmen");
     this.modelFactory = new ModelFactory({ renderer: this.renderer });
     this.visualRoot = null;
+    this.foregroundRoot = null;
+    this.visualMode = "uninitialized";
     this.assetEntries = new Map();
     this.loadedModels = new Map();
     this.entityByExternalId = new Map();
@@ -146,20 +159,26 @@ export class NesmenScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "nesmen-vertical-slice";
-    const [environmentTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
-      this.texture("terrain-nesmen-reference-clearing-v2"),
+    const [environmentTexture, foregroundTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
+      this.texture(V7_PLATE_ASSET),
+      this.texture(V7_FOREGROUND_ASSET),
       this.texture("terrain-nesmen-sand-profile"),
       this.texture("player-hunter-walk"),
       this.texture("npc-forester-jan")
     ]);
     sandTexture.repeat.set(2.2, 1.2);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(REFERENCE_CLEARING.width, REFERENCE_CLEARING.height),
-      new THREE.MeshBasicMaterial({ map: environmentTexture })
-    );
-    ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -4);
+    const ground = this.renderer.createTerrainPlate(environmentTexture, {
+      x: this.level.bounds.x,
+      y: this.level.bounds.y,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      z: -12,
+      assetId: V7_PLATE_ASSET
+    });
+    ground.name = "nesmen-v7-main-plate";
     root.add(ground);
+    this.visualMode = "layered-forest-v7";
 
     const ambient = new THREE.HemisphereLight(0xc9e6bb, 0x17251c, 1.8);
     const sun = new THREE.DirectionalLight(0xffefc5, 1.9);
@@ -211,6 +230,37 @@ export class NesmenScene {
       this.renderer.bindEntity(entity, group, "props");
       this.profileVisuals.set(entity, { group, marker, hole });
     }
+
+    const foreground = new THREE.Group();
+    foreground.name = "nesmen-v7-foreground-occlusion";
+    const lowerEdge = this.renderer.createSprite(foregroundTexture, {
+      x: 1180,
+      y: 1080,
+      z: 30,
+      width: 500,
+      height: 333,
+      anchorX: 0.5,
+      anchorY: 0.08,
+      assetId: V7_FOREGROUND_ASSET
+    });
+    lowerEdge.name = "nesmen-v7-lower-forest-edge";
+    foreground.add(lowerEdge);
+
+    const upperEdge = this.renderer.createSprite(foregroundTexture, {
+      x: 165,
+      y: 500,
+      z: 30,
+      width: 360,
+      height: 240,
+      anchorX: 0.5,
+      anchorY: 0.08,
+      assetId: V7_FOREGROUND_ASSET
+    });
+    upperEdge.name = "nesmen-v7-upper-forest-edge";
+    upperEdge.scale.x *= -1;
+    foreground.add(upperEdge);
+    this.foregroundRoot = foreground;
+    this.renderer.add(foreground, "foreground");
   }
 
   beginPlaying() {
@@ -471,7 +521,12 @@ export class NesmenScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, REFERENCE_CLEARING.cameraZoom);
+    const zoom = resolveNesmenV7CameraZoom(this.renderer.width, this.renderer.height);
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, zoom, {
+      deadZoneRatio: 0.06,
+      damping: 0.18,
+      snapDistanceRatio: 0.55
+    });
   }
 
   objectiveSnapshot() {
@@ -550,7 +605,9 @@ export class NesmenScene {
           kind: this.availableInteraction.interaction.kind,
           label: this.availableInteraction.interaction.label
         } : null,
-        loadedAssets: [...this.assetEntries.keys()].sort()
+        loadedAssets: [...this.assetEntries.keys()].sort(),
+        visualMode: this.visualMode,
+        cameraZoom: this.renderer.camera?.zoom ?? null
       },
       levelComplete: this.levelComplete
     };
@@ -563,6 +620,12 @@ export class NesmenScene {
       this.renderer.disposeObject(this.visualRoot);
       this.visualRoot = null;
     }
+    if (this.foregroundRoot) {
+      this.renderer.remove(this.foregroundRoot);
+      this.renderer.disposeObject(this.foregroundRoot);
+      this.foregroundRoot = null;
+    }
+    this.visualMode = "uninitialized";
   }
 
   unloadAssets() {
