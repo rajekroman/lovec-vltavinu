@@ -8,6 +8,8 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
+const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
+const V7_FOREGROUND_ASSET = "foreground-besednice-quarry-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -53,6 +55,7 @@ export class BesedniceScene {
     this.externalIdByEntity = new Map();
     this.traceVisuals = new Map();
     this.visualRoot = null;
+    this.foregroundRoot = null;
     this.playerEntity = null;
     this.traceEntities = [];
     this.hedgehogEntity = null;
@@ -135,18 +138,21 @@ export class BesedniceScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
-    const [environmentTexture, playerTexture, karelTexture] = await Promise.all([
-      this.texture("terrain-besednice-clay-quarry-v1"),
+    const [environmentTexture, foregroundTexture, playerTexture, karelTexture] = await Promise.all([
+      this.texture(V7_PLATE_ASSET),
+      this.texture(V7_FOREGROUND_ASSET),
       this.texture("player-hunter-walk"),
       this.texture("npc-rival-karel")
     ]);
-    environmentTexture.repeat.set(0.874, 1);
-    environmentTexture.offset.set(0.063, 0);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
-      new THREE.MeshBasicMaterial({ map: environmentTexture })
-    );
-    ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
+    const ground = this.renderer.createTerrainPlate(environmentTexture, {
+      x: this.level.bounds.x,
+      y: this.level.bounds.y,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      z: -12,
+      assetId: V7_PLATE_ASSET
+    });
+    ground.name = "besednice-v7-main-plate";
     root.add(ground);
     const ambient = new THREE.HemisphereLight(0xf0d7af, 0x241d19, 1.65);
     const sun = new THREE.DirectionalLight(0xffefcf, 1.85);
@@ -176,6 +182,23 @@ export class BesedniceScene {
     });
     hedgehogMarker.visible = false;
     this.renderer.bindEntity(this.hedgehogEntity, hedgehogMarker, "props");
+
+    const foreground = new THREE.Group();
+    foreground.name = "besednice-v7-foreground-occlusion";
+    const quarryEdge = this.renderer.createSprite(foregroundTexture, {
+      x: this.level.bounds.x + this.level.bounds.width / 2,
+      y: this.level.bounds.y + this.level.bounds.height / 2,
+      z: 30,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      anchorX: 0.5,
+      anchorY: 0.5,
+      assetId: V7_FOREGROUND_ASSET
+    });
+    quarryEdge.name = "besednice-v7-quarry-edge";
+    foreground.add(quarryEdge);
+    this.foregroundRoot = foreground;
+    this.renderer.add(foreground, "foreground");
   }
 
   beginPlaying() {
@@ -524,6 +547,11 @@ export class BesedniceScene {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
       this.visualRoot = null;
+    }
+    if (this.foregroundRoot) {
+      this.renderer.remove(this.foregroundRoot);
+      this.renderer.disposeObject(this.foregroundRoot);
+      this.foregroundRoot = null;
     }
   }
 
