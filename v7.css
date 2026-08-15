@@ -1,0 +1,179 @@
+/* V7 visual rebuild — reference-driven gameplay HUD overrides. */
+:root.v7-visual-rebuild{
+  --v7-panel:rgba(15,18,13,.91);
+  --v7-panel-strong:rgba(10,12,9,.96);
+  --v7-line:rgba(236,241,226,.15);
+  --v7-green:#7fe39d;
+  --v7-green-soft:#b7e9c4;
+  --v7-text:#f4f1e7;
+  --v7-muted:#aeb5a8;
+}
+
+/* Keep the scene dominant: HUD occupies the corners rather than spanning the playfield. */
+.v7-visual-rebuild .hud{
+  padding:calc(12px + var(--safe-t)) calc(12px + var(--safe-r)) calc(12px + var(--safe-b)) calc(12px + var(--safe-l));
+}
+.v7-visual-rebuild .hud-topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.v7-visual-rebuild .mission-panel{
+  width:min(430px,68vw);
+  max-width:none;
+  height:54px;
+  border-radius:4px;
+  border:1px solid var(--v7-line);
+  border-left:0;
+  background:linear-gradient(180deg,rgba(32,35,27,.95),var(--v7-panel));
+  box-shadow:0 8px 24px rgba(0,0,0,.33);
+  backdrop-filter:blur(8px);
+}
+.v7-visual-rebuild .mission-index{
+  width:48px;
+  flex:0 0 48px;
+  border-radius:0;
+  border-right:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.035);
+  color:#eeeade;
+  font-size:24px;
+  font-weight:900;
+}
+.v7-visual-rebuild .mission-copy{
+  padding:7px 12px 6px;
+}
+.v7-visual-rebuild .mission-copy small{
+  color:#9edcae;
+  font-size:9px;
+  letter-spacing:.15em;
+}
+.v7-visual-rebuild .mission-copy strong{
+  margin-top:1px;
+  color:var(--v7-text);
+  font-size:14px;
+  font-weight:800;
+  line-height:1.05;
+}
+.v7-visual-rebuild .objective-progress{
+  color:#8da393;
+  font-size:7px;
+}
+
+.v7-visual-rebuild .system-panel{
+  gap:7px;
+}
+.v7-visual-rebuild .system-panel .bag-pill{
+  display:none;
+}
+.v7-visual-rebuild .system-panel .icon-button{
+  width:44px;
+  min-width:44px;
+  height:44px;
+  padding:0;
+  border-radius:4px;
+  border:1px solid var(--v7-line);
+  background:var(--v7-panel-strong);
+  color:#f0eee6;
+  box-shadow:0 7px 20px rgba(0,0,0,.28);
+  backdrop-filter:blur(8px);
+}
+
+/* Compact calm/danger strip directly under the mission card, as in the approved frame. */
+.v7-visual-rebuild .danger-meter{
+  top:calc(70px + var(--safe-t));
+  left:calc(12px + var(--safe-l));
+  right:auto;
+  width:min(430px,68vw);
+  height:22px;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:8px;
+  padding:4px 10px 4px 0;
+  border-radius:3px;
+  border:1px solid rgba(236,241,226,.11);
+  background:rgba(13,15,11,.91);
+  box-shadow:0 7px 18px rgba(0,0,0,.25);
+}
+.v7-visual-rebuild .danger-copy{
+  display:grid;
+  place-items:center;
+  min-width:0;
+  height:100%;
+  border-right:1px solid rgba(255,255,255,.07);
+}
+.v7-visual-rebuild .danger-copy span{display:none}
+.v7-visual-rebuild .danger-copy strong{
+  color:#a9c5ae;
+  font-size:8px;
+  letter-spacing:.13em;
+}
+.v7-visual-rebuild .danger-meter i{
+  height:5px;
+  border-radius:1px;
+  background:rgba(255,255,255,.08);
+}
+.v7-visual-rebuild .danger-meter em{
+  background:linear-gradient(90deg,#7edb91,#75d88c 62%,#d9b66c 82%,#d9685d 100%);
+}
+.v7-visual-rebuild .danger-meter.warning .danger-copy strong{color:#e1bd72}
+.v7-visual-rebuild .danger-meter.detected .danger-copy strong{color:#ffaaa1}
+
+.v7-visual-rebuild .hint{
+  bottom:calc(116px + var(--safe-b));
+  padding:7px 11px;
+  border-radius:5px;
+  border-color:rgba(255,255,255,.12);
+  background:rgba(13,15,11,.88);
+  color:#ecebe3;
+  font-size:11px;
+  box-shadow:0 7px 18px rgba(0,0,0,.25);
+}
+
+/* Mobile controls are deliberately translucent so the authored terrain stays visible. */
+.v7-visual-rebuild .move-zone{
+  width:122px;
+  height:122px;
+  border:1px solid rgba(240,245,235,.22);
+  background:rgba(16,20,15,.20);
+  box-shadow:inset 0 0 0 18px rgba(255,255,255,.018),0 8px 28px rgba(0,0,0,.18);
+  backdrop-filter:blur(2px);
+}
+.v7-visual-rebuild .stick{
+  width:58px;
+  height:58px;
+  background:rgba(115,218,145,.48);
+  border:2px solid rgba(210,245,220,.68);
+}
+.v7-visual-rebuild .action-button{
+  width:92px;
+  height:92px;
+  border:2px solid rgba(212,244,220,.68);
+  background:radial-gradient(circle at 38% 32%,rgba(127,227,157,.96),rgba(44,128,72,.94));
+  box-shadow:0 9px 28px rgba(0,0,0,.3);
+}
+.v7-visual-rebuild .action-button.ready{
+  box-shadow:0 0 0 6px rgba(127,227,157,.10),0 9px 28px rgba(0,0,0,.3);
+}
+
+@media(max-width:520px){
+  .v7-visual-rebuild .mission-panel,.v7-visual-rebuild .danger-meter{width:min(62vw,330px)}
+  .v7-visual-rebuild .mission-panel{height:50px}
+  .v7-visual-rebuild .mission-index{width:42px;flex-basis:42px;font-size:20px}
+  .v7-visual-rebuild .mission-copy{padding:6px 9px}
+  .v7-visual-rebuild .mission-copy strong{font-size:11px}
+  .v7-visual-rebuild .mission-copy small{font-size:8px}
+  .v7-visual-rebuild .objective-progress{font-size:6px}
+  .v7-visual-rebuild .danger-meter{top:calc(64px + var(--safe-t));grid-template-columns:42px minmax(0,1fr)}
+}
+
+@media(orientation:landscape) and (max-height:520px){
+  .v7-visual-rebuild .hud{padding-top:calc(7px + var(--safe-t))}
+  .v7-visual-rebuild .mission-panel{width:min(390px,48vw);height:44px}
+  .v7-visual-rebuild .mission-index{width:38px;flex-basis:38px;font-size:18px}
+  .v7-visual-rebuild .mission-copy{padding:5px 8px}
+  .v7-visual-rebuild .mission-copy strong{font-size:10px}
+  .v7-visual-rebuild .danger-meter{top:calc(54px + var(--safe-t));left:calc(12px + var(--safe-l));width:min(390px,48vw);height:20px;grid-template-columns:38px minmax(0,1fr)}
+  .v7-visual-rebuild .system-panel .icon-button{width:40px;min-width:40px;height:40px}
+  .v7-visual-rebuild .move-zone{width:106px;height:106px}
+  .v7-visual-rebuild .action-button{width:80px;height:80px}
+}
