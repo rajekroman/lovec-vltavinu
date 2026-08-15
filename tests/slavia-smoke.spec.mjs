@@ -481,7 +481,7 @@ async function completeBesednice(page, input, testInfo) {
 test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
   // The test walks the full physical distance through four large maps using real input.
   // Mobile touch runs need headroom for the final Slavia certification sequence.
-  test.setTimeout(660_000);
+  test.setTimeout(900_000);
   const input = createInputDriver(page, testInfo);
   const pageErrors = [];
   const httpErrors = [];

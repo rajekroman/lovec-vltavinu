@@ -123,6 +123,7 @@ test("desktop and mobile smoke use project-native normalized input", () => {
   assert.match(slaviaSmoke, /const movementTimeout = input\.desktop \? timeout : timeout \+ 30_000/);
   assert.match(slaviaSmoke, /pauseForBesedniceEvidence\(page, timeout = 20_000\)/);
   assert.match(slaviaSmoke, /window\.__slaviaQaInteraction\?\.performed \?\? null\), \{\s*timeout: 6_000,/);
+  assert.match(slaviaSmoke, /test\.setTimeout\(900_000\)/);
   assert.match(slaviaSmoke, /Date\.now\(\) \+ movementTimeout \+ 2_000/);
   assert.match(slaviaSmoke, /Math\.min\(8_000, Math\.max\(1, movementDeadline - Date\.now\(\)\)\)/);
   assert.match(slaviaSmoke, /while \(!movement\?\.done\)/);
