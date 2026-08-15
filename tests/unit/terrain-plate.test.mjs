@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 import * as THREE from "../../vendor/three.module.min.js";
 import { prepareTerrainPlateTexture } from "../../src/render/HybridRenderer.js";
@@ -22,6 +23,23 @@ const makeTexture = () => ({
     copy.offset.y = this.offset.y;
     return copy;
   }
+});
+
+test("Chlum V7 production terrain plate is a bounded authored bitmap asset", () => {
+  const rootUrl = new URL("../../", import.meta.url);
+  const manifest = JSON.parse(fs.readFileSync(new URL("assets/manifests/assets.json", rootUrl), "utf8"));
+  const entry = manifest.find(candidate => candidate.id === "terrain-chlum-plate-v7");
+
+  assert.ok(entry);
+  assert.equal(entry.url, "./assets/textures/terrain/chlum-plate-v7.png");
+  assert.deepEqual(entry.dimensions, { width: 1600, height: 1200 });
+  assert.equal(entry.transparent, false);
+  assert.equal(entry.wrap, undefined);
+  assert.equal(entry.metrics.bytes, fs.statSync(new URL(entry.url.slice(2), rootUrl)).size);
+  assert.ok(entry.metrics.bytes <= entry.budget.bytes);
+  assert.equal(entry.budget.textureMax, 2048);
+  assert.match(entry.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(entry.disposeOwner, "LevelScene:chlum");
 });
 
 test("terrain plates clamp edges and never repeat the authored image", () => {

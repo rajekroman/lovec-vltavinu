@@ -15,6 +15,7 @@ const EXPECTED_IDS = [
   "finding-vltavin-common",
   "finding-vltavin-rare",
   "finding-vltavin-standard",
+  "terrain-chlum-plate-v7",
   "terrain-chlum-field",
   "terrain-chlum-furrows",
   "model-chlum-tractor-no-driver",

@@ -8,7 +8,7 @@ const manifest = JSON.parse(read("assets/manifests/assets.json"));
 
 test("production NPC art uses the V7 Chlum farmer while later-level NPCs stay on the approved v2 baseline", () => {
   const expected = Object.freeze({
-    "npc-farmer-vaclav": { file: "farmer-vaclav-v7.svg", dimensions: { width: 384, height: 512 } },
+    "npc-farmer-vaclav": { file: "farmer-vaclav-v7.png", dimensions: { width: 384, height: 512 } },
     "npc-forester-jan": { file: "forester-jan-v2.png", dimensions: { width: 256, height: 384 } },
     "npc-rival-karel": { file: "rival-karel-v2.png", dimensions: { width: 256, height: 384 } },
     "npc-expert-eva": { file: "expert-eva-v2.png", dimensions: { width: 256, height: 384 } },
