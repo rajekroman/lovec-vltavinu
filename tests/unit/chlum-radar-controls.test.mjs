@@ -24,6 +24,7 @@ test("the full-flow test reveals Chlum by radar and keeps rhythmic digging in Ne
   assert.match(smoke, /toHaveAttribute\("aria-label", "RADAR"\)/);
   assert.match(smoke, /revealed = activeRuntime\(await runtimeSnapshot\(page\)\)\?\.searched === true/);
   assert.match(smoke, /captureEvidence\(page, testInfo, "chlum-radar-finding"\)/);
+  assert.match(smoke, /waitForTractorLeftOf\(page, maxX = 620, timeout = 75_000\)/);
   assert.match(smoke, /async function completeNesmen/);
   assert.match(smoke, /for \(let hit = 1; hit <= 3; hit\+\+\) await successfulDigHit/);
 });

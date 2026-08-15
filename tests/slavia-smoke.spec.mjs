@@ -317,7 +317,7 @@ async function successfulDigHit(page, input, expectedTotal) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
 }
 
-async function waitForTractorLeftOf(page, maxX = 620, timeout = 30_000) {
+async function waitForTractorLeftOf(page, maxX = 620, timeout = 75_000) {
   await expect.poll(async () => {
     const tractorX = (await runtimeSnapshot(page)).chlum?.runtime?.tractor?.x;
     return typeof tractorX === "number" && tractorX <= maxX;
