@@ -1,14 +1,15 @@
 # PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.17.0 · 15. 8. 2026**  
+Revize: **2.17.1 · 15. 8. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr aktuální práce. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická release evidence a nepohyblivé tagy zůstávají auditovatelné v Git historii, uzavřených issues/PR a GitHub Releases a touto revizí se zpětně nepřepisují.
 
 ## 1. Aktuální ověřená realita
 
-- Jediný publikovatelný základ je `main@53715811443eff26653007b1b9fcbfe57721e8f4`, vzniklý merge PR #210.
-- Tento `main` zachovává ověřený produkční strom v6.3 a přidává pouze governance synchronizaci V7; zůstává jediným release základem, dokud nebude výslovně schválen nový release.
+- Jediná publikovatelná větev je `main`.
+- Governance base/provenance této revize je `main@53715811443eff26653007b1b9fcbfe57721e8f4`, vzniklý merge PR #210. Tento SHA je auditní základ revize 2.17.1, nikoli samo-referenční požadavek, aby po merge tohoto governance PR zůstal HEAD `main` beze změny.
+- Runtime/release obsah na tomto governance základu zachovává ověřený produkční strom v6.3; governance-only commity nemění runtime a nový V7 release vznikne až po samostatné schválené release gate.
 - Aktuální veřejný release `v6.3.0` existuje samostatně a jeho release target je `f16d5e2aaf7c47752de4c6e6f903924d485837c3`.
 - Produkční runtime zachovává jeden Three.js `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden `InputManager`, jeden manifest-driven `AssetLoader` a jednu in-memory `GameSession`.
 - Kanonické levely zůstávají přesně `chlum → nesmen → besednice → slavia`.
@@ -211,7 +212,7 @@ Automatický merge feature PR je zakázán.
 → #211 governance checkpoint refresh
 → dokončit a vizuálně schválit Chlum v #207 / PR #208
 → A0 review + případný merge #208
-→ aktualizovat PROJECT_CONTROL na nový main SHA
+→ zaznamenat přesný feature merge SHA jako nový V7 Chlum integration checkpoint (bez samo-referenčního požadavku na governance HEAD)
 → samostatný V7 Nesměň issue/PR
 → vizuální approval Nesměně
 → samostatný V7 Besednice issue/PR
