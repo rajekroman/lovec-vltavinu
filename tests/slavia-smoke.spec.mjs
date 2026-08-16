@@ -84,9 +84,11 @@ function createInputDriver(page, testInfo) {
 
     const zone = page.locator("#moveZone");
     await expect(zone).toBeVisible();
-    const moveZoneBox = await zone.boundingBox();
-    expect(moveZoneBox).not.toBeNull();
-    if (!moveZoneBox) throw new Error("Mobile joystick has no bounding box.");
+    const moveZoneBox = await zone.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    });
+    if (!(moveZoneBox.width > 0 && moveZoneBox.height > 0)) throw new Error("Mobile joystick has no usable bounds.");
 
     const radius = Math.max(1, Math.min(moveZoneBox.width, moveZoneBox.height) / 2);
     const centerX = moveZoneBox.x + moveZoneBox.width / 2;
@@ -493,7 +495,9 @@ async function completeBesednice(page, input, testInfo) {
 test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
   // The test walks the full physical distance through four large maps using real input.
   // Mobile touch runs need headroom for the final Slavia certification sequence.
-  test.setTimeout(900_000);
+// Full touch traversal covers four large maps; landscape may legitimately take
+// longer than portrait while retaining the same real input and interaction gates.
+test.setTimeout(1_200_000);
   const input = createInputDriver(page, testInfo);
   const pageErrors = [];
   const httpErrors = [];
@@ -511,6 +515,9 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   const arrived = await runtimeSnapshot(page);
   expect(arrived.session.findings).toHaveLength(3);
   expect(arrived.session.score).toBe(450);
+  expect(arrived.slavia.runtime.visualMode).toBe("open-event-plaza-v7");
+  expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plaza-v7");
+  expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-fair-edge-v7");
   await captureEvidence(page, testInfo, "slavia-arrival");
 
   for (const document of [{ x: 410, y: 760 }, { x: 790, y: 460 }, { x: 1130, y: 780 }]) {

@@ -7,6 +7,8 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
+const V7_PLATE_ASSET = "terrain-slavia-event-plaza-v7";
+const V7_FOREGROUND_ASSET = "foreground-slavia-fair-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -49,6 +51,7 @@ export class SlaviaScene {
     this.entityByExternalId = new Map();
     this.externalIdByEntity = new Map();
     this.visualRoot = null;
+    this.foregroundRoot = null;
     this.playerEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -117,14 +120,17 @@ export class SlaviaScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "slavia-vertical-slice";
-    const environmentTexture = this.texture("terrain-slavia-malse-exterior-v1");
-    environmentTexture.repeat.set(1, 0.917);
-    environmentTexture.offset.set(0, 0.0415);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
-      new THREE.MeshBasicMaterial({ map: environmentTexture })
-    );
-    ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
+    const environmentTexture = this.texture(V7_PLATE_ASSET);
+    const foregroundTexture = this.texture(V7_FOREGROUND_ASSET);
+    const ground = this.renderer.createTerrainPlate(environmentTexture, {
+      x: this.level.bounds.x,
+      y: this.level.bounds.y,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      z: -12,
+      assetId: V7_PLATE_ASSET
+    });
+    ground.name = "slavia-v7-event-plaza";
     root.add(ground, new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55));
 
     const buildingEntity = this.entityByExternalId.get("kd-slavia");
@@ -177,6 +183,23 @@ export class SlaviaScene {
 
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+
+    const foreground = new THREE.Group();
+    foreground.name = "slavia-v7-foreground-occlusion";
+    const fairEdge = this.renderer.createSprite(foregroundTexture, {
+      x: this.level.bounds.x + this.level.bounds.width / 2,
+      y: this.level.bounds.y + this.level.bounds.height / 2,
+      z: 30,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      anchorX: 0.5,
+      anchorY: 0.5,
+      assetId: V7_FOREGROUND_ASSET
+    });
+    fairEdge.name = "slavia-v7-fair-edge";
+    foreground.add(fairEdge);
+    this.foregroundRoot = foreground;
+    this.renderer.add(foreground, "foreground");
   }
 
   beginPlaying() {
@@ -454,7 +477,8 @@ export class SlaviaScene {
           entity: this.externalIdByEntity.get(this.availableInteraction.entity),
           kind: this.availableInteraction.interaction.kind
         } : null,
-        loadedAssets: [...this.assetEntries.keys()].sort()
+        loadedAssets: [...this.assetEntries.keys()].sort(),
+        visualMode: "open-event-plaza-v7"
       }
     };
   }
@@ -466,6 +490,11 @@ export class SlaviaScene {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
       this.visualRoot = null;
+    }
+    if (this.foregroundRoot) {
+      this.renderer.remove(this.foregroundRoot);
+      this.renderer.disposeObject(this.foregroundRoot);
+      this.foregroundRoot = null;
     }
   }
 
