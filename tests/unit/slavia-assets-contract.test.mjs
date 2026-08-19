@@ -17,6 +17,10 @@ const expectedAssets = Object.freeze([
   "npc-expert-eva",
   "npc-thief-franta"
 ]);
+const v7EnvironmentAssets = Object.freeze([
+  "terrain-slavia-event-plaza-v7",
+  "foreground-slavia-fair-edge-v7"
+]);
 
 const sha256 = buffer => crypto.createHash("sha256").update(buffer).digest("hex");
 const localPath = url => {
@@ -65,6 +69,25 @@ test("Slavia PNG sprites have valid signatures and declared dimensions", () => {
   }
 });
 
+test("Slavia V7 event environment has production dimensions, budgets and lifecycle ownership", () => {
+  const byId = new Map(manifest.map(entry => [entry.id, entry]));
+  for (const id of v7EnvironmentAssets) {
+    const entry = byId.get(id);
+    assert.ok(entry, `missing ${id}`);
+    assert.equal(entry.preload, "level:slavia");
+    assert.equal(entry.disposeOwner, "LevelScene:slavia");
+    assert.ok(entry.metrics.bytes <= entry.budget.bytes, `${id} exceeds byte budget`);
+    assert.ok(Math.max(entry.dimensions.width, entry.dimensions.height) <= entry.budget.textureMax);
+    const buffer = readBuffer(localPath(entry.url));
+    assert.equal(buffer.byteLength, entry.metrics.bytes, `${id} byte metric mismatch`);
+    assert.equal(sha256(buffer), entry.sha256, `${id} SHA-256 mismatch`);
+  }
+  assert.deepEqual(byId.get("terrain-slavia-event-plaza-v7").dimensions, { width: 1536, height: 1024 });
+  assert.equal(byId.get("terrain-slavia-event-plaza-v7").transparent, false);
+  assert.deepEqual(byId.get("foreground-slavia-fair-edge-v7").dimensions, { width: 1586, height: 992 });
+  assert.equal(byId.get("foreground-slavia-fair-edge-v7").transparent, true);
+});
+
 test("Slavia GLB models are valid, bounded and within triangle budgets", () => {
   const byId = new Map(manifest.map(entry => [entry.id, entry]));
   const expectedBounds = new Map([
@@ -97,7 +120,9 @@ test("Slavia data and canonical scene references resolve through the manifest", 
   assert.ok(ids.has("terrain-slavia-malse-exterior-v1"));
   assert.match(slaviaScene, /this\.model\("model-slavia-kd-building"\)/);
   assert.match(slaviaScene, /this\.model\("model-slavia-document-folder"\)/);
-  assert.match(slaviaScene, /this\.texture\("terrain-slavia-malse-exterior-v1"\)/);
+  assert.match(slaviaScene, /this\.texture\(V7_PLATE_ASSET\)/);
+  assert.match(slaviaScene, /terrain-slavia-event-plaza-v7/);
+  assert.match(slaviaScene, /foreground-slavia-fair-edge-v7/);
   assert.match(slaviaScene, /scale: 104/);
   assert.match(slaviaScene, /\["thief-franta", "npc-thief-franta"\]/);
   assert.doesNotMatch(slaviaScene, /npc-rival-franta|ProductionSlaviaScene/);
@@ -110,5 +135,7 @@ test("service worker pre-caches only canonical Slavia scene modules", () => {
   assert.doesNotMatch(serviceWorker, /ProductionSlaviaScene|BesedniceSlaviaBridgeScene/);
   for (const path of paths) assert.ok(serviceWorker.includes(`"${path}"`));
   assert.ok(serviceWorker.includes('"./assets/textures/terrain/slavia-malse-exterior-v1.png"'));
-  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-3-release/);
+  assert.ok(serviceWorker.includes('"./assets/textures/terrain/slavia-event-plaza-v7.png"'));
+  assert.ok(serviceWorker.includes('"./assets/sprites/foreground/slavia-fair-edge-v7.png"'));
+  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-3-riverside-1/);
 });
