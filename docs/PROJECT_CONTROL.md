@@ -26,6 +26,7 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 - Slavia V7 slice nahrazuje provizorní 768×511 noční plate produkčním `terrain-slavia-event-plate-v7` (1440×880, poměr stran shodný s `bounds` 1800×1100), přidává `foreground-slavia-event-edge-v7` jako samostatnou occlusion vrstvu a bounds-safe `resolveSlaviaV7CameraZoom`.
 - Kanonický quest, CrowdRisk hlášení, certifikace i finální hodnocení zůstaly beze změny; nepřibyl save, inventář, druhý renderer, kamera, loop ani session.
 - Lokální exact-head evidence této větve: validator **0 errors / 0 warnings**, syntax **PASS**, unit **222/222 PASS**, Playwright matice **desktop 1280×720 + audio lifecycle + iPhone portrait 390×844 + iPhone landscape 844×390 PASS** (screenshoty `slavia-arrival`, `slavia-certification`, `slavia-final-result` ve všech třech viewportech). A0 visual approval a CI exact-head běh zůstávají otevřené.
+- Preload kontrakt je nově vynucený: validátor odmítne jakýkoli manifest asset, na který se produkční runtime nikdy neodkáže. Odstraněno **7 mrtvých assetů / 4,26 MB** (Nesměň −2,99 MB, Besednice −0,60 MB, Slavia −0,56 MB stahovaných dat na vstupu do levelu).
 - Release zůstává **BLOCKED** do schválení Slavie a následného celoproduktového QA.
 
 ## 2. Neměnné invarianty
@@ -62,7 +63,7 @@ Porušení kteréhokoli bodu je blocker.
 | V7 Besednice | **#217 / PR #218 COMPLETED** | jen regresní opravy v samostatném issue |
 | V7 Slavia | **IMPLEMENTED — čeká na A0 visual approval** | pouze opravy vyplývající z visual review a QA; `claude/vltaviny-game-dev-c73sup` staví přímo na schváleném `main`, PR #220 se nepoužil |
 | Gameplay/data | **BEZE ZMĚNY** | quest, CrowdRisk i finální certifikační flow zůstaly nedotčené |
-| Grafika/assety | **DELIVERED** | `terrain-slavia-event-plate-v7`, `foreground-slavia-event-edge-v7`, generátor `tools/art/build-slavia-v7-art.mjs` |
+| Grafika/assety | **DELIVERED** | `terrain-slavia-event-plate-v7`, `foreground-slavia-event-edge-v7`, generátor `tools/art/build-slavia-v7-art.mjs`, odstranění mrtvého preloadu |
 | UI/mobil | **BEZE ZMĚNY** | HUD ani safe-area kompozice se pro Slavii neměnily |
 | QA | **SUPPORT Slavia** | validátor, unit (222), čtyřlevelový full-flow, desktop + iPhone portrait/landscape |
 | Release | **BLOCKED** | žádný V7 release před schválením Slavie, celoproduktovým QA a samostatnou release gate |
@@ -205,7 +206,27 @@ Dodáno ve větvi `claude/vltaviny-game-dev-c73sup`:
 
 Neuzavřené body jsou výhradně schvalovací a CI exact-head běh; implementační rozsah Slavie je hotový.
 
-### 7.6 Vizuální omezení plate
+### 7.6 Úklid mrtvého preloadu
+
+Manifest obsahoval assety, které po V7 přestavbě žádný produkční modul nepoužívá, a přesto se stahovaly a cachovaly při vstupu do levelu. Odstraněny byly soubor, manifest položka i záznam v `sw.js`:
+
+| Asset | Level | Ušetřeno |
+|---|---|---|
+| `terrain-nesmen-reference-clearing-v2` | Nesměň | 2 983 kB |
+| `terrain-nesmen-forest-floor` | Nesměň | 5 kB |
+| `model-nesmen-tree-stump` | Nesměň | 1 kB |
+| `terrain-besednice-clay-quarry-v1` | Besednice | 608 kB |
+| `terrain-besednice-quarry` | Besednice | 3 kB |
+| `model-besednice-rock` | Besednice | 1 kB |
+| `terrain-slavia-malse-exterior-v1` | Slavia | 559 kB |
+
+Celkem **4,26 MB**. Jde výhradně o odstranění nepoužívaných dat: žádná schválená vizuální podoba Chlumu, Nesměně ani Besednice se nemění a plná čtyřlevelová Playwright matice po úklidu prochází.
+
+Pravidlo je nově vynucené v `tools/validate.mjs`: každý asset v manifestu musí být odkazován ID z modulu dosažitelného z `src/bootstrap.js`, jinak validace selže. Historie souborů zůstává auditovatelná v Gitu.
+
+Název distribuční cache se posunul na `lovec-vltavinu-slavia-v6-3-release-2`, aby se u vracejících se hráčů uvolnily i zastaralé záznamy smazaných souborů. Po úklidu prošla kompletní Playwright matice **6/6 PASS** (desktop, audio lifecycle, iPhone portrait, iPhone landscape).
+
+### 7.7 Vizuální omezení plate
 
 Slavia plate je procedurálně malovaný a reprodukovatelný generátorem `tools/art/build-slavia-v7-art.mjs` (viz `docs/ART_PIPELINE.md`). Splňuje kompoziční a měřítková pravidla kontraktu — venkovní eventová plocha, KD Slavia jako sekundární kulisa, nerepetitivní plate, foreground occlusion, čitelné cíle — ale malířskou věrností nedosahuje fotorealistických plate Chlumu, Nesměně a Besednice. Výměna za externě autorovanou malbu je možná beze změny runtime při zachování ID `terrain-slavia-event-plate-v7` a poměru stran `1800:1100`.
 

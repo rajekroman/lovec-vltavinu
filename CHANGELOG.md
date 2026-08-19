@@ -11,6 +11,12 @@ Každá lokalita dostává authored terrain plate, samostatnou foreground occlus
   foreground vrstva `foreground-slavia-event-edge-v7`, `resolveSlaviaV7CameraZoom` a reprodukovatelný
   generátor grafiky `tools/art/build-slavia-v7-art.mjs`. Čeká na visual approval.
 
+### Úklid preloadu
+
+Z manifestu, offline cache i stromu zmizelo 7 assetů (4,26 MB), které po V7 přestavbě už žádná scéna
+nevykresluje — mimo jiné 3MB referenční snímek Nesměně a provizorní plate Besednice a Slavie.
+`tools/validate.mjs` nově selže, pokud manifest obsahuje asset, na který se runtime neodkazuje.
+
 ## 6.x
 
 Modulární ES-module runtime s jedním Three.js `WebGLRenderer`, ortografickou kamerou, in-memory session

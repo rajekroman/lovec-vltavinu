@@ -42,6 +42,12 @@ Plate je mapován 1:1 na `bounds` levelu z `src/data/levels.js`.
 4. Přidej cestu do `sw.js` (`CORE`), jinak validátor selže.
 5. `npm test` — validátor kontroluje PNG signaturu, rozměry, textureMax i byte budget; unit testy kontrolují SHA-256 a lifecycle ownership.
 
+## Mrtvé assety
+
+Manifest je zároveň seznam toho, co se stahuje. Validátor proto selže, pokud v něm zůstane asset,
+na jehož ID se neodkazuje žádný modul dosažitelný z `src/bootstrap.js`. Referenční snímky,
+provizorní plate a nepoužité rekvizity do manifestu ani do `sw.js` nepatří; jejich historie zůstává v Gitu.
+
 ## Známé omezení
 
 Plate Slavie je **procedurálně malovaný** stylizovaný diorama-art, ne fotorealistická malba jako Chlum/Nesměň/Besednice. Kompozice, měřítko postav, hloubka a čitelnost cílů odpovídají vizuálnímu kontraktu; malířská věrnost je nižší. Výměna za ručně/externě autorovanou malbu je možná bez zásahu do runtime: stačí zachovat ID `terrain-slavia-event-plate-v7`, poměr stran `1800:1100` a aktualizovat manifest.
