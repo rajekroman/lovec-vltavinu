@@ -1,9 +1,27 @@
-# Lovec vltavínů Reborn 5.1
+# Changelog
 
-## Reálnější lokality
+## V7 — vizuální přestavba lokalit (probíhá)
+
+Každá lokalita dostává authored terrain plate, samostatnou foreground occlusion vrstvu a bounds-safe kameru sledující hráče. Gameplay, quest pravidla ani architektura runtime se přitom nemění.
+
+- **Chlum** (#207 / PR #208) — pole po dešti, integrovaný traktor, action frames hledače.
+- **Nesměň** (#213 / PR #214) — vrstevnatý les, rytmické kopání, průhledná foreground occlusion.
+- **Besednice** (#217 / PR #218) — jílový lom, ježková vrstva, landscape-safe frustum.
+- **KD Slavia** — venkovní sběratelská akce u Malše: nový plate `terrain-slavia-event-plate-v7`,
+  foreground vrstva `foreground-slavia-event-edge-v7`, `resolveSlaviaV7CameraZoom` a reprodukovatelný
+  generátor grafiky `tools/art/build-slavia-v7-art.mjs`. Čeká na visual approval.
+
+## 6.x
+
+Modulární ES-module runtime s jedním Three.js `WebGLRenderer`, ortografickou kamerou, in-memory session
+bez save systému a inventáře, dotykovým ovládáním pro iPhone portrait i landscape a service workerem
+pouze jako distribuční cache.
+
+## 5.1 — Reálnější lokality (historické)
 
 - Chlum: otevřené zvlněné pole, vzdálený les, hluboké výkopy, haldy hlíny a strniště.
 - Ločenice: řídký borový les, světlé písčité podloží, valy, jámy a popadané kmeny.
 - Besednice: rozrytá těžební plocha, pásové stopy, zemní valy, hlubší jámy a bagry.
 - Slávie: historická fasáda s trojúhelníkovým štítem spojená s moderní bílou přístavbou a proskleným parterem.
-- Herní logika, bossové, hudba a ovládání zůstaly zachované.
+
+Ločenice není v cílové V7 verzi samostatný level; kanonické lokality jsou Chlum, Nesměň, Besednice a KD Slavia.

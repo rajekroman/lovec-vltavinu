@@ -1,6 +1,6 @@
 # PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.20.0 · 19. 8. 2026**
+Revize: **2.21.0 · 19. 8. 2026**
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr aktuální práce. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická evidence zůstává auditovatelná v Git historii, uzavřených issues/PR a GitHub Releases.
@@ -8,7 +8,7 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 ## 1. Aktuální ověřená realita
 
 - Jediná publikovatelná větev je `main`.
-- Governance base této revize je `main@38564df54bf93f6267310ad32f340e4066366649`, squash merge PR **#218**. Jde o auditní základ, nikoli samo-referenční požadavek na budoucí HEAD.
+- Governance base této revize je `main@924d2f8dc7e9c11eef68ca16f9354d0d0d1dccc2`, squash merge governance PR **#222** (uzavírá #221). Jde o auditní základ, nikoli samo-referenční požadavek na budoucí HEAD.
 - Runtime zachovává jeden Three.js `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden `InputManager`, jeden manifest-driven `AssetLoader` a jednu in-memory `GameSession`.
 - Kanonické levely jsou přesně `chlum → nesmen → besednice → slavia`.
 - **Chlum V7 je COMPLETED / MERGED / VISUALLY APPROVED** v issue #207 / PR #208.
@@ -21,8 +21,12 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 - Schválený Besednice feature head je `6a34038f348472ab30555f6cba4fdeda542afd73`; merge SHA je `38564df54bf93f6267310ad32f340e4066366649`.
 - Exact-head CI #1450 / workflow `32288333181` je zelené: validator **0 errors / 0 warnings**, unit **214/214 PASS**, desktop + iPhone portrait + iPhone landscape full-flow **PASS**.
 - Besednice statický artifact `9378494134`, digest `sha256:9436f3f6ae32ec4ab63096f5a12437e2c2f8012d33b1218613f4dfc625635e91`; Playwright artifact `9378974857`, digest `sha256:d7241712495f94870817e103905d2370937516199b2ded89fb1db5caf8713ade`.
-- Governance transition po Besednici vlastní issue **#221** a větev **`agent/v7-governance-slavia`**.
-- Po merge navázaného governance PR je jediný odemčený další milestone **Slavia V7**. Release zůstává **BLOCKED** do schválení Slavie a následného celoproduktového QA.
+- Governance transition po Besednici je **COMPLETED** (issue #221 / PR #222).
+- **Slavia V7 je IMPLEMENTED / AWAITING A0 VISUAL APPROVAL** ve větvi `claude/vltaviny-game-dev-c73sup`.
+- Slavia V7 slice nahrazuje provizorní 768×511 noční plate produkčním `terrain-slavia-event-plate-v7` (1440×880, poměr stran shodný s `bounds` 1800×1100), přidává `foreground-slavia-event-edge-v7` jako samostatnou occlusion vrstvu a bounds-safe `resolveSlaviaV7CameraZoom`.
+- Kanonický quest, CrowdRisk hlášení, certifikace i finální hodnocení zůstaly beze změny; nepřibyl save, inventář, druhý renderer, kamera, loop ani session.
+- Lokální exact-head evidence této větve: validator **0 errors / 0 warnings**, syntax **PASS**, unit **222/222 PASS**, Playwright matice **desktop 1280×720 + audio lifecycle + iPhone portrait 390×844 + iPhone landscape 844×390 PASS** (screenshoty `slavia-arrival`, `slavia-certification`, `slavia-final-result` ve všech třech viewportech). A0 visual approval a CI exact-head běh zůstávají otevřené.
+- Release zůstává **BLOCKED** do schválení Slavie a následného celoproduktového QA.
 
 ## 2. Neměnné invarianty
 
@@ -52,20 +56,22 @@ Porušení kteréhokoli bodu je blocker.
 
 | Proud | Stav | Povolená akce |
 |---|---|---|
-| A0 koordinace | **#221 ACTIVE** | zaznamenat Besednice approval/merge, vyřešit Slavia lineage a odemknout jediný Slavia proud |
+| A0 koordinace | **#221 / PR #222 COMPLETED** | posoudit Slavia visual slice a rozhodnout o approval |
 | V7 Chlum | **#207 / PR #208 COMPLETED** | jen regresní opravy v samostatném issue |
 | V7 Nesměň | **#213 / PR #214 COMPLETED** | jen regresní opravy v samostatném issue |
 | V7 Besednice | **#217 / PR #218 COMPLETED** | jen regresní opravy v samostatném issue |
-| V7 Slavia | **NEXT po merge governance PR #221** | jediný implementační proud z aktuálního schváleného `main`; pre-created #219 / PR #220 jsou do lineage auditu FROZEN |
-| Gameplay/data | **Slavia single-stream po #221** | zachovat existující quest, CrowdRisk a finální certifikační flow |
-| Grafika/assety | **Slavia single-stream po #221** | pouze produkční Slavia terrain/event/foreground assety |
-| UI/mobil | **Slavia single-stream po #221** | pouze Slavia-scoped kompozice/HUD a safe-area tuning |
-| QA | **SUPPORT Slavia po #221** | validátor, unit, čtyřlevelový full-flow, desktop + iPhone portrait/landscape |
+| V7 Slavia | **IMPLEMENTED — čeká na A0 visual approval** | pouze opravy vyplývající z visual review a QA; `claude/vltaviny-game-dev-c73sup` staví přímo na schváleném `main`, PR #220 se nepoužil |
+| Gameplay/data | **BEZE ZMĚNY** | quest, CrowdRisk i finální certifikační flow zůstaly nedotčené |
+| Grafika/assety | **DELIVERED** | `terrain-slavia-event-plate-v7`, `foreground-slavia-event-edge-v7`, generátor `tools/art/build-slavia-v7-art.mjs` |
+| UI/mobil | **BEZE ZMĚNY** | HUD ani safe-area kompozice se pro Slavii neměnily |
+| QA | **SUPPORT Slavia** | validátor, unit (222), čtyřlevelový full-flow, desktop + iPhone portrait/landscape |
 | Release | **BLOCKED** | žádný V7 release před schválením Slavie, celoproduktovým QA a samostatnou release gate |
 
-Nevznikají paralelní „finální“ větve. Slavia se integračně odemkne až po merge governance PR navázaného na #221. Existující issue #219 a draft PR #220 vznikly před dokončením povinné Besednice gate a nejsou samy o sobě autorizací k merge.
+Nevznikají paralelní „finální“ větve. Slavia je implementovaná v jediné větvi `claude/vltaviny-game-dev-c73sup` odvozené přímo ze schváleného `main`; starší issue #219 a draft PR #220 se nepoužily a zůstávají bez autorizace k merge.
 
-### 3.1 Lineage pravidlo pro #219 / PR #220
+### 3.1 Lineage pravidlo pro #219 / PR #220 — VYŘEŠENO
+
+Lineage audit skončil variantou „nová větev z aktuálního `main`“. Slavia V7 je implementovaná v `claude/vltaviny-game-dev-c73sup` s base `main@924d2f8dc7e9c11eef68ca16f9354d0d0d1dccc2`, takže diff neobsahuje žádný pre-fix Besednice stav. Původní pravidlo zůstává platné pro případ, že by někdo chtěl PR #220 oživit:
 
 - #219 může po merge governance PR sloužit jako kanonický Slavia feature issue pouze po aktualizaci zastaralého požadavku na stackování z pre-fix Besednice headu.
 - PR #220 má base `agent/v7-besednice-visual-slice` na starším headu `2f0751ed231e8f37451a4cb9d45faad3ff9f07fe`, tedy před finálním Besednice camera fixem a před squash merge #218.
@@ -138,7 +144,7 @@ Exact-head evidence:
 
 Besednice už není otevřený pracovní proud. Případná regrese vyžaduje vlastní issue.
 
-## 7. Následující milestone — Slavia V7
+## 7. Slavia V7 — dodaný slice, čeká na approval
 
 ### 7.1 Cíl a gameplay
 
@@ -180,6 +186,29 @@ Před A0 approval Slavia feature PR musí existovat:
 
 Automatický merge feature PR je zakázán.
 
+### 7.5 Stav dodávky
+
+Dodáno ve větvi `claude/vltaviny-game-dev-c73sup`:
+
+| Bod gate | Stav |
+|---|---|
+| čistý lineage ze schváleného `main` | **SPLNĚNO** (base `924d2f8`, žádný Besednice revert) |
+| repository-owned produkční assety se stabilními relativními URL | **SPLNĚNO** (`slavia-event-plate-v7.png`, `slavia-event-edge-v7.png`) |
+| úplná manifest metadata (ID, typ, rozměr, byte budget, SHA-256, `disposeOwner`) | **SPLNĚNO** |
+| validator 0/0 a kompletní unit suite | **SPLNĚNO** (222/222) |
+| čtyřlevelový full-flow | **SPLNĚNO** ve všech třech viewportech |
+| desktop + iPhone portrait + iPhone landscape | **PASS** (lokální matice; CI exact-head běh po push) |
+| screenshot evidence 1280×720 / 390×844 / 844×390 | **SPLNĚNO** (Playwright artefakty) |
+| ruční visual review | **OTEVŘENO — vlastní Roman (A0)** |
+| bez save, inventáře, druhého rendereru/kamery/loopu/session | **SPLNĚNO** (kontrolováno validátorem i unit testy) |
+| A0 visual approval → ready-for-review → squash merge | **OTEVŘENO** |
+
+Neuzavřené body jsou výhradně schvalovací a CI exact-head běh; implementační rozsah Slavie je hotový.
+
+### 7.6 Vizuální omezení plate
+
+Slavia plate je procedurálně malovaný a reprodukovatelný generátorem `tools/art/build-slavia-v7-art.mjs` (viz `docs/ART_PIPELINE.md`). Splňuje kompoziční a měřítková pravidla kontraktu — venkovní eventová plocha, KD Slavia jako sekundární kulisa, nerepetitivní plate, foreground occlusion, čitelné cíle — ale malířskou věrností nedosahuje fotorealistických plate Chlumu, Nesměně a Besednice. Výměna za externě autorovanou malbu je možná beze změny runtime při zachování ID `terrain-slavia-event-plate-v7` a poměru stran `1800:1100`.
+
 ## 8. Integrační pořadí V7
 
 ```text
@@ -188,10 +217,10 @@ Automatický merge feature PR je zakázán.
 → #213 / PR #214 Nesměň — COMPLETED / MERGED / APPROVED
 → #215 / PR #216 governance transition — COMPLETED
 → #217 / PR #218 Besednice — COMPLETED / MERGED / APPROVED
-→ #221 governance transition — ACTIVE
-→ lineage audit #219 / PR #220 proti schválenému main
-→ jediný autorizovaný Slavia V7 issue/PR
-→ exact-head QA + desktop/iPhone screenshot review
+→ #221 / PR #222 governance transition — COMPLETED
+→ lineage audit #219 / PR #220 — VYŘEŠEN novou větví z main
+→ Slavia V7 visual slice v `claude/vltaviny-game-dev-c73sup` — IMPLEMENTED
+→ exact-head QA + desktop/iPhone screenshot review — PROBÍHÁ
 → Slavia approval + případný squash merge
 → celoproduktový QA
 → samostatná release gate
