@@ -20,6 +20,8 @@ const expectedAssets = Object.freeze([
   "finding-vltavin-besednice-hedgehog",
   "terrain-besednice-quarry",
   "terrain-besednice-clay-quarry-v1",
+  "terrain-besednice-clay-quarry-v7",
+  "foreground-besednice-quarry-edge-v7",
   "model-besednice-trace-marker",
   "model-besednice-hedgehog-marker",
   "model-besednice-rock"
@@ -67,6 +69,11 @@ test("Besednice manifest pack has stable IDs, budgets and lifecycle owners", () 
     assert.equal(entry.disposeOwner, "LevelScene:besednice");
     assert.match(entry.sha256, /^[a-f0-9]{64}$/);
   }
+  assert.deepEqual(byId.get("terrain-besednice-clay-quarry-v7")?.dimensions, { width: 1436, height: 1095 });
+  assert.equal(byId.get("foreground-besednice-quarry-edge-v7")?.transparent, true);
+  assert.deepEqual(byId.get("foreground-besednice-quarry-edge-v7")?.dimensions, { width: 1344, height: 1024 });
+  assert.match(scene, /createTerrainPlate\(environmentTexture/);
+  assert.match(scene, /besednice-v7-foreground-occlusion/);
 });
 
 test("service worker includes only canonical production scene modules", () => {
@@ -114,6 +121,9 @@ test("desktop and mobile smoke use project-native normalized input", () => {
   assert.doesNotMatch(slaviaSmoke, /let moveZoneBox = null/);
   assert.match(slaviaSmoke, /const moveZoneBox = await zone\.boundingBox\(\)/);
   assert.match(slaviaSmoke, /const movementTimeout = input\.desktop \? timeout : timeout \+ 30_000/);
+  assert.match(slaviaSmoke, /pauseForBesedniceEvidence\(page, timeout = 20_000\)/);
+  assert.match(slaviaSmoke, /window\.__slaviaQaInteraction\?\.performed \?\? null\), \{\s*timeout: 6_000,/);
+  assert.match(slaviaSmoke, /test\.setTimeout\(900_000\)/);
   assert.match(slaviaSmoke, /Date\.now\(\) \+ movementTimeout \+ 2_000/);
   assert.match(slaviaSmoke, /Math\.min\(8_000, Math\.max\(1, movementDeadline - Date\.now\(\)\)\)/);
   assert.match(slaviaSmoke, /while \(!movement\?\.done\)/);
