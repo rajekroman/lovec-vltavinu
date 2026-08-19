@@ -13,6 +13,16 @@ const V7_FOREGROUND_ASSET = "foreground-besednice-quarry-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+export function resolveBesedniceV7CameraZoom(viewportWidth, viewportHeight, viewHeight = 720, boundsWidth = 1680) {
+  const width = Math.max(1, Number(viewportWidth) || 1);
+  const height = Math.max(1, Number(viewportHeight) || 1);
+  const safeViewHeight = Math.max(1, Number(viewHeight) || 720);
+  const safeBoundsWidth = Math.max(1, Number(boundsWidth) || 1680);
+  const fitZoom = (safeViewHeight * (width / height)) / safeBoundsWidth;
+  const boundsSafeZoom = Math.ceil(fitZoom * 100) / 100 + 0.01;
+  return Math.max(0.9, boundsSafeZoom);
+}
+
 export class BesedniceScene {
   constructor(options) {
     this.app = options.app;
@@ -459,7 +469,13 @@ export class BesedniceScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.9);
+    const zoom = resolveBesedniceV7CameraZoom(
+      this.renderer.width,
+      this.renderer.height,
+      this.renderer.viewHeight,
+      this.level.bounds.width
+    );
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, zoom);
   }
 
   hudModel() {
