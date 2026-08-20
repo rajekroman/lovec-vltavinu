@@ -22,11 +22,12 @@ export function scaleScore(baseScore, quality, perfect = false) {
 }
 
 export function createFinding(variant, findingId, locality, quality, options = {}) {
-  const scoreMultiplier = options.scoreMultiplier ?? 1;
+  const perfect = typeof options === "boolean" ? options : options.perfect ?? false;
+  const scoreMultiplier = typeof options === "object" ? (options.scoreMultiplier ?? 1) : 1;
   if (!(typeof scoreMultiplier === "number" && Number.isFinite(scoreMultiplier) && scoreMultiplier > 0)) {
     throw new TypeError("scoreMultiplier must be a positive finite number.");
   }
-  const scaledScore = scaleScore(variant.score, quality);
+  const scaledScore = scaleScore(variant.score, quality, perfect);
   return Object.freeze({
     findingId,
     locality,

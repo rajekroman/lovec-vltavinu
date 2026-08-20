@@ -469,7 +469,7 @@ export class BesedniceScene {
     return true;
   }
 
-  strikeDig() {
+  async strikeDig() {
     const result = this.dig.strike();
     if (!result) return;
     if (result.hit) this.totalDigHits += 1;
@@ -492,7 +492,7 @@ export class BesedniceScene {
     interaction.enabled = false;
     const marker = this.renderer.objectByEntity.get(this.hedgehogEntity);
     if (marker) marker.visible = false;
-    this.spawnFinding(spot.findingId);
+    await this.spawnFinding(spot.findingId);
     if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
     this.modal = null;
     this.session.setPhase("playing");
@@ -503,7 +503,7 @@ export class BesedniceScene {
     this.emitHud(true);
   }
 
-  spawnFinding(findingId) {
+  async spawnFinding(findingId) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(this.hedgehogEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
