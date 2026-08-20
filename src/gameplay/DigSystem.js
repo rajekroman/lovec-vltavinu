@@ -85,6 +85,10 @@ export class DigSystem {
     return q.reduce((sum, v) => sum + v, 0) / q.length;
   }
 
+  perfectDig() {
+    return this.active ? this.active.misses === 0 && this.active.complete : false;
+  }
+
   snapshot() {
     return this.active ? { ...this.active } : null;
   }

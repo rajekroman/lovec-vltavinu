@@ -57,7 +57,7 @@ export class NesmenScene {
     this.hudRevision = 0;
     this.hudSignature = "";
     this.interactions = new InteractionSystem({ events: this.events });
-    this.dig = new DigSystem({ events: this.events });
+    this.dig = new DigSystem({ events: this.events, sweetMin: 0.35, sweetMax: 0.65, speed: 1.1 });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
   }
 
@@ -400,6 +400,7 @@ export class NesmenScene {
     const entity = this.activeProfileEntity;
     const spot = this.app.world.get(entity, "digSpot");
     spot.digQuality = this.dig.averageQuality();
+    spot.perfectDig = this.dig.perfectDig();
     const interaction = this.app.world.get(entity, "interaction");
     this.dig.finish();
     spot.dug = true;
@@ -411,7 +412,7 @@ export class NesmenScene {
       visual.marker.visible = false;
       visual.hole.visible = true;
     }
-    if (spot.findingId) this.spawnFinding(entity, spot.findingId, spot.digQuality);
+    if (spot.findingId) this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.perfectDig);
 
     this.activeProfileEntity = null;
     this.modal = null;
@@ -437,14 +438,14 @@ export class NesmenScene {
     this.emitHud(true);
   }
 
-  spawnFinding(profileEntity, findingId, digQuality) {
+  spawnFinding(profileEntity, findingId, digQuality, perfect) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
       transform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       previousTransform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 72, priority: 90, enabled: true },
-      findingQuality: { value: digQuality }
+      findingQuality: { value: digQuality, perfect: perfect === true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
     this.texture("finding-vltavin-nesmen").then(texture => {
@@ -464,9 +465,11 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
-    const quality = this.app.world.get(entity, "findingQuality")?.value ?? 0;
+    const fq = this.app.world.get(entity, "findingQuality") ?? {};
+    const quality = fq.value ?? 0;
+    const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality));
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, perfect));
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);

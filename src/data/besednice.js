@@ -1,4 +1,5 @@
 import { CONTEXT_ACTION, getLevelDefinition, getLevelTarget } from "./levels.js";
+import { getDialogueDefinition } from "./dialogues.js";
 
 const deepFreeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
@@ -11,7 +12,8 @@ const level = getLevelDefinition("besednice");
 const tracePositions = getLevelTarget("besednice", "besednice-trace")?.positions ?? [];
 const hedgehogPosition = getLevelTarget("besednice", "besednice-hedgehog")?.positions[0];
 const karelPosition = getLevelTarget("besednice", "crystal-karel")?.positions[0];
-if (!level || tracePositions.length !== 3 || !hedgehogPosition || !karelPosition) {
+const guideDialogue = getDialogueDefinition("besednice-guide");
+if (!level || tracePositions.length !== 3 || !hedgehogPosition || !karelPosition || !guideDialogue) {
   throw new Error("Besednice canonical data is incomplete.");
 }
 
@@ -47,6 +49,23 @@ const entities = [
       player: { speed: 220 }
     }
   },
+  {
+    id: "besednice-guide",
+    components: {
+      transform: { x: 320, y: 880, rotation: 0, scale: 1 },
+      sprite: { assetId: "npc-rival-karel", layer: "actors", frame: 0 },
+      collider: { shape: "circle", radius: 24, layer: "npc", mask: [] },
+      interaction: {
+        kind: "talk",
+        label: "MLUVIT",
+        action: CONTEXT_ACTION,
+        range: 64,
+        priority: 100,
+        enabled: true
+      },
+      npc: { name: "Petr", role: "guide", dialogueId: "besednice-guide" }
+    }
+  },
   ...BESEDNICE_TRACE_IDS.map((id, index) => ({
     id,
     components: {
@@ -58,7 +77,7 @@ const entities = [
         action: CONTEXT_ACTION,
         range: 66,
         priority: 70,
-        enabled: true
+        enabled: false
       },
       clue: { index, discovered: false }
     }

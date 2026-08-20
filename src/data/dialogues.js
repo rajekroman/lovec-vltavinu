@@ -25,6 +25,16 @@ const definitions = [
     ],
     actionLabel: "ROZUMÍM",
     grantsFlag: "nesmenPermission"
+  },
+  {
+    id: "besednice-guide",
+    speaker: { entityId: "besednice-guide", name: "Petr", role: "guide" },
+    lines: [
+      "Tady v lomu je ježková vrstva blízko povrchu.",
+      "Nejdřív najdi tři stopy, které ukážou správné místo ke kopání. A pozor na Karla — čeká na cizí nálezy."
+    ],
+    actionLabel: "ROZUMÍM",
+    grantsFlag: "besedniceGuide"
   }
 ];
 
