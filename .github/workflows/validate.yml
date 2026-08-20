@@ -120,9 +120,9 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         run: npm install --no-audit --no-fund --no-package-lock
 
-      - name: Install Chromium
+      - name: Install Chromium headless shell
         if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Run ${{ matrix.project }}
         if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
