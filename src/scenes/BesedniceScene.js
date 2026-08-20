@@ -74,6 +74,8 @@ export class BesedniceScene {
     this.hedgehogEntity = null;
     this.karelEntity = null;
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
@@ -281,6 +283,28 @@ export class BesedniceScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateCollectionAnimation(dt);
+  }
+
+  updateCollectionAnimation(dt) {
+    if (this.collectingEntity === null) return;
+    this.collectingElapsed += dt;
+    const duration = 0.3;
+    if (this.collectingElapsed >= duration) {
+      this.renderer.unbindEntity(this.collectingEntity);
+      this.app.world.destroyEntity(this.collectingEntity);
+      this.externalIdByEntity.delete(this.collectingEntity);
+      this.collectingEntity = null;
+      this.collectingElapsed = 0;
+      return;
+    }
+    const t = this.collectingElapsed / duration;
+    const scale = 1 + t * 0.5;
+    const visual = this.renderer.getVisual(this.collectingEntity);
+    if (visual && visual.material) {
+      visual.scale.set(scale, scale, 1);
+      visual.material.opacity = Math.max(0, 1 - t);
+    }
   }
 
   updateHud() {
@@ -421,9 +445,8 @@ export class BesedniceScene {
     const variant = resolveVariant(BESEDNICE_FINDING_VARIANTS, quality, this.rng);
     this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality, perfect));
     const entity = this.findingEntity;
-    this.renderer.unbindEntity(entity);
-    this.app.world.destroyEntity(entity);
-    this.externalIdByEntity.delete(entity);
+    this.collectingEntity = entity;
+    this.collectingElapsed = 0;
     this.findingEntity = null;
     this.boss.start(this.app.world, this.karelEntity);
     this.availableInteraction = null;

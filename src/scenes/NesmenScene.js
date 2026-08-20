@@ -47,6 +47,8 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -88,6 +90,8 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -325,6 +329,28 @@ export class NesmenScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateCollectionAnimation(dt);
+  }
+
+  updateCollectionAnimation(dt) {
+    if (this.collectingEntity === null) return;
+    this.collectingElapsed += dt;
+    const duration = 0.3;
+    if (this.collectingElapsed >= duration) {
+      this.renderer.unbindEntity(this.collectingEntity);
+      this.app.world.destroyEntity(this.collectingEntity);
+      this.externalIdByEntity.delete(this.collectingEntity);
+      this.collectingEntity = null;
+      this.collectingElapsed = 0;
+      return;
+    }
+    const t = this.collectingElapsed / duration;
+    const scale = 1 + t * 0.5;
+    const visual = this.renderer.getVisual(this.collectingEntity);
+    if (visual && visual.material) {
+      visual.scale.set(scale, scale, 1);
+      visual.material.opacity = Math.max(0, 1 - t);
+    }
   }
 
   updateHud() {
@@ -470,9 +496,8 @@ export class NesmenScene {
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
     this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, perfect));
-    this.renderer.unbindEntity(entity);
-    this.app.world.destroyEntity(entity);
-    this.externalIdByEntity.delete(entity);
+    this.collectingEntity = entity;
+    this.collectingElapsed = 0;
     this.findingEntity = null;
     this.availableInteraction = null;
     this.interactions.clear();
