@@ -9,6 +9,8 @@ import { createRng } from "../gameplay/SessionRng.js";
 import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
+import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
@@ -71,6 +73,9 @@ export class BesedniceScene {
     this.traceVisuals = new Map();
     this.visualRoot = null;
     this.foregroundRoot = null;
+    this.karelIdleVisual = null;
+    this.pickupTween = null;
+    this.visualTime = 0;
     this.playerEntity = null;
     this.guideEntity = null;
     this.traceEntities = [];
@@ -191,12 +196,19 @@ export class BesedniceScene {
     const karel = this.renderer.createSprite(karelTexture, {
       width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
     });
+    const karelIdle = createIdleWrapper(THREE, karel, {
+      name: "besednice-v7-karel-idle",
+      amplitude: 0.02,
+      frequency: 1.65,
+      phase: 2.2
+    });
+    this.karelIdleVisual = karelIdle;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.guideEntity, guide, "actors");
-    this.renderer.bindEntity(this.karelEntity, karel, "actors");
+    this.renderer.bindEntity(this.karelEntity, karelIdle, "actors");
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
-        assetId: "model-besednice-trace-marker", rotationX: Math.PI / 2, scale: 38, z: 4
+        assetId: "model-besednice-trace-marker", layer: "props", rotationX: Math.PI / 2, scale: 38, z: 4
       });
       this.renderer.bindEntity(entity, marker, "props");
       this.traceVisuals.set(entity, marker);
@@ -285,6 +297,15 @@ export class BesedniceScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.visualTime += Math.max(0, Number(dt) || 0);
+    const bossState = this.karelEntity === null ? null : this.app.world.get(this.karelEntity, "boss");
+    const bossMoving = bossState?.started === true && bossState.defeated !== true;
+    updateIdlePulse(this.karelIdleVisual, this.visualTime, bossMoving ? 0 : 1);
+    if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
+      const entity = this.findingEntity;
+      if (entity !== null) this.finishPickup(entity);
+      else this.pickupTween = null;
+    }
   }
 
   updateHud() {
@@ -401,7 +422,7 @@ export class BesedniceScene {
     interaction.enabled = false;
     const marker = this.renderer.objectByEntity.get(this.hedgehogEntity);
     if (marker) marker.visible = false;
-    void this.spawnFinding(spot.findingId);
+    this.spawnFinding(spot.findingId);
     if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
     this.modal = null;
     this.session.setPhase("playing");
@@ -412,7 +433,7 @@ export class BesedniceScene {
     this.emitHud(true);
   }
 
-  async spawnFinding(findingId) {
+  spawnFinding(findingId) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(this.hedgehogEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
@@ -421,15 +442,22 @@ export class BesedniceScene {
       interaction: { kind: "collect", label: "SEBRAT JEŽEK", action: "action", range: 76, priority: 95, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
-    const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
-      width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
-      assetId: "finding-vltavin-besednice-hedgehog"
+    const moldavite = createProceduralMoldavite(this.THREE, {
+      locality: "besednice",
+      rarity: "A",
+      seed: this.session.state.seed ^ 0x42454649,
+      z: 15,
+      rotationX: 0.34,
+      rotationY: -0.18
     });
-    this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
   collectHedgehog() {
-    if (this.findingEntity === null) return false;
+    if (this.findingEntity === null || this.pickupTween) return false;
+    const entity = this.findingEntity;
+    const interaction = this.app.world.get(entity, "interaction");
+    if (interaction) interaction.enabled = false;
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot") ?? {};
     const quality = spot.digQuality ?? 0;
     const cleanDig = spot.cleanDig === true;
@@ -437,17 +465,23 @@ export class BesedniceScene {
     this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality, {
       scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
     }));
-    const entity = this.findingEntity;
-    this.renderer.unbindEntity(entity);
-    this.app.world.destroyEntity(entity);
-    this.externalIdByEntity.delete(entity);
-    this.findingEntity = null;
     this.boss.start(this.app.world, this.karelEntity);
+    const visual = this.renderer.objectByEntity.get(entity);
+    this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("besednice-boss-start");
     this.emitHud(true);
+    if (!this.pickupTween) this.finishPickup(entity);
     return true;
+  }
+
+  finishPickup(entity) {
+    this.renderer.unbindEntity(entity);
+    this.app.world.destroyEntity(entity);
+    this.externalIdByEntity.delete(entity);
+    if (this.findingEntity === entity) this.findingEntity = null;
+    this.pickupTween = null;
   }
 
   recoverHedgehog() {
@@ -621,7 +655,9 @@ export class BesedniceScene {
           kind: this.availableInteraction.interaction.kind,
           label: this.availableInteraction.interaction.label
         } : null,
-        loadedAssets: [...this.assetEntries.keys()].sort()
+        loadedAssets: [...this.assetEntries.keys()].sort(),
+        karelIdleScaleY: this.karelIdleVisual?.scale?.y ?? null,
+        pickupActive: Boolean(this.pickupTween)
       },
       levelComplete: this.levelComplete
     };
@@ -629,6 +665,8 @@ export class BesedniceScene {
 
   destroyVisualWorld() {
     if (!this.renderer?.objectByEntity) return;
+    if (this.pickupTween) cancelPickupTween(this.pickupTween);
+    this.pickupTween = null;
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
@@ -640,6 +678,8 @@ export class BesedniceScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.karelIdleVisual = null;
+    this.visualTime = 0;
   }
 
   unloadAssets() {

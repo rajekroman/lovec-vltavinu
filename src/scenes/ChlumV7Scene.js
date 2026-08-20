@@ -1,5 +1,9 @@
 import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
+import { CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
+import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { syncSpriteVisual } from "../render/ThreeRenderer.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
@@ -25,50 +29,6 @@ export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   return 1.08;
 }
 
-function moldaviteNoise(x, y, z) {
-  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
-  return value - Math.floor(value);
-}
-
-export function createChlumV7Moldavite(THREE) {
-  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
-    throw new TypeError("Chlum V7 moldavite requires Three.js mesh primitives.");
-  }
-
-  const geometry = new THREE.IcosahedronGeometry(1, 2);
-  const position = geometry.attributes?.position;
-  if (!position?.getX || !position?.setXYZ) throw new TypeError("Chlum V7 moldavite geometry must expose positions.");
-
-  for (let index = 0; index < position.count; index++) {
-    const x = position.getX(index);
-    const y = position.getY(index);
-    const z = position.getZ(index);
-    const radial = 0.82 + moldaviteNoise(x, y, z) * 0.24;
-    position.setXYZ(index, x * radial * 1.08, y * radial * 0.9, z * radial * 0.72);
-  }
-  position.needsUpdate = true;
-  geometry.computeVertexNormals?.();
-
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x315f38,
-    emissive: 0x0b2011,
-    emissiveIntensity: 0.24,
-    roughness: 0.5,
-    metalness: 0.02,
-    transparent: true,
-    opacity: 0.96
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = "chlum-v7-moldavite-finding";
-  mesh.position.z = 14;
-  mesh.rotation.x = 0.28;
-  mesh.rotation.y = -0.36;
-  mesh.scale.set(5, 4, 3);
-  mesh.userData.assetId = "procedural-chlum-moldavite-v7";
-  mesh.userData.findingVisual = "moldavite";
-  return mesh;
-}
-
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
   if (documentRef.getElementById(V7_STYLESHEET_ID)) return true;
@@ -86,10 +46,13 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     ensureV7Theme();
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
+    this.farmerIdleVisual = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
     this.findingActionStage = null;
+    this.pickupTween = null;
+    this.visualTime = 0;
     this.visualMode = "uninitialized";
   }
 
@@ -182,8 +145,15 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       ...actorSpriteOptions,
       assetId: "npc-farmer-vaclav"
     });
+    const farmerIdle = createIdleWrapper(THREE, farmer, {
+      name: "chlum-v7-farmer-idle",
+      amplitude: 0.02,
+      frequency: 1.35,
+      phase: 0.4
+    });
+    this.farmerIdleVisual = farmerIdle;
     this.renderer.bindEntity(this.playerEntity, playerGroup, "actors");
-    this.renderer.bindEntity(this.farmerEntity, farmer, "actors");
+    this.renderer.bindEntity(this.farmerEntity, farmerIdle, "actors");
     this.syncPlayerActionVisual();
 
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
@@ -275,7 +245,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
-    const moldavite = createChlumV7Moldavite(this.THREE);
+    const moldavite = createProceduralMoldavite(this.THREE, {
+      locality: "chlum",
+      rarity: "B",
+      seed: this.session.state.seed ^ 0x43484c55
+    });
     this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
@@ -317,10 +291,33 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   }
 
   collectFinding() {
-    if (this.findingEntity === null) return;
+    if (this.findingEntity === null || this.pickupTween) return;
+    const entity = this.findingEntity;
+    const interaction = this.app.world.get(entity, "interaction");
+    if (interaction) interaction.enabled = false;
+
     this.findingActionStage = "pick-up";
     this.playHunterAction("pick-up");
-    super.collectFinding();
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
+
+    const visual = this.renderer.objectByEntity.get(entity);
+    this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
+    this.radarMessage = "Vltavín byl bezpečně sebrán.";
+    this.availableInteraction = null;
+    this.interactions.clear();
+    this.app.input.reset("finding-collected");
+    this.emitHud(true);
+    if (!this.pickupTween) this.finishPickup(entity);
+  }
+
+  finishPickup(entity) {
+    this.renderer.unbindEntity(entity);
+    this.app.world.destroyEntity(entity);
+    this.externalIdByEntity.delete(entity);
+    if (this.findingEntity === entity) this.findingEntity = null;
+    this.pickupTween = null;
   }
 
   showResult() {
@@ -365,6 +362,13 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
   updateAnimations(dt) {
     super.updateAnimations(dt);
+    this.visualTime += Math.max(0, Number(dt) || 0);
+    updateIdlePulse(this.farmerIdleVisual, this.visualTime);
+    if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
+      const entity = this.findingEntity;
+      if (entity !== null) this.finishPickup(entity);
+      else this.pickupTween = null;
+    }
     this.syncPlayerActionVisual();
   }
 
@@ -388,6 +392,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   }
 
   destroyVisualWorld() {
+    if (this.pickupTween) cancelPickupTween(this.pickupTween);
+    this.pickupTween = null;
     if (this.farmerInteractionRing) {
       this.renderer.remove(this.farmerInteractionRing);
       this.renderer.disposeObject(this.farmerInteractionRing);
@@ -398,10 +404,12 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.farmerIdleVisual = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
     this.findingActionStage = null;
+    this.visualTime = 0;
     super.destroyVisualWorld();
   }
 
@@ -418,7 +426,9 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
         ...snapshot.runtime,
         visualMode: this.visualMode,
         cameraZoom: this.renderer.camera?.zoom ?? null,
-        farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true
+        farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true,
+        farmerIdleScaleY: this.farmerIdleVisual?.scale?.y ?? null,
+        pickupActive: Boolean(this.pickupTween)
       }
     };
   }
