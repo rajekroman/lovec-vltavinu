@@ -47,7 +47,10 @@ jobs:
         run: |
           mkdir -p test-results
           set -o pipefail
-          node tools/validate.mjs 2>&1 | tee test-results/static-validation.log
+          npm run validate 2>&1 | tee test-results/static-validation.log
+
+      - name: Validate module graph
+        run: npm run validate:modules
 
       - name: Reproduce Slavia production art
         run: node tools/art/build-slavia-v7-art.mjs
