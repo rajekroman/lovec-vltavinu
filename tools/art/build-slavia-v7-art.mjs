@@ -143,6 +143,15 @@ function paintRiver(surface) {
       return [...tone, (1 - t) * 0.85];
     });
   }
+  // current lines — flowing surface streaks that break the flat water read
+  for (let index = 0; index < 40; index++) {
+    const streamY = rng() * surface.height;
+    const streamX = rng() * (RIVER_EDGE(streamY) - 40) + 10;
+    const streamLen = 20 + rng() * 60;
+    strokeLine(surface, streamX, streamY, streamX - streamLen * 0.15, streamY + streamLen, 1.6 + rng() * 1.4, (_x, _y, _u, v) => {
+      return [186, 202, 206, 0.14 * (1 - Math.abs(v - 0.5) * 2)];
+    });
+  }
   for (let index = 0; index < 900; index++) {
     const y = rng() * surface.height;
     const x = RIVER_EDGE(y) + 4 + rng() * 30;
@@ -217,6 +226,22 @@ function paintPlaza(surface) {
     const tone = shade(warm, clamp(jointX * jointY * chip + (grit - 0.5) * 0.13, 0.55, 1.25));
     return [...tone, 0.97];
   });
+  // puddles — small reflective patches that catch sunlight after rain
+  const puddleRng = createRng(4422);
+  for (let index = 0; index < 16; index++) {
+    const px = 320 + puddleRng() * 1080;
+    const py = 180 + puddleRng() * 560;
+    if (blocked(px - 20, py - 14, px + 20, py + 14)) continue;
+    const rx = 8 + puddleRng() * 18;
+    const ry = rx * (0.45 + puddleRng() * 0.25);
+    fillEllipse(surface, px, py, rx, ry, (ex, ey, distance) => {
+      const ripple = Math.sin(distance * 14 + fbm(ex * 0.15, ey * 0.15, { seed: 4430 + index, octaves: 2 }) * 4) * 0.04;
+      const reflection = smoothstep(1, 0.2, distance);
+      const sky = mixColor([142, 164, 184], [186, 202, 216], 0.5 + ripple);
+      return [...sky, 0.35 * reflection];
+    }, { softness: 0.4 });
+  }
+
   // service details keep the empty gameplay centre from reading as a blank slab field
   for (const [cx, cy, radius] of [[560, 300, 13], [980, 520, 11], [700, 690, 12]]) {
     fillEllipse(surface, cx, cy, radius, radius * 0.86, (px, py, distance) => [
@@ -234,6 +259,21 @@ function paintPlaza(surface) {
       0.35 * (1 - distance)
     ], { softness: 0.5 });
   }
+  // scattered leaf litter — autumn is just starting
+  const leafRng = createRng(7788);
+  const leafColors = [[168, 122, 48], [142, 86, 36], [186, 152, 56], [118, 82, 42], [196, 136, 44]];
+  for (let index = 0; index < 180; index++) {
+    const lx = 280 + leafRng() * 1150;
+    const ly = 140 + leafRng() * 640;
+    const leafColor = leafColors[Math.floor(leafRng() * leafColors.length)];
+    const angle = leafRng() * Math.PI;
+    const size = 2.2 + leafRng() * 3.4;
+    fillEllipse(surface, lx, ly, size, size * 0.5, (_px, _py, distance) => [
+      ...shade(leafColor, clamp(1.1 - distance * 0.3, 0.6, 1.2)),
+      0.65 * (1 - distance * 0.5)
+    ], { softness: 0.4, rotation: angle });
+  }
+
   // trodden lanes between the canonical objective anchors
   const lanes = [
     [ANCHORS.spawn, ANCHORS.documentChlum, [520, 380], ANCHORS.documentNesmen],
@@ -356,6 +396,43 @@ function drawVenue(surface) {
     strokeLine(surface, x0 + 20, y0 - 1, x0 + 20, y0 - 53, 2.4, () => [236, 226, 200, 0.55]);
     strokeLine(surface, x0, y0 - 27, x0 + 40, y0 - 26, 2.2, () => [236, 226, 200, 0.45]);
   }
+
+  // flower boxes on historic hall windows
+  for (let index = 0; index < 5; index++) {
+    const x0 = annexRight + 22 + index * 66;
+    if (x0 + 40 > entranceX - 62 && x0 < entranceX + 62) continue;
+    const y0 = groundY - 40;
+    fillRect(surface, x0 - 2, y0 + 2, x0 + 42, y0 + 10, (x, y) => [
+      ...shade(mixColor([96, 72, 56], [134, 98, 68], valueNoise(x * 0.3, y * 0.3, 1600 + index)), 1), 0.95
+    ]);
+    const flowerRng = createRng(1700 + index);
+    const flowerColors = [[196, 62, 72], [214, 142, 68], [186, 76, 148], [216, 186, 72]];
+    for (let flower = 0; flower < 6; flower++) {
+      const fx = x0 + 4 + flowerRng() * 34;
+      const fy = y0 - 2 - flowerRng() * 16;
+      const fc = flowerColors[Math.floor(flowerRng() * flowerColors.length)];
+      fillEllipse(surface, fx, fy, 3.6, 2.8, () => [...fc, 0.9], { softness: 0.3 });
+      fillEllipse(surface, fx, fy + 4, 2.4, 3.2, () => [68, 112, 52, 0.85], { softness: 0.3 });
+    }
+  }
+
+  // clock on pediment
+  const clockX = entranceX;
+  const clockY = facadeTop - 28;
+  const clockR = 18;
+  fillEllipse(surface, clockX, clockY, clockR + 4, clockR + 4, () => [84, 72, 56, 0.95], { softness: 0.15 });
+  fillEllipse(surface, clockX, clockY, clockR, clockR, (_px, _py, distance) => [
+    ...mixColor([238, 232, 216], [212, 206, 190], distance), 0.97
+  ], { softness: 0.1 });
+  for (let hour = 0; hour < 12; hour++) {
+    const angle = (hour / 12) * Math.PI * 2 - Math.PI / 2;
+    const markR = clockR * 0.78;
+    const mx = clockX + Math.cos(angle) * markR;
+    const my = clockY + Math.sin(angle) * markR;
+    fillEllipse(surface, mx, my, 1.6, 1.6, () => [42, 38, 32, 0.9]);
+  }
+  strokeLine(surface, clockX, clockY, clockX + Math.cos(-Math.PI * 0.33) * clockR * 0.55, clockY + Math.sin(-Math.PI * 0.33) * clockR * 0.55, 2.8, () => [36, 32, 28, 0.95]);
+  strokeLine(surface, clockX, clockY, clockX + Math.cos(Math.PI * 0.12) * clockR * 0.72, clockY + Math.sin(Math.PI * 0.12) * clockR * 0.72, 2, () => [36, 32, 28, 0.9]);
 
   // entrance: steps, double doors, canopy and house sign
   fillPolygon(surface, [
@@ -600,6 +677,21 @@ function paintFinalGrade(surface) {
   });
 }
 
+function paintTreeShadows(surface) {
+  const shadowTrees = [
+    [232, 176, 62], [318, 108, 58], [880, 96, 62], [700, 118, 46],
+    [1394, 806, 66], [1120, 812, 52], [830, 826, 58], [520, 828, 54]
+  ];
+  for (const [x, y, size] of shadowTrees) {
+    const shadowX = x + size * 0.7;
+    const shadowY = y + size * 0.35;
+    fillEllipse(surface, shadowX, shadowY, size * 1.1, size * 0.55, (_px, _py, distance) => {
+      const dapple = valueNoise(_px * 0.18, _py * 0.18, 6600) > 0.45 ? 0.6 : 1;
+      return [22, 28, 18, 0.18 * (1 - distance * 0.8) * dapple];
+    }, { softness: 0.5 });
+  }
+}
+
 function buildPlate() {
   const surface = createSurface(PLATE.width, PLATE.height, 3);
   paintGrass(surface);
@@ -607,6 +699,7 @@ function buildPlate() {
   paintQuay(surface);
   paintPlaza(surface);
   paintGravelPath(surface);
+  paintTreeShadows(surface);
   drawVenue(surface);
   drawServiceRoad(surface);
   drawEventLayout(surface);

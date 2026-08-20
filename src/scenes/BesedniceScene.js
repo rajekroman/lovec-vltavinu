@@ -1,9 +1,11 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, createBesedniceFinding } from "../data/besednice.js";
+import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, BESEDNICE_FINDING_VARIANTS } from "../data/besednice.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { BossSystem } from "../gameplay/BossSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
@@ -74,6 +76,7 @@ export class BesedniceScene {
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
+    this.rng = createRng(this.session.state.seed ^ 0x42455345);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = this.hudRevision ?? 0;
@@ -344,6 +347,7 @@ export class BesedniceScene {
     });
     if (!result.complete) return;
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot");
+    spot.digQuality = this.dig.averageQuality();
     const interaction = this.app.world.get(this.hedgehogEntity, "interaction");
     this.dig.finish();
     spot.dug = true;
@@ -378,7 +382,9 @@ export class BesedniceScene {
 
   collectHedgehog() {
     if (this.findingEntity === null) return false;
-    this.objectives.recordFinding(createBesedniceFinding("besednice-hedgehog", "besednice-hedgehog-1"));
+    const quality = this.app.world.get(this.hedgehogEntity, "digSpot")?.digQuality ?? 0;
+    const variant = resolveVariant(BESEDNICE_FINDING_VARIANTS, quality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality));
     const entity = this.findingEntity;
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
