@@ -1,7 +1,9 @@
 import { TileGrid } from "./TileGrid.js";
 import { IsometricRenderer } from "./IsometricRenderer.js";
+import { GridSceneVisuals } from "./GridSceneVisuals.js";
 import { getGridLevel, getSpawnPoint, gridSizeToWorldBounds } from "./GridLevels.js";
 import { TILE_SIZE } from "./TileDefinitions.js";
+import { gameplayMechanics } from "../gameplay/GameplayMechanics.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -20,6 +22,7 @@ export class GridScene {
   resetRuntime() {
     this.grid = null;
     this.isometricRenderer = null;
+    this.visuals = null;
     this.visualRoot = null;
     this.playerGridX = 0;
     this.playerGridY = 0;
@@ -31,6 +34,8 @@ export class GridScene {
     this.documents = new Map();
     this.modal = null;
     this.resultShown = false;
+    this.levelStartTime = null;
+    this.levelFindings = [];
   }
 
   async enter() {
@@ -42,9 +47,17 @@ export class GridScene {
     this.instantiateWorld();
     this.createVisualWorld();
     this.setCameraToPlayer();
+    this.levelStartTime = Date.now();
 
-    const levelDef = { title: `Úroveň ${this.levelId}`, goal: "Splň cíl úrovně" };
-    this.screens.showBrief(levelDef, 4, () => this.beginPlaying());
+    const levelDef = gameplayMechanics.getLevelDefinition(this.levelId) || {};
+    this.screens.showBrief(
+      {
+        title: levelDef.name || `Úroveň ${this.levelId}`,
+        goal: levelDef.description || "Splň cíl úrovně"
+      },
+      4,
+      () => this.beginPlaying()
+    );
   }
 
   instantiateWorld() {
@@ -88,6 +101,9 @@ export class GridScene {
     const gridGroup = this.isometricRenderer.renderGrid(this.grid);
     root.add(gridGroup);
 
+    this.visuals = new GridSceneVisuals(THREE, this.isometricRenderer);
+    this.visuals.addToScene(root);
+
     this.createPlayerMesh();
     root.add(this.playerMesh);
 
@@ -127,6 +143,21 @@ export class GridScene {
     this.session.setPhase("playing");
     this.screens.play();
     this.app.input.reset("grid-scene-start");
+    this.highlightInteractiveElements();
+  }
+
+  highlightInteractiveElements() {
+    if (!this.visuals) return;
+
+    // Highlight dig sites
+    for (const { gridX, gridY } of this.digSites.values()) {
+      this.visuals.highlightDigSite(this.grid, gridX, gridY);
+    }
+
+    // Highlight NPCs
+    for (const { gridX, gridY } of this.npcs.values()) {
+      this.visuals.highlightNPC(this.grid, gridX, gridY);
+    }
   }
 
   updateControl(dt, time, input) {
@@ -145,6 +176,10 @@ export class GridScene {
     const newY = this.playerGridY + (move.y > 0 ? 1 : move.y < 0 ? -1 : 0);
 
     if (this.grid.isWalkable(newX, newY)) {
+      if (this.visuals) {
+        this.visuals.createMovementIndicator(this.grid, this.playerGridX, this.playerGridY, newX, newY);
+      }
+
       this.playerGridX = newX;
       this.playerGridY = newY;
       this.updatePlayerPosition();
@@ -206,6 +241,11 @@ export class GridScene {
     if (!site) return;
 
     this.screens.show(null, { playing: true });
+
+    if (this.visuals) {
+      this.visuals.createDigEffect(this.grid, site.gridX, site.gridY, 1);
+    }
+
     this.emitDugEvent(site.gridX, site.gridY);
     this.app.input.reset("grid-dig-complete");
   }
@@ -274,7 +314,17 @@ export class GridScene {
     }
   }
 
+  update(dt) {
+    if (this.visuals) {
+      this.visuals.update();
+    }
+  }
+
   destroyVisualWorld() {
+    if (this.visuals) {
+      this.visuals.dispose();
+      this.visuals = null;
+    }
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
