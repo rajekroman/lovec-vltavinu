@@ -5,6 +5,7 @@ import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createWaterOverlay } from "../render/WaterOverlay.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-slavia-event-plate-v7";
@@ -69,6 +70,7 @@ export class SlaviaScene {
     this.externalIdByEntity = new Map();
     this.visualRoot = null;
     this.foregroundRoot = null;
+    this.waterOverlay = null;
     this.visualMode = "uninitialized";
     this.cameraZoom = 0.9;
     this.playerEntity = null;
@@ -226,6 +228,9 @@ export class SlaviaScene {
     foreground.add(eventEdge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.waterOverlay = createWaterOverlay(THREE, this.level.bounds, { opacity: 0.25 });
+    this.renderer.add(this.waterOverlay.object, "ground");
   }
 
   beginPlaying() {
@@ -277,6 +282,7 @@ export class SlaviaScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    if (this.waterOverlay) this.waterOverlay.update(dt);
   }
 
   updateHud() {
@@ -520,6 +526,11 @@ export class SlaviaScene {
   destroyVisualWorld() {
     if (!this.renderer?.objectByEntity) return;
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
+    if (this.waterOverlay) {
+      this.renderer.remove(this.waterOverlay.object);
+      this.waterOverlay.dispose();
+      this.waterOverlay = null;
+    }
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
