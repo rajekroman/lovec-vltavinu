@@ -48,6 +48,39 @@ test("misses penalize average quality by contributing zero", () => {
   assert.ok(Math.abs(avg - 0.75) < 0.001, `expected ~0.75 (3×1.0 + 1×0) / 4, got ${avg}`);
 });
 
+test("dig:complete marks clean only for exactly three hits with zero misses", () => {
+  const events = [];
+  const bus = { emit: (name, payload) => events.push({ name, payload }) };
+  const clean = new DigSystem({ events: bus, sweetMin: 0.4, sweetMax: 0.6 });
+  clean.start("clean");
+  for (let hit = 0; hit < 3; hit++) {
+    clean.active.position = 0.5;
+    clean.strike();
+  }
+  assert.deepEqual(events.find(event => event.name === "dig:complete")?.payload, {
+    spot: "clean",
+    hits: 3,
+    misses: 0,
+    clean: true
+  });
+
+  events.length = 0;
+  const missed = new DigSystem({ events: bus, sweetMin: 0.4, sweetMax: 0.6 });
+  missed.start("missed");
+  missed.active.position = 0.1;
+  missed.strike();
+  for (let hit = 0; hit < 3; hit++) {
+    missed.active.position = 0.5;
+    missed.strike();
+  }
+  assert.deepEqual(events.find(event => event.name === "dig:complete")?.payload, {
+    spot: "missed",
+    hits: 3,
+    misses: 1,
+    clean: false
+  });
+});
+
 test("averageQuality returns 0 when no hits recorded", () => {
   const dig = new DigSystem();
   assert.equal(dig.averageQuality(), 0);
