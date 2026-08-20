@@ -57,6 +57,6 @@ test("TitleScene closes only an open help screen with Escape", async () => {
 });
 
 test("title version is player-facing and stays aligned with the runtime label", () => {
-  assert.match(html, /<p class="version">v6\.3 · Čtyři lokality<\/p>/);
+  assert.match(html, /<p class="version">v7\.0 · Čtyři lokality<\/p>/);
   assert.doesNotMatch(html, /Modular Bootstrap/);
 });

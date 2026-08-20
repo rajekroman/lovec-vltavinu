@@ -112,5 +112,5 @@ test("service worker pre-caches only canonical Slavia scene modules", () => {
   for (const path of paths) assert.ok(serviceWorker.includes(`"${path}"`));
   assert.ok(serviceWorker.includes('"./assets/textures/terrain/slavia-event-plate-v7.png"'));
   assert.ok(serviceWorker.includes('"./assets/sprites/foreground/slavia-event-edge-v7.png"'));
-  assert.match(serviceWorker, /lovec-vltavinu-slavia-v6-3-release/);
+  assert.match(serviceWorker, /lovec-vltavinu-slavia-v7-0-release/);
 });
