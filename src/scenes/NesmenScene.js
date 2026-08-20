@@ -190,10 +190,10 @@ export class NesmenScene {
     return texture;
   }
 
-  texture(id) {
+  async texture(id) {
     const entry = this.requireAsset(id);
     if (entry.type !== "texture" && entry.type !== "spritesheet") throw new Error(`Asset ${id} is not a texture.`);
-    const texture = this.app.assets.get(id, entry.type);
+    const texture = await this.app.assets.get(id, entry.type);
     if (!texture) throw new Error(`Texture is not loaded: ${id}`);
     return texture;
   }
@@ -487,7 +487,7 @@ export class NesmenScene {
     });
   }
 
-  strikeDig() {
+  async strikeDig() {
     const result = this.dig.strike();
     if (!result) return;
     if (result.hit) this.totalDigHits += 1;
@@ -517,10 +517,9 @@ export class NesmenScene {
       visual.marker.visible = false;
       visual.hole.visible = true;
     }
-    if (spot.findingId) this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.perfectDig);
     if (spot.findingId) {
-      this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.cleanDig);
-      if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
+      await this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.perfectDig);
+      if (spot.perfectDig) this.events.emit("dig:clean", { spot: spot.findingId });
     }
 
     this.activeProfileEntity = null;
@@ -547,7 +546,7 @@ export class NesmenScene {
     this.emitHud(true);
   }
 
-  spawnFinding(profileEntity, findingId, digQuality, perfect) {
+  async spawnFinding(profileEntity, findingId, digQuality, perfect) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
@@ -562,18 +561,17 @@ export class NesmenScene {
       this.renderer.bindEntity(this.findingEntity, mesh, "effects");
     } catch (error) {
       console.warn("Procedural moldavite failed, falling back to sprite", error);
-      this.texture("finding-vltavin-nesmen").then(texture => {
-        if (this.findingEntity === null) return;
-        const sprite = this.renderer.createSprite(texture, {
-          width: 50,
-          height: 50,
-          z: 14,
-          anchorX: 0.5,
-          anchorY: 0.2,
-          assetId: "finding-vltavin-nesmen"
-        });
-        this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+      const texture = await this.texture("finding-vltavin-nesmen");
+      if (this.findingEntity === null) return;
+      const sprite = this.renderer.createSprite(texture, {
+        width: 50,
+        height: 50,
+        z: 14,
+        anchorX: 0.5,
+        anchorY: 0.2,
+        assetId: "finding-vltavin-nesmen"
       });
+      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
     }
     const moldavite = createProceduralMoldavite(this.THREE, {
       locality: "nesmen",
@@ -592,7 +590,7 @@ export class NesmenScene {
     const quality = fq.value ?? 0;
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, perfect));
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
     this.collectingEntity = entity;
     this.collectingElapsed = 0;
     this.findingEntity = null;
