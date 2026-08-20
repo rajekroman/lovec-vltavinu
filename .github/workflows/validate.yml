@@ -45,6 +45,7 @@ jobs:
           node --check tests/mobile-smoke.spec.mjs
           node --check tests/radar-hud-smoke.spec.mjs
           node --check tests/slavia-smoke.spec.mjs
+          node --check tests/v71-dig-smoke.spec.mjs
           node --check playwright.config.mjs
 
       - name: Validate static build
