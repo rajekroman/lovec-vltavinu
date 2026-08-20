@@ -99,6 +99,7 @@ jobs:
           - desktop-chromium
           - audio-lifecycle-chromium
           - iphone-portrait
+          - iphone-portrait-smoke
           - iphone-landscape
 
     steps:
