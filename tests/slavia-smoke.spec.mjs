@@ -61,23 +61,28 @@ function createInputDriver(page, testInfo) {
     else await touchLocator(page, page.locator("#actionButton"));
   }
 
-  async function holdAxis(axis, direction) {
+  async function holdVector(xAxis, yAxis) {
+    const length = Math.hypot(xAxis, yAxis);
+    if (length <= 0) throw new Error("Movement vector must be non-zero.");
+    const xDirection = xAxis / Math.max(1, length);
+    const yDirection = yAxis / Math.max(1, length);
+
     if (desktop) {
-      const key = axis === "x"
-        ? (direction > 0 ? "ArrowRight" : "ArrowLeft")
-        : (direction > 0 ? "ArrowUp" : "ArrowDown");
+      const keys = [];
+      if (Math.abs(xDirection) > 0.01) keys.push(xDirection > 0 ? "ArrowRight" : "ArrowLeft");
+      if (Math.abs(yDirection) > 0.01) keys.push(yDirection > 0 ? "ArrowUp" : "ArrowDown");
       let active = true;
       let repeatError = null;
-      await page.keyboard.down(key);
+      for (const key of keys) await page.keyboard.down(key);
       const repeatTimer = setInterval(() => {
         if (!active) return;
-        page.keyboard.down(key).catch(error => { repeatError ??= error; });
+        for (const key of keys) page.keyboard.down(key).catch(error => { repeatError ??= error; });
       }, 250);
       return async () => {
         if (!active) return;
         active = false;
         clearInterval(repeatTimer);
-        await page.keyboard.up(key);
+        for (const key of [...keys].reverse()) await page.keyboard.up(key);
         if (repeatError) throw repeatError;
       };
     }
@@ -91,8 +96,8 @@ function createInputDriver(page, testInfo) {
     const radius = Math.max(1, Math.min(moveZoneBox.width, moveZoneBox.height) / 2);
     const centerX = moveZoneBox.x + moveZoneBox.width / 2;
     const centerY = moveZoneBox.y + moveZoneBox.height / 2;
-    const x = Math.round(centerX + (axis === "x" ? direction * radius * 0.98 : 0));
-    const y = Math.round(centerY + (axis === "y" ? -direction * radius * 0.98 : 0));
+    const x = Math.round(centerX + xDirection * radius * 0.98);
+    const y = Math.round(centerY - yDirection * radius * 0.98);
     const client = await page.context().newCDPSession(page);
     let active = true;
     let repeatError = null;
@@ -119,7 +124,11 @@ function createInputDriver(page, testInfo) {
     };
   }
 
-  return Object.freeze({ desktop, activateUi, contextualAction, holdAxis });
+  async function holdAxis(axis, direction) {
+    return holdVector(axis === "x" ? direction : 0, axis === "y" ? direction : 0);
+  }
+
+  return Object.freeze({ desktop, activateUi, contextualAction, holdAxis, holdVector });
 }
 
 async function expectReleasedInput(page) {
@@ -226,10 +235,101 @@ async function moveAxisTo(page, input, axis, target, timeout = 20_000, stopKind 
   }
 }
 
+async function moveVectorTo(page, input, targetX, targetY, timeout = 20_000, stopKind = null) {
+  const initial = await runtimeSnapshot(page);
+  const player = activeRuntime(initial)?.player;
+  if (!player) throw new Error(`${initial.scene} player is unavailable.`);
+  if (stopKind && activeRuntime(initial)?.available?.kind === stopKind) return true;
+  const deltaX = targetX - player.x;
+  const deltaY = targetY - player.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  if (distance <= TARGET_TOLERANCE) return true;
+  const directionX = deltaX / distance;
+  const directionY = deltaY / distance;
+  const movementTimeout = input.desktop ? timeout : timeout + 20_000;
+
+  await page.evaluate(async ({ x, y, tolerance, timeoutMs, expectedKind }) => {
+    const { app } = await import("./src/bootstrap.js");
+    window.__slaviaQaVectorMovement = { done: false, stalled: false, current: null, interaction: null };
+    const startedAt = performance.now();
+    let bestDistance = Infinity;
+    let lastProgressAt = startedAt;
+    const monitor = () => {
+      const state = window.__lovecRuntime?.snapshot?.();
+      const runtime = state?.[state.scene]?.runtime;
+      const current = runtime?.player;
+      const availableKind = runtime?.available?.kind ?? null;
+      const currentDistance = current ? Math.hypot(x - current.x, y - current.y) : Infinity;
+      const now = performance.now();
+      window.__slaviaQaVectorMovement.current = current ? { x: current.x, y: current.y, distance: currentDistance } : null;
+      if (currentDistance < bestDistance - 2) {
+        bestDistance = currentDistance;
+        lastProgressAt = now;
+      }
+      const interactionReached = Boolean(expectedKind) && availableKind === expectedKind;
+      if (currentDistance <= tolerance || interactionReached) {
+        app.stop();
+        window.__slaviaQaVectorMovement.interaction = interactionReached ? availableKind : null;
+        window.__slaviaQaVectorMovement.done = true;
+        return;
+      }
+      if (now - lastProgressAt >= 1_200 || now - startedAt >= timeoutMs) {
+        app.stop();
+        window.__slaviaQaVectorMovement.stalled = true;
+        window.__slaviaQaVectorMovement.done = true;
+        return;
+      }
+      requestAnimationFrame(monitor);
+    };
+    requestAnimationFrame(monitor);
+  }, {
+    x: targetX,
+    y: targetY,
+    tolerance: TARGET_TOLERANCE,
+    timeoutMs: movementTimeout,
+    expectedKind: stopKind
+  });
+
+  let movement = null;
+  let release = null;
+  const movementDeadline = Date.now() + movementTimeout + 2_000;
+  try {
+    while (!movement?.done) {
+      release = await input.holdVector(directionX, directionY);
+      const holdWindow = input.desktop
+        ? Math.max(1, movementDeadline - Date.now())
+        : Math.min(8_000, Math.max(1, movementDeadline - Date.now()));
+      try {
+        await page.waitForFunction(() => window.__slaviaQaVectorMovement?.done === true, null, { timeout: holdWindow });
+      } catch (error) {
+        if (input.desktop || Date.now() >= movementDeadline) throw error;
+      } finally {
+        await release().catch(() => {});
+        release = null;
+      }
+      movement = await page.evaluate(() => ({ ...window.__slaviaQaVectorMovement }));
+    }
+  } finally {
+    await release?.().catch(() => {});
+    await page.evaluate(async () => {
+      const { app } = await import("./src/bootstrap.js");
+      app.start();
+      delete window.__slaviaQaVectorMovement;
+    }).catch(() => {});
+  }
+
+  const final = await runtimeSnapshot(page);
+  if (stopKind && activeRuntime(final)?.available?.kind === stopKind) return true;
+  const current = activeRuntime(final)?.player;
+  return Boolean(current && Math.hypot(targetX - current.x, targetY - current.y) <= TARGET_TOLERANCE);
+}
+
 async function moveTo(page, input, x, y, kind, timeout = 12_000) {
   const approaches = [[x, y], [x - 20, y], [x + 20, y], [x, y - 20], [x, y + 20], [x, y]];
   const collisionTolerantKind = kind;
   for (const [targetX, targetY] of approaches) {
+    await moveVectorTo(page, input, targetX, targetY, 20_000, collisionTolerantKind);
+    if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
     await moveAxisTo(page, input, "x", targetX, 20_000, collisionTolerantKind);
     if ((activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null) === kind) return;
     await moveAxisTo(page, input, "y", targetY, 20_000, collisionTolerantKind);
