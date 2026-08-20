@@ -103,25 +103,33 @@ jobs:
           - iphone-landscape
 
     steps:
+      # Pull requests already exercise a real 844×390 orientation transition in
+      # iphone-portrait-smoke. Keep the expensive full landscape journey for
+      # main pushes and manual release-gate dispatches.
       - name: Checkout
+        if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         uses: actions/checkout@v5
 
       - name: Setup Node.js
+        if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         uses: actions/setup-node@v6
         with:
           node-version: 24
 
       - name: Install test dependencies
+        if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         run: npm install --no-audit --no-fund --no-package-lock
 
       - name: Install Chromium
+        if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         run: npx playwright install --with-deps chromium
 
       - name: Run ${{ matrix.project }}
+        if: ${{ github.event_name != 'pull_request' || matrix.project != 'iphone-landscape' }}
         run: npm run test:smoke -- --project="${{ matrix.project }}"
 
       - name: Upload Playwright report
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || matrix.project != 'iphone-landscape') }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.project }}
