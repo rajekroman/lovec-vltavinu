@@ -54,7 +54,7 @@ test("DigSystem rejects alternate hit counts and completes on the third successf
   }
   assert.equal(hits.length, 3);
   assert.equal(hits.every(event => event.requiredHits === 3), true);
-  assert.deepEqual(complete, [{ spot: "nesmen-profile-1", hits: 3 }]);
+  assert.deepEqual(complete, [{ spot: "nesmen-profile-1", hits: 3, misses: 0, clean: true }]);
   assert.equal(dig.strike(), null);
   assert.equal(dig.finish().hits, 3);
 });
