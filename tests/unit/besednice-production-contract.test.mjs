@@ -99,7 +99,12 @@ test("Playwright defines desktop, portrait and landscape projects", () => {
   assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 2);
   assert.match(playwrightConfig, /viewport: \{ width: 390, height: 844 \}/);
   assert.match(playwrightConfig, /viewport: \{ width: 844, height: 390 \}/);
-  assert.match(validationWorkflow, /Desktop and mobile Playwright matrix/);
+  assert.match(validationWorkflow, /name: Playwright — \$\{\{ matrix\.project \}\}/);
+  for (const project of ["desktop-chromium", "audio-lifecycle-chromium", "iphone-portrait", "iphone-landscape"]) {
+    assert.match(validationWorkflow, new RegExp(`- ${project}`));
+  }
+  assert.match(validationWorkflow, /fail-fast: false/);
+  assert.match(validationWorkflow, /--project="\$\{\{ matrix\.project \}\}"/);
 });
 
 test("desktop and mobile smoke use project-native normalized input", () => {
