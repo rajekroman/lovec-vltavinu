@@ -92,14 +92,23 @@ test("validation remains read-only", () => {
 });
 
 test("Playwright defines desktop, portrait and landscape projects", () => {
-  for (const project of ["desktop-chromium", "iphone-portrait", "iphone-landscape"]) {
+  for (const project of ["desktop-chromium", "iphone-portrait", "iphone-portrait-smoke", "iphone-landscape"]) {
     assert.match(playwrightConfig, new RegExp(`name: "${project}"`));
   }
   assert.match(playwrightConfig, /metadata: \{ inputMode: "desktop", orientation: "landscape" \}/);
-  assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 2);
+  assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 3);
   assert.match(playwrightConfig, /viewport: \{ width: 390, height: 844 \}/);
   assert.match(playwrightConfig, /viewport: \{ width: 844, height: 390 \}/);
-  assert.match(validationWorkflow, /Desktop and mobile Playwright matrix/);
+  assert.match(playwrightConfig, /name: "iphone-portrait",\s*testMatch: \/slavia-smoke\\\.spec\\\.mjs\$\//);
+  assert.match(playwrightConfig, /name: "iphone-portrait-smoke",\s*testMatch: \[\/mobile-smoke\\\.spec\\\.mjs\$\/, \/radar-hud-smoke\\\.spec\\\.mjs\$\/\]/);
+  assert.match(validationWorkflow, /name: Playwright — \$\{\{ matrix\.project \}\}/);
+  for (const project of ["desktop-chromium", "audio-lifecycle-chromium", "iphone-portrait", "iphone-portrait-smoke", "iphone-landscape"]) {
+    assert.match(validationWorkflow, new RegExp(`- ${project}`));
+  }
+  assert.match(validationWorkflow, /fail-fast: false/);
+  assert.match(validationWorkflow, /playwright install --with-deps --only-shell chromium/);
+  assert.doesNotMatch(validationWorkflow, /playwright install --with-deps chromium/);
+  assert.match(validationWorkflow, /--project="\$\{\{ matrix\.project \}\}"/);
 });
 
 test("desktop and mobile smoke use project-native normalized input", () => {

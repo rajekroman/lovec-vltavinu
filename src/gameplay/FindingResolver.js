@@ -1,5 +1,7 @@
 const RARITY_RANK = { C: 0, B: 1, A: 2 };
 
+export const CLEAN_DIG_SCORE_MULTIPLIER = 1.1;
+
 export function resolveVariant(variants, quality, rng) {
   if (!Array.isArray(variants) || !variants.length) throw new Error("No finding variants available.");
   if (variants.length === 1) return variants[0];
@@ -19,12 +21,17 @@ export function scaleScore(baseScore, quality, perfect = false) {
   return perfect ? Math.round(base + base * 0.15) : base;
 }
 
-export function createFinding(variant, findingId, locality, quality, perfect = false) {
+export function createFinding(variant, findingId, locality, quality, options = {}) {
+  const scoreMultiplier = options.scoreMultiplier ?? 1;
+  if (!(typeof scoreMultiplier === "number" && Number.isFinite(scoreMultiplier) && scoreMultiplier > 0)) {
+    throw new TypeError("scoreMultiplier must be a positive finite number.");
+  }
+  const scaledScore = scaleScore(variant.score, quality);
   return Object.freeze({
     findingId,
     locality,
     rarity: variant.rarity,
     weight: variant.weight,
-    score: scaleScore(variant.score, quality, perfect)
+    score: Math.round(scaledScore * scoreMultiplier)
   });
 }

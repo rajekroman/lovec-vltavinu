@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveVariant, scaleScore, createFinding } from "../../src/gameplay/FindingResolver.js";
+import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, scaleScore, createFinding } from "../../src/gameplay/FindingResolver.js";
 import { createRng } from "../../src/gameplay/SessionRng.js";
 
 const VARIANTS = [
@@ -49,6 +49,23 @@ test("scaleScore scales from 70% to 130%", () => {
   assert.equal(scaleScore(100, 0), 70);
   assert.equal(scaleScore(100, 0.5), 100);
   assert.equal(scaleScore(100, 1), 130);
+});
+
+test("clean-dig bonus is applied after quality scaling and does not change rarity", () => {
+  const variant = { rarity: "B", weight: 1.2, score: 101 };
+  const quality = 0.5;
+  const scaled = scaleScore(variant.score, quality);
+  const finding = createFinding(variant, "clean-1", "nesmen", quality, {
+    scoreMultiplier: CLEAN_DIG_SCORE_MULTIPLIER
+  });
+  assert.equal(CLEAN_DIG_SCORE_MULTIPLIER, 1.1);
+  assert.equal(finding.score, Math.round(scaled * 1.1));
+  assert.equal(finding.rarity, "B");
+});
+
+test("createFinding rejects invalid score multipliers", () => {
+  const variant = { rarity: "B", weight: 1.2, score: 90 };
+  assert.throws(() => createFinding(variant, "bad-1", "chlum", 0.5, { scoreMultiplier: 0 }), /scoreMultiplier/);
 });
 
 test("deterministic seed produces reproducible variant resolution", () => {

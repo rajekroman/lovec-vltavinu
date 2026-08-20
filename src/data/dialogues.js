@@ -28,13 +28,12 @@ const definitions = [
   },
   {
     id: "besednice-guide",
-    speaker: { entityId: "besednice-guide", name: "Petr", role: "guide" },
+    speaker: { entityId: "besednice-guide", name: "Milan", role: "quarry-guide" },
     lines: [
-      "Tady v lomu je ježková vrstva blízko povrchu.",
-      "Nejdřív najdi tři stopy, které ukážou správné místo ke kopání. A pozor na Karla — čeká na cizí nálezy."
+      "Ježková vrstva se neukáže hned. Nejdřív projdi tři stopy v odkryté hlíně.",
+      "Až všechny přečteš, poznáš správný profil. Vykopej ho přesně a hlídej si Karla — na dobrý nález čeká."
     ],
-    actionLabel: "ROZUMÍM",
-    grantsFlag: "besedniceGuide"
+    actionLabel: "JDU PO STOPÁCH"
   }
 ];
 

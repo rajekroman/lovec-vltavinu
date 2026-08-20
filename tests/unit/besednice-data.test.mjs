@@ -12,6 +12,7 @@ import {
 const level = getLevelDefinition("besednice");
 
 test("Besednice data contains one player, guide, exactly three clues, one locked dig site and Karel", () => {
+test("Besednice data contains guide, player, exactly three gated clues, one locked dig site and Karel", () => {
   const ids = BESEDNICE_ENTITY_DEFINITIONS.map(entity => entity.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual(ids, ["player", "besednice-guide", ...BESEDNICE_TRACE_IDS, "besednice-hedgehog", "crystal-karel"]);
@@ -21,6 +22,9 @@ test("Besednice data contains one player, guide, exactly three clues, one locked
   assert.equal(guide.components.interaction.kind, "talk");
   assert.equal(guide.components.interaction.enabled, true);
   assert.equal(guide.components.npc.dialogueId, "besednice-guide");
+  assert.equal(guide.components.interaction.action, CONTEXT_ACTION);
+  assert.equal(guide.components.interaction.enabled, true);
+  assert.equal(guide.components.sprite.assetId, "npc-rival-karel");
 
   for (const [index, id] of BESEDNICE_TRACE_IDS.entries()) {
     const clue = getBesedniceEntityDefinition(id);

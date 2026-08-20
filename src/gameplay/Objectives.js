@@ -48,21 +48,30 @@ function nesmen(runtime) {
 }
 
 function besednice(runtime) {
+  const briefingComplete = runtime.briefingComplete === true;
   const clues = count(runtime.clues);
   const hedgehog = runtime.hedgehog === true;
   const bossStarted = runtime.bossStarted === true;
   const bossDefeated = runtime.bossDefeated === true;
-  const complete = clues >= 3 && hedgehog && bossStarted && bossDefeated;
+  const complete = briefingComplete && clues >= 3 && hedgehog && bossStarted && bossDefeated;
   return {
-    text: clues < 3
-      ? `Stopy ${clues}/3`
-      : !hedgehog
-        ? "Vykopej ježkový profil"
-        : !bossStarted || !bossDefeated ? "Dostaň ježek zpět" : "Ježek je v bezpečí",
+    text: !briefingComplete
+      ? "Promluv s místním znalcem"
+      : clues < 3
+        ? `Stopy ${clues}/3`
+        : !hedgehog
+          ? "Vykopej ježkový profil"
+          : !bossStarted || !bossDefeated ? "Dostaň ježek zpět" : "Ježek je v bezpečí",
     complete,
-    progress: clamp01(clamp01(clues / 3) * 0.45 + (hedgehog ? 0.2 : 0) + (bossStarted ? 0.05 : 0) + (bossDefeated ? 0.3 : 0)),
-    current: { clues, hedgehog, bossStarted, bossDefeated },
-    target: { clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true }
+    progress: clamp01(
+      (briefingComplete ? 0.1 : 0) +
+      clamp01(clues / 3) * 0.4 +
+      (hedgehog ? 0.2 : 0) +
+      (bossStarted ? 0.05 : 0) +
+      (bossDefeated ? 0.25 : 0)
+    ),
+    current: { briefingComplete, clues, hedgehog, bossStarted, bossDefeated },
+    target: { briefingComplete: true, clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true }
   };
 }
 
