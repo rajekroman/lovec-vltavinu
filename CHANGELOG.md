@@ -17,6 +17,12 @@ Z manifestu, offline cache i stromu zmizelo 7 assetů (4,26 MB), které po V7 p�
 nevykresluje — mimo jiné 3MB referenční snímek Nesměně a provizorní plate Besednice a Slavie.
 `tools/validate.mjs` nově selže, pokud manifest obsahuje asset, na který se runtime neodkazuje.
 
+### Odstranění legacy runtime a save kódu
+
+Dokončen integrační krok 6: z repozitáře zmizely `audio.js`, `data.js`, distribuční ZIP,
+`BUILD_REPORT.txt` a celá zmrazená save vrstva (`LegacySaveAdapter`, `LegacyDataAdapter`, `GameState`,
+`docs/save-schema.md`). Validátor jejich návrat i jakoukoli persistenci v `src/` nově odmítá.
+
 ## 6.x
 
 Modulární ES-module runtime s jedním Three.js `WebGLRenderer`, ortografickou kamerou, in-memory session

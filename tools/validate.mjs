@@ -19,8 +19,32 @@ const countMatches = (source, pattern) => [...source.matchAll(pattern)].length;
 
 const requiredFiles = ["index.html", "style.css", "manifest.webmanifest", "sw.js", "icon-180.png", "icon-192.png", "icon-512.png", "vendor/three.module.min.js", "src/bootstrap.js", "assets/manifests/assets.json"];
 requiredFiles.forEach(relativePath => { if (!exists(relativePath)) fail(`Chybí povinný soubor: ${relativePath}`); });
-const forbiddenLegacyFiles = ["game.js", "runtime-stability.js"];
+const forbiddenLegacyFiles = [
+  "game.js",
+  "runtime-stability.js",
+  "audio.js",
+  "data.js",
+  "src/adapters/LegacySaveAdapter.js",
+  "src/adapters/LegacyDataAdapter.js",
+  "src/state/GameState.js",
+  "src/domain/index.js"
+];
 forbiddenLegacyFiles.forEach(relativePath => { if (exists(relativePath)) fail(`Legacy runtime soubor nesmí existovat: ${relativePath}`); });
+
+// Save systém se v cílové architektuře nevyvíjí: persistence nesmí být ani v modulu mimo runtime graf.
+const collectSourceFiles = (directory, collected = []) => {
+  for (const entry of fs.readdirSync(absolute(directory), { withFileTypes: true })) {
+    const child = `${directory}/${entry.name}`;
+    if (entry.isDirectory()) collectSourceFiles(child, collected);
+    else if (entry.name.endsWith(".js")) collected.push(child);
+  }
+  return collected;
+};
+const sourceFiles = exists("src") ? collectSourceFiles("src") : [];
+const persistenceOffenders = sourceFiles.filter(relativePath => /localStorage|sessionStorage|indexedDB/.test(read(relativePath)));
+if (persistenceOffenders.length) fail(`Zdrojové moduly nesmí obsahovat persistence vrstvu: ${persistenceOffenders.join(", ")}.`);
+const distributionArchives = fs.readdirSync(root).filter(entry => entry.endsWith(".zip"));
+if (distributionArchives.length) fail(`ZIP balíček není předáním práce a nesmí být v repozitáři: ${distributionArchives.join(", ")}.`);
 const html = read("index.html");
 const serviceWorker = read("sw.js");
 const manifestText = read("manifest.webmanifest");
@@ -158,6 +182,7 @@ console.log(`Kontrolováno HTML ID: ${htmlIds.length}`);
 console.log(`Kontrolováno runtime DOM referencí: ${referencedIds.size}`);
 console.log(`Kontrolováno runtime modulů: ${runtimeModules.size}`);
 console.log(`Kontrolováno zakázaných legacy souborů: ${forbiddenLegacyFiles.length}`);
+console.log(`Kontrolováno zdrojových modulů na persistenci: ${sourceFiles.length}`);
 console.log(`Kontrolováno PWA cest: ${cachedPaths.size}`);
 console.log(`Kontrolováno Chlum/common assetů: ${chlumAssetCount}`);
 console.log(`Kontrolováno Nesměň assetů: ${nesmenAssetCount}`);

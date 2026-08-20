@@ -27,6 +27,7 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 - Kanonický quest, CrowdRisk hlášení, certifikace i finální hodnocení zůstaly beze změny; nepřibyl save, inventář, druhý renderer, kamera, loop ani session.
 - Lokální exact-head evidence této větve: validator **0 errors / 0 warnings**, syntax **PASS**, unit **222/222 PASS**, Playwright matice **desktop 1280×720 + audio lifecycle + iPhone portrait 390×844 + iPhone landscape 844×390 PASS** (screenshoty `slavia-arrival`, `slavia-certification`, `slavia-final-result` ve všech třech viewportech). A0 visual approval a CI exact-head běh zůstávají otevřené.
 - Preload kontrakt je nově vynucený: validátor odmítne jakýkoli manifest asset, na který se produkční runtime nikdy neodkáže. Odstraněno **7 mrtvých assetů / 4,26 MB** (Nesměň −2,99 MB, Besednice −0,60 MB, Slavia −0,56 MB stahovaných dat na vstupu do levelu).
+- Integrační krok 6 (**odstranění nepoužívaného Canvas monolitu, runtime opravné vrstvy a legacy save kódu**) je **DOKONČEN**: pryč jsou `audio.js`, `data.js`, distribuční ZIP, `BUILD_REPORT.txt`, `LegacySaveAdapter`, `LegacyDataAdapter`, `GameState` i `docs/save-schema.md` (627 kB). Validátor nově zakazuje jejich návrat i jakoukoli persistenci v `src/`.
 - Release zůstává **BLOCKED** do schválení Slavie a následného celoproduktového QA.
 
 ## 2. Neměnné invarianty
@@ -230,6 +231,19 @@ Název distribuční cache se posunul na `lovec-vltavinu-slavia-v6-3-release-2`,
 
 Slavia plate je procedurálně malovaný a reprodukovatelný generátorem `tools/art/build-slavia-v7-art.mjs` (viz `docs/ART_PIPELINE.md`). Splňuje kompoziční a měřítková pravidla kontraktu — venkovní eventová plocha, KD Slavia jako sekundární kulisa, nerepetitivní plate, foreground occlusion, čitelné cíle — ale malířskou věrností nedosahuje fotorealistických plate Chlumu, Nesměně a Besednice. Výměna za externě autorovanou malbu je možná beze změny runtime při zachování ID `terrain-slavia-event-plate-v7` a poměru stran `1800:1100`.
 
+## 7.8 Uzavřený integrační krok 6
+
+| Odstraněno | Důvod |
+|---|---|
+| `audio.js`, `data.js` | zbytky Canvas monolitu 5.x, které runtime neimportuje |
+| `lovec_vltavinu_full_v2_github_pages.zip` | ZIP není předáním práce (`AGENTS.md`) |
+| `BUILD_REPORT.txt` | statický report verze 5.1, neplatný pro V7 |
+| `src/adapters/LegacySaveAdapter.js`, `src/state/GameState.js`, `src/domain/index.js` | zmrazený save kód 5.2; cílová architektura save systém nemá |
+| `src/adapters/LegacyDataAdapter.js` | most na legacy datové tabulky, které už neexistují |
+| `docs/save-schema.md` | dokumentace odstraněného save schématu |
+
+Vynuceno v `tools/validate.mjs`: zakázané legacy soubory nesmí existovat, žádný modul pod `src/` nesmí obsahovat `localStorage`/`sessionStorage`/`indexedDB` a v kořeni repozitáře nesmí být ZIP balíček. Unit suite po úklidu má **211/211 PASS** (zanikly testy zrušené save vrstvy; testy cílů levelů zůstaly v `tests/unit/objectives.test.mjs`).
+
 ## 8. Integrační pořadí V7
 
 ```text
@@ -243,6 +257,7 @@ Slavia plate je procedurálně malovaný a reprodukovatelný generátorem `tools
 → Slavia V7 visual slice v `claude/vltaviny-game-dev-c73sup` — IMPLEMENTED
 → exact-head QA + desktop/iPhone screenshot review — PROBÍHÁ
 → Slavia approval + případný squash merge
+→ integrační krok 6: odstranění legacy runtime a save kódu — COMPLETED
 → celoproduktový QA
 → samostatná release gate
 → release pouze z main
