@@ -4,6 +4,7 @@ import { GridSceneVisuals } from "./GridSceneVisuals.js";
 import { getGridLevel, getSpawnPoint, gridSizeToWorldBounds } from "./GridLevels.js";
 import { TILE_SIZE } from "./TileDefinitions.js";
 import { gameplayMechanics } from "../gameplay/GameplayMechanics.js";
+import { EnvironmentTheme } from "../render/EnvironmentTheme.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -36,6 +37,7 @@ export class GridScene {
     this.resultShown = false;
     this.levelStartTime = null;
     this.levelFindings = [];
+    this.environmentTheme = new EnvironmentTheme(this.THREE);
   }
 
   async enter() {
@@ -107,16 +109,11 @@ export class GridScene {
     this.createPlayerMesh();
     root.add(this.playerMesh);
 
-    const lights = new THREE.Group();
-    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
-    const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-    directional.position.set(-20, 20, 30);
-    directional.castShadow = true;
-    lights.add(ambient, directional);
-    root.add(lights);
-
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+
+    // Apply environment theme (lighting and atmosphere)
+    this.environmentTheme.apply(root, this.levelId);
   }
 
   createPlayerMesh() {
