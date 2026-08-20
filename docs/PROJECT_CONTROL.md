@@ -1,6 +1,6 @@
 # PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.22.0 · 20. 8. 2026**
+Revize: **2.23.0 · 20. 8. 2026**
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je jediný autoritativní stavový registr aktuální práce. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`. Historická evidence zůstává auditovatelná v Git historii, uzavřených issues/PR a GitHub Releases.
@@ -8,7 +8,7 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 ## 1. Aktuální ověřená realita
 
 - Jediná publikovatelná větev je `main`.
-- Governance base této revize je `main@924d2f8dc7e9c11eef68ca16f9354d0d0d1dccc2`, squash merge governance PR **#222** (uzavírá #221). Jde o auditní základ, nikoli samo-referenční požadavek na budoucí HEAD.
+- Governance base této revize je `main@ad694873fbed1ce97f425f7b1bf68991fdcc5d69`, squash merge PR **#224** (uzavírá #219). Jde o auditní základ, nikoli samo-referenční požadavek na budoucí HEAD.
 - Runtime zachovává jeden Three.js `WebGLRenderer`, jednu ortografickou kameru, jeden fixed-step loop, jeden `InputManager`, jeden manifest-driven `AssetLoader` a jednu in-memory `GameSession`.
 - Kanonické levely jsou přesně `chlum → nesmen → besednice → slavia`.
 - **Chlum V7 je COMPLETED / MERGED / VISUALLY APPROVED** v issue #207 / PR #208.
@@ -22,7 +22,10 @@ Tento dokument je jediný autoritativní stavový registr aktuální práce. Tec
 - Exact-head CI #1450 / workflow `32288333181` je zelené: validator **0 errors / 0 warnings**, unit **214/214 PASS**, desktop + iPhone portrait + iPhone landscape full-flow **PASS**.
 - Besednice statický artifact `9378494134`, digest `sha256:9436f3f6ae32ec4ab63096f5a12437e2c2f8012d33b1218613f4dfc625635e91`; Playwright artifact `9378974857`, digest `sha256:d7241712495f94870817e103905d2370937516199b2ded89fb1db5caf8713ade`.
 - Governance transition po Besednici je **COMPLETED** (issue #221 / PR #222).
-- **Slavia V7 je IMPLEMENTED / A0 VISUALLY APPROVED** ve větvi `claude/vltaviny-game-dev-c73sup`, PR **#224** (uzavírá #219). Approval udělil Roman 20. 8. 2026; merge zůstává podmíněný zelenou exact-head CI.
+- **Slavia V7 je COMPLETED / MERGED / VISUALLY APPROVED** v issue #219 / PR **#224**.
+- Schválený Slavia feature head je `1f79e54`; merge SHA je `ad694873fbed1ce97f425f7b1bf68991fdcc5d69`.
+- Exact-head CI workflow `32317739302` je zelená: statická a unit gate **SUCCESS** (validator 0 errors / 0 warnings, unit 211/211 PASS), desktop + iPhone portrait + iPhone landscape + audio lifecycle matice **SUCCESS**.
+- **Všechny čtyři kanonické lokality jsou tím převedené na V7.** Otevřený zůstává celoproduktový QA a samostatná release gate.
 - Slavia V7 slice nahrazuje provizorní 768×511 noční plate produkčním `terrain-slavia-event-plate-v7` (1440×880, poměr stran shodný s `bounds` 1800×1100), přidává `foreground-slavia-event-edge-v7` jako samostatnou occlusion vrstvu a bounds-safe `resolveSlaviaV7CameraZoom`.
 - Kanonický quest, CrowdRisk hlášení, certifikace i finální hodnocení zůstaly beze změny; nepřibyl save, inventář, druhý renderer, kamera, loop ani session.
 - Lokální exact-head evidence této větve: validator **0 errors / 0 warnings**, syntax **PASS**, unit **222/222 PASS**, Playwright matice **desktop 1280×720 + audio lifecycle + iPhone portrait 390×844 + iPhone landscape 844×390 PASS** (screenshoty `slavia-arrival`, `slavia-certification`, `slavia-final-result` ve všech třech viewportech). A0 visual approval a CI exact-head běh zůstávají otevřené.
@@ -62,12 +65,12 @@ Porušení kteréhokoli bodu je blocker.
 | V7 Chlum | **#207 / PR #208 COMPLETED** | jen regresní opravy v samostatném issue |
 | V7 Nesměň | **#213 / PR #214 COMPLETED** | jen regresní opravy v samostatném issue |
 | V7 Besednice | **#217 / PR #218 COMPLETED** | jen regresní opravy v samostatném issue |
-| V7 Slavia | **APPROVED — čeká na zelenou exact-head CI a squash merge (PR #224)** | pouze opravy vyplývající z visual review a QA; `claude/vltaviny-game-dev-c73sup` staví přímo na schváleném `main`, PR #220 se nepoužil |
+| V7 Slavia | **#219 / PR #224 COMPLETED** | pouze opravy vyplývající z visual review a QA; `claude/vltaviny-game-dev-c73sup` staví přímo na schváleném `main`, PR #220 se nepoužil |
 | Gameplay/data | **BEZE ZMĚNY** | quest, CrowdRisk i finální certifikační flow zůstaly nedotčené |
 | Grafika/assety | **DELIVERED** | `terrain-slavia-event-plate-v7`, `foreground-slavia-event-edge-v7`, generátor `tools/art/build-slavia-v7-art.mjs`, odstranění mrtvého preloadu |
 | UI/mobil | **BEZE ZMĚNY** | HUD ani safe-area kompozice se pro Slavii neměnily |
 | QA | **SUPPORT Slavia** | validátor, unit (222), čtyřlevelový full-flow, desktop + iPhone portrait/landscape |
-| Release | **BLOCKED** | žádný V7 release před schválením Slavie, celoproduktovým QA a samostatnou release gate |
+| Release | **NEXT** | celoproduktové QA a release gate ve vlastním issue; tag pouze ze schváleného `main` |
 
 Nevznikají paralelní „finální“ větve. Slavia je implementovaná v jediné větvi `claude/vltaviny-game-dev-c73sup` odvozené přímo ze schváleného `main`; starší issue #219 a draft PR #220 se nepoužily a zůstávají bez autorizace k merge.
 
@@ -203,9 +206,9 @@ Dodáno ve větvi `claude/vltaviny-game-dev-c73sup`:
 | screenshot evidence 1280×720 / 390×844 / 844×390 | **SPLNĚNO** (Playwright artefakty) |
 | ruční visual review | **SPLNĚNO — A0 approval 20. 8. 2026** |
 | bez save, inventáře, druhého rendereru/kamery/loopu/session | **SPLNĚNO** (kontrolováno validátorem i unit testy) |
-| A0 visual approval → ready-for-review → squash merge | **approval SPLNĚN**, PR #224 ready-for-review; merge až po zelené exact-head CI |
+| A0 visual approval → ready-for-review → squash merge | **SPLNĚNO** — approval 20. 8. 2026, squash merge `ad69487` |
 
-Po A0 approvalu zůstává otevřený jediný bod: zelený exact-head CI běh nad PR #224. Implementační rozsah Slavie je hotový.
+Všechny body gate jsou splněné; Slavia byla schválena a mergnuta (merge SHA `ad69487`). Slavia už není otevřený pracovní proud — případná regrese vyžaduje vlastní issue.
 
 ### 7.6 Úklid mrtvého preloadu
 
@@ -256,7 +259,7 @@ Vynuceno v `tools/validate.mjs`: zakázané legacy soubory nesmí existovat, ž�
 → lineage audit #219 / PR #220 — VYŘEŠEN novou větví z main
 → Slavia V7 visual slice v `claude/vltaviny-game-dev-c73sup` — IMPLEMENTED
 → exact-head QA + desktop/iPhone screenshot review — PROBÍHÁ
-→ Slavia approval — UDĚLEN 20. 8. 2026 → squash merge PR #224 po zelené CI
+→ Slavia approval UDĚLEN 20. 8. 2026 → squash merge `ad69487` — COMPLETED
 → integrační krok 6: odstranění legacy runtime a save kódu — COMPLETED
 → celoproduktový QA
 → samostatná release gate
@@ -264,6 +267,21 @@ Vynuceno v `tools/validate.mjs`: zakázané legacy soubory nesmí existovat, ž�
 ```
 
 Žádný level nesmí přeskočit přímou schválenou závislost.
+
+## 8.1 Následující milestone — release gate
+
+Po merge Slavie je jediným otevřeným proudem **celoproduktové QA a release gate** (vlastní issue). Kandidátský SHA je `ad694873fbed1ce97f425f7b1bf68991fdcc5d69`.
+
+Podmínky před tagem:
+
+1. úplně zelená QA matice nad **nezměněným** kandidátským SHA;
+2. ruční průchod všech čtyř lokalit na desktopu i iPhonu (portrait i landscape) včetně návratu z pozadí a otočení;
+3. ověření veřejné GitHub Pages URL po nasazení;
+4. kontrola, že service worker cache `lovec-vltavinu-slavia-v6-3-release-2` odpovídá viditelné verzi v `index.html`;
+5. sjednocení verzních řetězců (`index.html`, `sw.js`, `package.json`, `VERSION.txt`) na cílové číslo release;
+6. samostatné release issue s explicitním candidate SHA a rozhodnutím o číslu verze.
+
+Tag ani GitHub Release nevzniká automaticky sloučením feature PR.
 
 ## 9. Historická release identita — neměnit
 
