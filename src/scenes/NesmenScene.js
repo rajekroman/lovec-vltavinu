@@ -5,7 +5,7 @@ import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { createRng } from "../gameplay/SessionRng.js";
-import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
+import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
@@ -14,6 +14,8 @@ const V7_PLATE_ASSET = "terrain-nesmen-forest-plate-v7";
 const V7_FOREGROUND_ASSET = "foreground-nesmen-forest-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export const NESMEN_DIG_CONFIG = Object.freeze({ sweetMin: 0.35, sweetMax: 0.65, speed: 1.05 });
 
 export function resolveNesmenV7CameraZoom(viewportWidth, viewportHeight) {
   const width = Math.max(1, Number(viewportWidth) || 1);
@@ -57,7 +59,7 @@ export class NesmenScene {
     this.hudRevision = 0;
     this.hudSignature = "";
     this.interactions = new InteractionSystem({ events: this.events });
-    this.dig = new DigSystem({ events: this.events });
+    this.dig = new DigSystem({ events: this.events, ...NESMEN_DIG_CONFIG });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
   }
 
@@ -400,6 +402,7 @@ export class NesmenScene {
     const entity = this.activeProfileEntity;
     const spot = this.app.world.get(entity, "digSpot");
     spot.digQuality = this.dig.averageQuality();
+    spot.cleanDig = result.hits === DIG_REQUIRED_HITS && result.misses === 0;
     const interaction = this.app.world.get(entity, "interaction");
     this.dig.finish();
     spot.dug = true;
@@ -411,7 +414,10 @@ export class NesmenScene {
       visual.marker.visible = false;
       visual.hole.visible = true;
     }
-    if (spot.findingId) this.spawnFinding(entity, spot.findingId, spot.digQuality);
+    if (spot.findingId) {
+      this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.cleanDig);
+      if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
+    }
 
     this.activeProfileEntity = null;
     this.modal = null;
@@ -437,14 +443,15 @@ export class NesmenScene {
     this.emitHud(true);
   }
 
-  spawnFinding(profileEntity, findingId, digQuality) {
+  spawnFinding(profileEntity, findingId, digQuality, cleanDig) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
       transform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       previousTransform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 72, priority: 90, enabled: true },
-      findingQuality: { value: digQuality }
+      findingQuality: { value: digQuality },
+      cleanDig: { value: cleanDig === true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
     this.texture("finding-vltavin-nesmen").then(texture => {
@@ -465,8 +472,11 @@ export class NesmenScene {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
     const quality = this.app.world.get(entity, "findingQuality")?.value ?? 0;
+    const cleanDig = this.app.world.get(entity, "cleanDig")?.value === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality));
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, {
+      scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
+    }));
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);
@@ -605,7 +615,8 @@ export class NesmenScene {
             x: transform.x,
             y: transform.y,
             dug: spot.dug === true,
-            filled: spot.filled === true
+            filled: spot.filled === true,
+            cleanDig: spot.cleanDig === true
           };
         }),
         available: this.availableInteraction ? {
