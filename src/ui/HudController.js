@@ -46,7 +46,8 @@ export class HudController {
     this.unsubscribe = [
       this.events.on("hud:model:changed", payload => this.render(payload)),
       this.events.on("finding:collected", payload => this.showToast(`NÁLEZ ZAPSÁN · +${Math.round(payload.score)} BODŮ`, "good")),
-      this.events.on("objective:complete", () => this.showToast("ÚKOL SPLNĚN", "good"))
+      this.events.on("objective:complete", () => this.showToast("ÚKOL SPLNĚN", "good")),
+      this.events.on("dig:clean", () => this.showToast("ČISTÉ KOPÁNÍ +10 %", "rare"))
     ];
     this.toastTimer = null;
   }

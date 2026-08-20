@@ -8,10 +8,11 @@ const deepFreeze = value => {
 };
 
 const level = getLevelDefinition("besednice");
+const guidePosition = getLevelTarget("besednice", "besednice-guide")?.positions[0];
 const tracePositions = getLevelTarget("besednice", "besednice-trace")?.positions ?? [];
 const hedgehogPosition = getLevelTarget("besednice", "besednice-hedgehog")?.positions[0];
 const karelPosition = getLevelTarget("besednice", "crystal-karel")?.positions[0];
-if (!level || tracePositions.length !== 3 || !hedgehogPosition || !karelPosition) {
+if (!level || !guidePosition || tracePositions.length !== 3 || !hedgehogPosition || !karelPosition) {
   throw new Error("Besednice canonical data is incomplete.");
 }
 
@@ -47,6 +48,21 @@ const entities = [
       player: { speed: 220 }
     }
   },
+  {
+    id: "besednice-guide",
+    components: {
+      transform: { ...guidePosition, rotation: 0, scale: 1 },
+      sprite: { assetId: "npc-rival-karel", layer: "actors", frame: 0, flipX: true },
+      interaction: {
+        kind: "talk",
+        label: "PROMLUVIT",
+        action: CONTEXT_ACTION,
+        range: 76,
+        priority: 90,
+        enabled: true
+      }
+    }
+  },
   ...BESEDNICE_TRACE_IDS.map((id, index) => ({
     id,
     components: {
@@ -58,7 +74,7 @@ const entities = [
         action: CONTEXT_ACTION,
         range: 66,
         priority: 70,
-        enabled: true
+        enabled: false
       },
       clue: { index, discovered: false }
     }
