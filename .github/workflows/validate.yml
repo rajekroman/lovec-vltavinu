@@ -114,8 +114,8 @@ jobs:
       - name: Install test dependencies
         run: npm install --no-audit --no-fund --no-package-lock
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Chromium headless shell
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Run ${{ matrix.project }}
         run: npm run test:smoke -- --project="${{ matrix.project }}"
