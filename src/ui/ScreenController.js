@@ -175,6 +175,30 @@ export class ScreenController {
     return this.show("briefScreen", { playing: false });
   }
 
+  showFinding({ finding, icon = "🔑", score = 0, perfect = false }) {
+    const rarityNames = { A: "Velmi vzácný", B: "Vzácný", C: "Běžný" };
+    const rarityText = rarityNames[finding.rarity] || "Neznámý";
+    const perfectionText = perfect ? " ✨ DOKONALÝ NÁLEZ! ✨" : "";
+
+    this.element("dialogName").textContent = `${icon} NÁLEZ`;
+    this.element("dialogText").textContent = `${rarityText}\n+${score} bodů${perfectionText}`;
+    this.element("dialogAvatar").textContent = icon;
+    const button = this.element("dialogButton");
+    button.textContent = "POKRAČOVAT";
+    bindOnce(button, () => {});
+    return this.show("dialogScreen", { playing: false });
+  }
+
+  showDanger(message = "⚠️ Nebezpečí!", onDismiss) {
+    this.element("dialogName").textContent = "⚠️ NEBEZPEČÍ";
+    this.element("dialogText").textContent = message;
+    this.element("dialogAvatar").textContent = "⚠";
+    const button = this.element("dialogButton");
+    button.textContent = "POCHOPENO";
+    bindOnce(button, onDismiss);
+    return this.show("dialogScreen", { playing: false });
+  }
+
   play() {
     const activeElement = this.document.activeElement;
     if (activeElement?.closest?.(".screen")) activeElement.blur?.();
