@@ -102,6 +102,7 @@ export class NesmenScene {
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
     this.interactions = new InteractionSystem({ events: this.events });
     this.dig = new DigSystem({ events: this.events, sweetMin: 0.35, sweetMax: 0.65, speed: 1.1 });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
@@ -374,6 +375,7 @@ export class NesmenScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.updateCollectionAnimation(dt);
+    this.updateNpcIdleAnimation(dt);
   }
 
   updateCollectionAnimation(dt) {
@@ -395,6 +397,14 @@ export class NesmenScene {
       visual.scale.set(scale, scale, 1);
       visual.material.opacity = Math.max(0, 1 - t);
     }
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.foresterEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.npcIdleTime += dt;
+    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
+    const visual = this.renderer.getVisual(this.foresterEntity);
+    if (visual) visual.scale.set(idleScale, idleScale, 1);
   }
 
   updateHud() {

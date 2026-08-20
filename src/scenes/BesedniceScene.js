@@ -128,6 +128,7 @@ export class BesedniceScene {
     this.levelComplete = null;
     this.hudRevision = this.hudRevision ?? 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
   }
 
   async loadAssets() {
@@ -328,6 +329,7 @@ export class BesedniceScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.updateCollectionAnimation(dt);
+    this.updateNpcIdleAnimation(dt);
   }
 
   updateCollectionAnimation(dt) {
@@ -349,6 +351,14 @@ export class BesedniceScene {
       visual.scale.set(scale, scale, 1);
       visual.material.opacity = Math.max(0, 1 - t);
     }
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.guideEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.npcIdleTime += dt;
+    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
+    const visual = this.renderer.getVisual(this.guideEntity);
+    if (visual) visual.scale.set(idleScale, idleScale, 1);
   }
 
   updateHud() {
