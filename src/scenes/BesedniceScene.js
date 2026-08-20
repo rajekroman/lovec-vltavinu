@@ -11,6 +11,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
@@ -120,6 +121,8 @@ export class BesedniceScene {
     this.foregroundRoot = null;
     this.karelIdleVisual = null;
     this.pickupTween = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
     this.visualTime = 0;
     this.playerEntity = null;
     this.guideEntity = null;
@@ -284,6 +287,14 @@ export class BesedniceScene {
     foreground.add(quarryEdge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x6B5A47 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0x8FBC8F });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
+
+    this.events.on("dig:hit", ({ position }) => this.onDigHit(position));
+    this.events.on("dig:clean", () => this.onDigClean());
   }
 
   beginPlaying() {
@@ -355,6 +366,12 @@ export class BesedniceScene {
       if (entity !== null) this.finishPickup(entity);
       else this.pickupTween = null;
     }
+    this.updateParticles(dt);
+  }
+
+  updateParticles(dt) {
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
   }
 
   updateHud() {
@@ -762,6 +779,16 @@ export class BesedniceScene {
     if (!this.renderer?.objectByEntity) return;
     if (this.pickupTween) cancelPickupTween(this.pickupTween);
     this.pickupTween = null;
+    if (this.dustEmitter) {
+      this.renderer.remove(this.dustEmitter.object);
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
@@ -775,6 +802,31 @@ export class BesedniceScene {
     }
     this.karelIdleVisual = null;
     this.visualTime = 0;
+  }
+
+  onDigHit(position) {
+    if (!this.dustEmitter) return;
+    const x = position?.x ?? 0;
+    const y = position?.y ?? 0;
+    const z = position?.z ?? 4;
+    this.dustEmitter.emitBurst(x, y, z, 10, {
+      speed: 2.2,
+      spread: 0.6,
+      lifetime: 0.4,
+      size: 2.2
+    });
+  }
+
+  onDigClean() {
+    if (!this.sparkleEmitter) return;
+    const transform = this.app.world.get(this.hedgehogEntity, "transform");
+    if (!transform) return;
+    this.sparkleEmitter.emitBurst(transform.x, transform.y, 6, 18, {
+      speed: 3.2,
+      spread: 0.8,
+      lifetime: 0.5,
+      size: 1.8
+    });
   }
 
   unloadAssets() {
