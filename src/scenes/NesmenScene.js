@@ -548,7 +548,6 @@ export class NesmenScene {
   }
 
   spawnFinding(profileEntity, findingId, digQuality, perfect) {
-  spawnFinding(profileEntity, findingId, digQuality, cleanDig) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
@@ -576,10 +575,6 @@ export class NesmenScene {
         this.renderer.bindEntity(this.findingEntity, sprite, "effects");
       });
     }
-      findingQuality: { value: digQuality },
-      cleanDig: { value: cleanDig === true }
-    });
-    this.externalIdByEntity.set(this.findingEntity, findingId);
     const moldavite = createProceduralMoldavite(this.THREE, {
       locality: "nesmen",
       rarity: "B",
