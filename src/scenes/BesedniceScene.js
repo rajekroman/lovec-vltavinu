@@ -26,6 +26,50 @@ export function resolveBesedniceV7CameraZoom(viewportWidth, viewportHeight, view
   return Math.max(0.9, boundsSafeZoom);
 }
 
+function moldaviteNoise(x, y, z) {
+  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+export function createBesedniceMoldavite(THREE) {
+  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
+    throw new TypeError("Besednice moldavite requires Three.js mesh primitives.");
+  }
+
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.attributes?.position;
+  if (!position?.getX || !position?.setXYZ) throw new TypeError("Besednice moldavite geometry must expose positions.");
+
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const radial = 0.79 + moldaviteNoise(x, y, z) * 0.25;
+    position.setXYZ(index, x * radial * 1.12, y * radial * 0.92, z * radial * 0.68);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals?.();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x2f6038,
+    emissive: 0x0c2010,
+    emissiveIntensity: 0.22,
+    roughness: 0.52,
+    metalness: 0.015,
+    transparent: true,
+    opacity: 0.95
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "besednice-moldavite-finding";
+  mesh.position.z = 14;
+  mesh.rotation.x = 0.25;
+  mesh.rotation.y = -0.42;
+  mesh.scale.set(5.2, 4.1, 3.2);
+  mesh.userData.assetId = "procedural-besednice-moldavite";
+  mesh.userData.findingVisual = "moldavite";
+  return mesh;
+}
+
 export class BesedniceScene {
   constructor(options) {
     this.app = options.app;
@@ -430,11 +474,17 @@ export class BesedniceScene {
       interaction: { kind: "collect", label: "SEBRAT JEŽEK", action: "action", range: 76, priority: 95, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
-    const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
-      width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
-      assetId: "finding-vltavin-besednice-hedgehog"
-    });
-    this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    try {
+      const mesh = createBesedniceMoldavite(this.THREE);
+      this.renderer.bindEntity(this.findingEntity, mesh, "effects");
+    } catch (error) {
+      console.warn("Procedural moldavite failed, falling back to sprite", error);
+      const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
+        width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
+        assetId: "finding-vltavin-besednice-hedgehog"
+      });
+      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    }
   }
 
   collectHedgehog() {
