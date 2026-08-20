@@ -53,7 +53,13 @@ jobs:
         run: npm run validate:modules
 
       - name: Reproduce Slavia production art
-        run: node tools/art/build-slavia-v7-art.mjs
+        run: |
+          node tools/art/build-slavia-v7-art.mjs
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Slavia art reproduction changed the committed tree or left intermediate files:"
+            git status --short
+            exit 1
+          fi
 
       - name: Test Nesměň data contract
         run: node --test --test-reporter=spec tests/unit/nesmen-data.test.mjs
