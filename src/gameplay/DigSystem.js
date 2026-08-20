@@ -74,7 +74,14 @@ export class DigSystem {
     active.direction = 1;
     if (active.hits === DIG_REQUIRED_HITS) {
       active.complete = true;
-      this.events?.emit("dig:complete", { spot: active.spot, hits: DIG_REQUIRED_HITS });
+      const clean = active.misses === 0;
+      this.events?.emit("dig:complete", {
+        spot: active.spot,
+        hits: DIG_REQUIRED_HITS,
+        misses: active.misses,
+        clean
+      });
+      if (clean) this.events?.emit("dig:clean", { spot: active.spot, hits: DIG_REQUIRED_HITS, misses: 0 });
     }
     return { hit: true, complete: active.complete, quality, ...this.snapshot() };
   }
