@@ -6,6 +6,7 @@ import { TILE_SIZE } from "./TileDefinitions.js";
 import { gameplayMechanics } from "../gameplay/GameplayMechanics.js";
 import { EnvironmentTheme } from "../render/EnvironmentTheme.js";
 import { DigMechanics, createDigSite } from "../gameplay/DigMechanics.js";
+import { DialogueSystem } from "../gameplay/DialogueSystem.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -40,6 +41,7 @@ export class GridScene {
     this.levelFindings = [];
     this.environmentTheme = new EnvironmentTheme(this.THREE);
     this.digMechanics = new DigMechanics({ rng: () => Math.random() });
+    this.dialogueSystem = new DialogueSystem();
     this.currentScore = 0;
     this.digSitesCompleted = new Set();
   }
@@ -299,20 +301,29 @@ export class GridScene {
 
   performNPCDialog(npcId) {
     this.modal = "dialog";
-    const dialogText = {
-      "farmer-vaclav": "Vítej na poli! Hledáš vltavíny?",
-      "forester-jan": "V lese můžeš pracovat jen na vyznačených místech.",
-      "rival-karel": "Slabo! Já bych to zvládl lépe.",
-      "expert-eva": "Máš zajímavé nálezy!",
-      "thief-franta": "Psst, podívej se sem..."
-    };
+    const dialogue = this.dialogueSystem.getConversation(npcId);
+
+    if (!dialogue) {
+      this.modal = null;
+      return;
+    }
+
+    const options = dialogue.options || [];
+    const primaryOptionIndex = 0;
 
     this.screens.showDialog({
-      name: npcId.toUpperCase(),
-      text: dialogText[npcId] || "Ahoj!",
-      avatar: npcId[0].toUpperCase(),
-      buttonLabel: "OK",
+      name: dialogue.name || npcId.toUpperCase(),
+      text: dialogue.text,
+      avatar: dialogue.avatar || npcId[0].toUpperCase(),
+      buttonLabel: options[primaryOptionIndex]?.text || "OK",
       onConfirm: () => {
+        const result = this.dialogueSystem.handleChoice(npcId, primaryOptionIndex);
+
+        // Handle any effects
+        if (result?.effect) {
+          this.events.emit("npc:effect", { npcId, effect: result.effect });
+        }
+
         this.modal = null;
         this.screens.show(null, { playing: true });
       }
