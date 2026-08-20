@@ -5,6 +5,7 @@ import { getGridLevel, getSpawnPoint, gridSizeToWorldBounds } from "./GridLevels
 import { TILE_SIZE } from "./TileDefinitions.js";
 import { gameplayMechanics } from "../gameplay/GameplayMechanics.js";
 import { EnvironmentTheme } from "../render/EnvironmentTheme.js";
+import { DigMechanics, createDigSite } from "../gameplay/DigMechanics.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -38,6 +39,9 @@ export class GridScene {
     this.levelStartTime = null;
     this.levelFindings = [];
     this.environmentTheme = new EnvironmentTheme(this.THREE);
+    this.digMechanics = new DigMechanics({ rng: () => Math.random() });
+    this.currentScore = 0;
+    this.digSitesCompleted = new Set();
   }
 
   async enter() {
@@ -226,21 +230,60 @@ export class GridScene {
     const site = this.digSites.get(siteIndex);
     if (!site) return;
 
+    const difficulty = this.session.state.difficulty || "normal";
+    const requiredHits = this.digMechanics.getRequiredHits(difficulty);
+
     this.screens.showDig({
       title: `Vykopávka ${siteIndex + 1}`,
-      requiredHits: 3,
+      requiredHits,
       onAction: () => this.completeDig(siteIndex)
     });
   }
 
   completeDig(siteIndex) {
     const site = this.digSites.get(siteIndex);
-    if (!site) return;
+    if (!site || this.digSitesCompleted.has(siteIndex)) return;
 
     this.screens.show(null, { playing: true });
 
     if (this.visuals) {
       this.visuals.createDigEffect(this.grid, site.gridX, site.gridY, 1);
+    }
+
+    // Resolve the dig using game mechanics
+    const difficulty = this.session.state.difficulty || "normal";
+    const digSiteData = createDigSite(this.levelId, siteIndex);
+
+    if (digSiteData) {
+      const digResult = this.digMechanics.resolveDig(digSiteData, difficulty);
+
+      // Handle danger
+      if (digResult.danger) {
+        this.events.emit("danger:triggered", digResult.danger);
+        this.session.setPhase("danger");
+        this.screens.showDanger(digResult.danger.message, () => {
+          this.session.setPhase("playing");
+          this.screens.show(null, { playing: true });
+        });
+      }
+
+      // Handle finding
+      if (digResult.finding) {
+        this.levelFindings.push(digResult.finding);
+        this.currentScore += digResult.score;
+        this.events.emit("finding:resolved", digResult.finding);
+
+        const rarityIcons = { A: "💎", B: "⭐", C: "🔑" };
+        const icon = rarityIcons[digResult.finding.rarity] || "🔑";
+        this.screens.showFinding({
+          finding: digResult.finding,
+          icon,
+          score: digResult.score,
+          perfect: digResult.perfect
+        });
+      }
+
+      this.digSitesCompleted.add(siteIndex);
     }
 
     this.emitDugEvent(site.gridX, site.gridY);
