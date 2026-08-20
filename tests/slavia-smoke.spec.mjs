@@ -455,6 +455,18 @@ async function pauseForBesedniceEvidence(page, timeout = 20_000) {
 }
 
 async function completeBesednice(page, input, testInfo) {
+  const beforeBriefing = await runtimeSnapshot(page);
+  expect(beforeBriefing.besednice.runtime.briefingComplete).toBe(false);
+  expect(beforeBriefing.besednice.runtime.traces.every(trace => trace.enabled === false)).toBe(true);
+  await moveTo(page, input, 260, 980, "talk", 15_000);
+  await performAction(page, input);
+  await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
+  await expect(page.locator("#dialogName")).toHaveText("MILAN");
+  await input.activateUi(page.locator("#dialogButton"));
+  await expect.poll(async () => (await runtimeSnapshot(page)).besednice.runtime.briefingComplete).toBe(true);
+  const afterBriefing = await runtimeSnapshot(page);
+  expect(afterBriefing.besednice.runtime.traces.every(trace => trace.enabled === true)).toBe(true);
+
   for (const trace of [{ x: 470, y: 890 }, { x: 880, y: 620 }, { x: 1240, y: 420 }]) {
     await moveTo(page, input, trace.x, trace.y, "discover", 15_000);
     await performAction(page, input);
