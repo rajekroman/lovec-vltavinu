@@ -8,6 +8,7 @@ import { ThreeRenderer } from "./render/ThreeRenderer.js";
 import { GltfAssetLoader, GLTF_LOADER_REVISION } from "./render/GltfAssetLoader.js";
 import { disposeObject3D, disposeTexture } from "./render/AssetDisposal.js";
 import { ScreenController } from "./ui/ScreenController.js";
+import { SceneTransition } from "./ui/SceneTransition.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
@@ -38,7 +39,8 @@ const renderer = new ThreeRenderer({
   clearColor: 0x17150f,
   antialias: true
 });
-const app = new GameApp({ events, renderer });
+const transition = new SceneTransition(documentRef);
+const app = new GameApp({ events, renderer, transition });
 const session = createGameSession();
 const screens = new ScreenController(documentRef);
 const hud = new HudController({ document: documentRef, events });
