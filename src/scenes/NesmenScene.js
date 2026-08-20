@@ -1,9 +1,11 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { NESMEN_ENTITY_DEFINITIONS, NESMEN_PROFILE_IDS, createNesmenFinding } from "../data/nesmen.js";
+import { NESMEN_ENTITY_DEFINITIONS, NESMEN_PROFILE_IDS, NESMEN_FINDING_VARIANTS } from "../data/nesmen.js";
 import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
@@ -49,6 +51,8 @@ export class NesmenScene {
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
+    this.lastDigQuality = 0.5;
+    this.rng = createRng(this.session.state.seed ^ 0x4E45534D);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = 0;
@@ -393,6 +397,7 @@ export class NesmenScene {
     });
     if (!result.complete || this.activeProfileEntity === null) return;
 
+    this.lastDigQuality = this.dig.averageQuality();
     const entity = this.activeProfileEntity;
     const spot = this.app.world.get(entity, "digSpot");
     const interaction = this.app.world.get(entity, "interaction");
@@ -458,7 +463,8 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
-    this.objectives.recordFinding(createNesmenFinding("nesmen-standard", "nesmen-finding-1"));
+    const variant = resolveVariant(NESMEN_FINDING_VARIANTS, this.lastDigQuality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", this.lastDigQuality));
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);

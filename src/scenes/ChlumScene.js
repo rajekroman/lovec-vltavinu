@@ -1,9 +1,11 @@
 import { LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { CHLUM_ENTITY_DEFINITIONS, createChlumFinding } from "../data/chlum.js";
+import { CHLUM_ENTITY_DEFINITIONS, CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
 import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DangerSystem } from "../gameplay/DangerSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
@@ -40,6 +42,7 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
+    this.rng = createRng(this.session.state.seed ^ 0x43484C4D);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = 0;
@@ -349,7 +352,9 @@ export class ChlumScene {
   collectFinding() {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
-    this.objectives.recordFinding(createChlumFinding("chlum-standard", "chlum-finding-1"));
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);
