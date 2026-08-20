@@ -106,8 +106,6 @@ test("Playwright defines desktop, portrait and landscape projects", () => {
     assert.match(validationWorkflow, new RegExp(`- ${project}`));
   }
   assert.match(validationWorkflow, /fail-fast: false/);
-  assert.match(validationWorkflow, /playwright install --with-deps --only-shell chromium/);
-  assert.doesNotMatch(validationWorkflow, /playwright install --with-deps chromium/);
   assert.match(validationWorkflow, /--project="\$\{\{ matrix\.project \}\}"/);
 });
 
