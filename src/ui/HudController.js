@@ -1,12 +1,25 @@
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 const fingerprint = (revision, model) => `${revision}:${JSON.stringify(model ?? {})}`;
 
+function radarPresentation(model) {
+  const hint = String(model?.hint ?? "");
+  const normalized = hint.toLocaleLowerCase("cs-CZ");
+  const active = String(model?.actionLabel ?? "").toUpperCase() === "RADAR" || normalized.includes("radar");
+  if (!active) return { visible: false, signal: "off", strength: 0, label: "VYPNUTO" };
+  if (normalized.includes("odhalil")) return { visible: true, signal: "target", strength: 1, label: "CÍL" };
+  if (normalized.includes("silný")) return { visible: true, signal: "strong", strength: 0.82, label: "SILNÝ" };
+  if (normalized.includes("slabý")) return { visible: true, signal: "weak", strength: 0.48, label: "SLABÝ" };
+  if (normalized.includes("bez signálu")) return { visible: true, signal: "none", strength: 0.14, label: "MIMO" };
+  return { visible: true, signal: "ready", strength: 0.28, label: "HLEDÁM" };
+}
+
 export class HudController {
   constructor(options) {
     this.document = options.document;
     this.events = options.events;
     this.revision = -1;
     this.lastFingerprint = "";
+    const radar = this.ensureRadarPanel();
     this.elements = {
       app: this.require("app"),
       hud: this.require("hud"),
@@ -24,7 +37,10 @@ export class HudController {
       toast: this.require("toast"),
       action: this.require("actionButton"),
       actionIcon: this.require("actionIcon"),
-      actionText: this.require("actionText")
+      actionText: this.require("actionText"),
+      radar,
+      radarFill: this.require("radarFill"),
+      radarState: this.require("radarState")
     };
     this.installAccessibilityContracts();
     this.unsubscribe = [
@@ -41,6 +57,35 @@ export class HudController {
     return element;
   }
 
+  ensureRadarPanel() {
+    const existing = this.document.getElementById("radarPanel");
+    if (existing) return existing;
+    const hud = this.require("hud");
+    const panel = this.document.createElement("div");
+    panel.id = "radarPanel";
+    panel.className = "radar-panel hidden";
+    panel.setAttribute("aria-label", "Radar vltavínů");
+
+    const label = this.document.createElement("span");
+    label.className = "radar-label";
+    label.textContent = "RADAR";
+
+    const track = this.document.createElement("i");
+    track.className = "radar-track";
+    const fill = this.document.createElement("em");
+    fill.id = "radarFill";
+    track.append(fill);
+
+    const state = this.document.createElement("strong");
+    state.id = "radarState";
+    state.className = "radar-state";
+    state.textContent = "VYPNUTO";
+
+    panel.append(label, track, state);
+    hud.append(panel);
+    return panel;
+  }
+
   installAccessibilityContracts() {
     const elements = this.elements;
     elements.dangerMeter.setAttribute("role", "progressbar");
@@ -50,6 +95,11 @@ export class HudController {
     elements.toast.setAttribute("role", "status");
     elements.toast.setAttribute("aria-live", "polite");
     elements.toast.setAttribute("aria-hidden", "true");
+    elements.radar.setAttribute("role", "meter");
+    elements.radar.setAttribute("aria-valuemin", "0");
+    elements.radar.setAttribute("aria-valuemax", "100");
+    elements.radar.setAttribute("aria-valuenow", "0");
+    elements.radar.setAttribute("aria-hidden", "true");
     elements.action.removeAttribute?.("aria-pressed");
   }
 
@@ -119,6 +169,16 @@ export class HudController {
     elements.hint.classList.toggle("hidden", !interactionPrompt);
     elements.hint.classList.toggle("action-ready", actionReady);
 
+    const radar = radarPresentation(model);
+    const radarPercent = Math.round(clamp01(radar.strength) * 100);
+    elements.radar.classList.toggle("hidden", !radar.visible);
+    elements.radar.dataset.signal = radar.signal;
+    elements.radarFill.style.width = `${radarPercent}%`;
+    elements.radarState.textContent = radar.label;
+    elements.radar.setAttribute("aria-hidden", radar.visible ? "false" : "true");
+    elements.radar.setAttribute("aria-valuenow", String(radarPercent));
+    elements.radar.setAttribute("aria-valuetext", radar.label);
+
     const visibleActionLabel = actionReady ? actionLabel : "PŘIBLIŽ SE";
     elements.action.classList.toggle("ready", actionReady);
     elements.action.classList.toggle("unavailable", !actionReady);
@@ -140,7 +200,11 @@ export class HudController {
     this.elements.hint.classList.remove("action-ready");
     this.elements.action.classList.remove("ready");
     this.elements.action.classList.remove("unavailable");
+    this.elements.radar.classList.add("hidden");
+    this.elements.radar.setAttribute("aria-hidden", "true");
     this.elements.toast.classList.remove("show", "good", "bad", "rare");
     this.elements.toast.setAttribute("aria-hidden", "true");
   }
 }
+
+export { radarPresentation };

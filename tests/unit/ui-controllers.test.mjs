@@ -43,6 +43,7 @@ class FakeElement {
     this.inert = false;
     this.children = [];
     this.focused = false;
+    this.dataset = {};
   }
 
   setAttribute(name, value) {
@@ -128,12 +129,14 @@ const createUiDocument = () => {
   const document = new FakeDocument();
   for (const id of [
     "app", "hud", "controls", "missionNumber", "placeLabel", "objectiveLabel", "objectiveProgress", "bagValue",
-    "heatPill", "dangerMeterText", "heatFill", "dangerBanner", "dangerText", "hint", "toast",
+    "heatPill", "dangerMeterText", "heatFill", "radarPanel", "radarFill", "radarState", "dangerBanner", "dangerText", "hint", "toast",
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo", "pausePlace", "pauseObjective", "pauseProgress",
     "digHits", "digHitCount", "digHitSymbols", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
     "resultScore", "resultStats"
   ]) document.add(id);
+
+  document.getElementById("radarPanel").classList.add("hidden");
 
   for (const id of [
     "actionButton", "briefButton", "dialogButton", "digButton", "againButton",
@@ -185,6 +188,8 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
   assert.equal(document.getElementById("dangerBanner").getAttribute("aria-hidden"), "false");
   assert.equal(document.getElementById("dangerText").textContent, "TRAKTOR JE BLÍZKO");
   assert.equal(document.getElementById("app").classList.contains("danger-state"), true);
+  assert.equal(document.getElementById("radarPanel").classList.contains("hidden"), true);
+  assert.equal(document.getElementById("radarPanel").getAttribute("role"), "meter");
   assert.equal(document.getElementById("actionButton").classList.contains("ready"), true);
   assert.equal(document.getElementById("actionButton").getAttribute("aria-label"), "MLUVIT");
   assert.equal(document.getElementById("actionButton").getAttribute("aria-disabled"), "false");
