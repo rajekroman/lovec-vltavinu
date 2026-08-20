@@ -585,11 +585,14 @@ function paintFinalGrade(surface) {
   forEachPixel(surface, (x, y) => {
     const u = x / surface.width;
     const v = y / surface.height;
-    const sun = clamp(0.5 + (u * 0.5 - v * 0.42), 0, 1);
-    const tint = mixColor([104, 116, 138], [255, 226, 182], smoothstep(0, 1, sun));
-    const strength = 0.05 + Math.abs(sun - 0.5) * 0.1;
+    // Sluneční směr musí souhlasit se stíny rekvizit, které padají doprava dolů.
+    const sun = clamp(0.5 + ((1 - u) * 0.45 - v * 0.4), 0, 1);
+    const tint = mixColor([100, 114, 138], [255, 228, 186], smoothstep(0, 1, sun));
+    const strength = 0.05 + Math.abs(sun - 0.5) * 0.12;
     const vignette = smoothstep(1.34, 0.5, Math.hypot(u - 0.5, v - 0.5) * 1.85);
-    return [...tint, strength + (1 - vignette) * 0.1];
+    // Atmosférická perspektiva: vzdálený horní okraj mapy je o něco světlejší a studenější.
+    const haze = smoothstep(0.42, 0, v) * 0.16;
+    return [...mixColor(tint, [198, 210, 214], haze * 3), strength + (1 - vignette) * 0.1 + haze];
   });
   forEachPixel(surface, (x, y) => {
     const speck = (valueNoise(x * 3.1, y * 3.1, 777) - 0.5) * 9;
