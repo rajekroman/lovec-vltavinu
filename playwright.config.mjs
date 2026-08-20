@@ -24,7 +24,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
-      testMatch: /slavia-smoke\.spec\.mjs$/,
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
       metadata: { inputMode: "desktop", orientation: "landscape" },
       use: {
         ...devices["Desktop Chrome"],
