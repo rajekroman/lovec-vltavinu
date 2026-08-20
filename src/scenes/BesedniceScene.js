@@ -517,7 +517,8 @@ export class BesedniceScene {
       this.renderer.bindEntity(this.findingEntity, mesh, "effects");
     } catch (error) {
       console.warn("Procedural moldavite failed, falling back to sprite", error);
-      const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
+      const texture = await this.texture("finding-vltavin-besednice-hedgehog");
+      const sprite = this.renderer.createSprite(texture, {
         width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
         assetId: "finding-vltavin-besednice-hedgehog"
       });
