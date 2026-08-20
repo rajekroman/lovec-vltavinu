@@ -69,7 +69,7 @@ test("Chlum asset manifest has stable IDs, budgets, relative URLs and dispose ow
   }
 });
 
-test("Chlum PNG and GLB files match declared technical constraints", () => {
+test("Chlum image and GLB files match declared technical constraints", () => {
   for (const entry of chlumManifest) {
     const file = fileFor(entry);
     const buffer = fs.readFileSync(file);
@@ -80,6 +80,9 @@ test("Chlum PNG and GLB files match declared technical constraints", () => {
       assert.deepEqual({ width, height }, entry.dimensions, entry.id);
       assert.ok(Math.max(width, height) <= entry.budget.textureMax, entry.id);
       if (entry.transparent === true) assert.ok([4, 6].includes(buffer[25]), `${entry.id} must preserve PNG alpha`);
+    } else if (entry.url.endsWith(".webp")) {
+      assert.equal(buffer.subarray(0, 4).toString("ascii"), "RIFF", entry.id);
+      assert.equal(buffer.subarray(8, 12).toString("ascii"), "WEBP", entry.id);
     } else if (entry.url.endsWith(".glb")) {
       assert.equal(buffer.subarray(0, 4).toString("ascii"), "glTF", entry.id);
       assert.equal(buffer.readUInt32LE(4), 2, entry.id);

@@ -49,15 +49,18 @@ test("Nesměň manifest contains the complete budgeted V7 asset group", () => {
   }
 });
 
-test("Nesměň PNG dimensions and GLB triangle counts match the manifest", async () => {
+test("Nesměň image dimensions and GLB triangle counts match the manifest", async () => {
   const loader = new GltfAssetLoader();
   for (const entry of entries) {
     const buffer = bufferFor(entry);
-    if (entry.type === "texture") {
+    if (entry.url.endsWith(".png")) {
       assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", entry.id);
       const dimensions = { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
       assert.deepEqual(dimensions, entry.dimensions, entry.id);
       assert.ok(Math.max(dimensions.width, dimensions.height) <= entry.budget.textureMax, entry.id);
+    } else if (entry.url.endsWith(".webp")) {
+      assert.equal(buffer.subarray(0, 4).toString("ascii"), "RIFF", entry.id);
+      assert.equal(buffer.subarray(8, 12).toString("ascii"), "WEBP", entry.id);
     } else {
       assert.equal(entry.type, "gltf", entry.id);
       assert.equal(buffer.subarray(0, 4).toString("ascii"), "glTF", entry.id);

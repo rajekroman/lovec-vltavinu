@@ -31,7 +31,7 @@ test("Chlum V7 production terrain plate is a bounded authored bitmap asset", () 
   const entry = manifest.find(candidate => candidate.id === "terrain-chlum-plate-v7");
 
   assert.ok(entry);
-  assert.equal(entry.url, "./assets/textures/terrain/chlum-plate-v7.png");
+  assert.equal(entry.url, "./assets/textures/terrain/chlum-plate-v7.webp");
   assert.deepEqual(entry.dimensions, { width: 1600, height: 1200 });
   assert.equal(entry.transparent, false);
   assert.equal(entry.wrap, undefined);

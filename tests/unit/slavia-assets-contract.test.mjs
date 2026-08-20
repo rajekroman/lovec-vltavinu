@@ -110,7 +110,7 @@ test("service worker pre-caches only canonical Slavia scene modules", () => {
   assert.ok(serviceWorker.includes('"./src/scenes/SlaviaScene.js"'));
   assert.doesNotMatch(serviceWorker, /ProductionSlaviaScene|BesedniceSlaviaBridgeScene/);
   for (const path of paths) assert.ok(serviceWorker.includes(`"${path}"`));
-  assert.ok(serviceWorker.includes('"./assets/textures/terrain/slavia-event-plate-v7.png"'));
-  assert.ok(serviceWorker.includes('"./assets/sprites/foreground/slavia-event-edge-v7.png"'));
+  assert.ok(serviceWorker.includes('"./assets/textures/terrain/slavia-event-plate-v7.webp"'));
+  assert.ok(serviceWorker.includes('"./assets/sprites/foreground/slavia-event-edge-v7.webp"'));
   assert.match(serviceWorker, /lovec-vltavinu-slavia-v7-0-release/);
 });

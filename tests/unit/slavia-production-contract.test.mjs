@@ -19,7 +19,7 @@ test("Slavia V7 production art is a repository-owned bounded bitmap pack", () =>
     const entry = byId.get(id);
     assert.ok(entry, `missing ${id}`);
     assert.equal(entry.type, "texture");
-    assert.match(entry.url, /^\.\/assets\/.+\.png$/);
+    assert.match(entry.url, /^\.\/assets\/.+\.webp$/);
     assert.equal(entry.preload, "level:slavia");
     assert.equal(entry.disposeOwner, "LevelScene:slavia");
     assert.match(entry.sha256, /^[a-f0-9]{64}$/);
@@ -28,9 +28,8 @@ test("Slavia V7 production art is a repository-owned bounded bitmap pack", () =>
     assert.ok(Math.max(entry.dimensions.width, entry.dimensions.height) <= entry.budget.textureMax);
 
     const buffer = readBuffer(entry.url.slice(2));
-    assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
-    assert.equal(buffer.readUInt32BE(16), entry.dimensions.width);
-    assert.equal(buffer.readUInt32BE(20), entry.dimensions.height);
+    assert.equal(buffer.subarray(0, 4).toString("ascii"), "RIFF");
+    assert.equal(buffer.subarray(8, 12).toString("ascii"), "WEBP");
     assert.equal(buffer.byteLength, entry.metrics.bytes);
     assert.equal(crypto.createHash("sha256").update(buffer).digest("hex"), entry.sha256);
     assert.ok(serviceWorker.includes(`"${entry.url}"`), `service worker missing ${entry.url}`);
