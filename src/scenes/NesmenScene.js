@@ -10,6 +10,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-nesmen-forest-plate-v7";
@@ -87,6 +88,8 @@ export class NesmenScene {
     this.foregroundRoot = null;
     this.foresterIdleVisual = null;
     this.pickupTween = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
     this.visualTime = 0;
     this.visualMode = "uninitialized";
     this.assetEntries = new Map();
@@ -331,6 +334,14 @@ export class NesmenScene {
     foreground.add(upperEdge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x8B7355 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0x2f6038 });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
+
+    this.events.on("dig:hit", ({ position }) => this.onDigHit(position));
+    this.events.on("dig:clean", () => this.onDigClean());
   }
 
   beginPlaying() {
@@ -393,6 +404,12 @@ export class NesmenScene {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.updateCollectionAnimation(dt);
     this.updateNpcIdleAnimation(dt);
+    this.updateParticles(dt);
+  }
+
+  updateParticles(dt) {
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
   }
 
   updateCollectionAnimation(dt) {
@@ -763,6 +780,16 @@ export class NesmenScene {
   destroyVisualWorld() {
     if (this.pickupTween) cancelPickupTween(this.pickupTween);
     this.pickupTween = null;
+    if (this.dustEmitter) {
+      this.renderer.remove(this.dustEmitter.object);
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
@@ -783,6 +810,33 @@ export class NesmenScene {
     for (const entry of this.assetEntries.values()) this.app.assets.unload(entry.id, entry.type);
     this.loadedModels.clear();
     this.app.assets.unload(MANIFEST_ENTRY.id, MANIFEST_ENTRY.type);
+  }
+
+  onDigHit(position) {
+    if (!this.dustEmitter) return;
+    const x = position?.x ?? 0;
+    const y = position?.y ?? 0;
+    const z = position?.z ?? 4;
+    this.dustEmitter.emitBurst(x, y, z, 12, {
+      speed: 2.5,
+      spread: 0.7,
+      lifetime: 0.35,
+      size: 2
+    });
+  }
+
+  onDigClean() {
+    if (!this.sparkleEmitter) return;
+    const activeEntity = this.activeProfileEntity;
+    if (!activeEntity) return;
+    const transform = this.app.world.get(activeEntity, "transform");
+    if (!transform) return;
+    this.sparkleEmitter.emitBurst(transform.x, transform.y, 6, 15, {
+      speed: 3,
+      spread: 0.8,
+      lifetime: 0.45,
+      size: 1.5
+    });
   }
 
   async exit() {
