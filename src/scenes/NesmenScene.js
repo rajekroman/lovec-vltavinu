@@ -598,12 +598,6 @@ export class NesmenScene {
     this.findingEntity = null;
     const interaction = this.app.world.get(entity, "interaction");
     if (interaction) interaction.enabled = false;
-    const quality = this.app.world.get(entity, "findingQuality")?.value ?? 0;
-    const cleanDig = this.app.world.get(entity, "cleanDig")?.value === true;
-    const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, {
-      scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
-    }));
     const visual = this.renderer.objectByEntity.get(entity);
     this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
     this.availableInteraction = null;
