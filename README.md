@@ -1,4 +1,4 @@
-# Lovec vltavínů 6.3.0
+# Lovec vltavínů 7.0.0
 
 Mobilní browserová arkádová hra z jihočeských nalezišť vltavínů. Hráč projde čtyři kanonické kapitoly **Chlum → Nesměň → Besednice → KD Slávie**, sestaví výstavní kolekci a získá finální hodnocení poroty.
 

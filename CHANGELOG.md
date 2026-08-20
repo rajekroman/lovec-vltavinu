@@ -1,6 +1,6 @@
 # Changelog
 
-## V7 — vizuální přestavba lokalit (probíhá)
+## 7.0.0 — V7: vizuální přestavba všech lokalit
 
 Každá lokalita dostává authored terrain plate, samostatnou foreground occlusion vrstvu a bounds-safe kameru sledující hráče. Gameplay, quest pravidla ani architektura runtime se přitom nemění.
 
@@ -9,7 +9,7 @@ Každá lokalita dostává authored terrain plate, samostatnou foreground occlus
 - **Besednice** (#217 / PR #218) — jílový lom, ježková vrstva, landscape-safe frustum.
 - **KD Slavia** — venkovní sběratelská akce u Malše: nový plate `terrain-slavia-event-plate-v7`,
   foreground vrstva `foreground-slavia-event-edge-v7`, `resolveSlaviaV7CameraZoom` a reprodukovatelný
-  generátor grafiky `tools/art/build-slavia-v7-art.mjs`. Čeká na visual approval.
+  generátor grafiky `tools/art/build-slavia-v7-art.mjs`.
 
 ### Úklid preloadu
 
