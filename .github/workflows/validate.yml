@@ -26,9 +26,16 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install WebP build tool
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq webp
+
       - name: Check JavaScript syntax
         run: |
           node --check tools/validate.mjs
+          node --check tools/art/build-slavia-v7-art.mjs
+          node --check tools/art/build-slavia-v7-png.mjs
           find src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           find tests/unit -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
           node --check tests/audio-lifecycle.spec.mjs
@@ -41,6 +48,9 @@ jobs:
           mkdir -p test-results
           set -o pipefail
           node tools/validate.mjs 2>&1 | tee test-results/static-validation.log
+
+      - name: Reproduce Slavia production art
+        run: node tools/art/build-slavia-v7-art.mjs
 
       - name: Test Nesměň data contract
         run: node --test --test-reporter=spec tests/unit/nesmen-data.test.mjs
