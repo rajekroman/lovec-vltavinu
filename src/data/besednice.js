@@ -1,4 +1,5 @@
 import { CONTEXT_ACTION, getLevelDefinition, getLevelTarget } from "./levels.js";
+import { getDialogueDefinition } from "./dialogues.js";
 
 const deepFreeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;

@@ -16,8 +16,9 @@ export function resolveVariant(variants, quality, rng) {
   return sorted[0];
 }
 
-export function scaleScore(baseScore, quality) {
-  return Math.round(baseScore * (0.7 + 0.6 * quality));
+export function scaleScore(baseScore, quality, perfect = false) {
+  const base = Math.round(baseScore * (0.7 + 0.6 * quality));
+  return perfect ? Math.round(base + base * 0.15) : base;
 }
 
 export function createFinding(variant, findingId, locality, quality, options = {}) {

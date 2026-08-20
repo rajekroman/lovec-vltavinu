@@ -85,6 +85,14 @@ test("deterministic seed yields stable scores through scaleScore", () => {
   assert.equal(scaleScore(variant.score, 1.0), 117);
 });
 
+test("scaleScore applies 15% perfect dig bonus", () => {
+  const normal = scaleScore(100, 1.0);
+  const perfect = scaleScore(100, 1.0, true);
+  assert.equal(normal, 130);
+  assert.equal(perfect, 150);
+  assert.ok(perfect > normal);
+});
+
 test("createFinding produces frozen object with scaled score", () => {
   const variant = { rarity: "B", weight: 1.2, score: 90 };
   const f = createFinding(variant, "test-1", "chlum", 0.8);
@@ -94,4 +102,11 @@ test("createFinding produces frozen object with scaled score", () => {
   assert.equal(f.weight, 1.2);
   assert.equal(f.score, scaleScore(90, 0.8));
   assert.ok(Object.isFrozen(f));
+});
+
+test("createFinding with perfect flag gives higher score", () => {
+  const variant = { rarity: "A", weight: 1.7, score: 150 };
+  const normal = createFinding(variant, "f-1", "nesmen", 1.0);
+  const perfect = createFinding(variant, "f-2", "nesmen", 1.0, true);
+  assert.ok(perfect.score > normal.score, `perfect ${perfect.score} should exceed normal ${normal.score}`);
 });

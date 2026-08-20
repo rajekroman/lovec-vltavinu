@@ -29,6 +29,50 @@ export function resolveNesmenV7CameraZoom(viewportWidth, viewportHeight) {
   return 1;
 }
 
+function moldaviteNoise(x, y, z) {
+  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+export function createNesmenMoldavite(THREE) {
+  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
+    throw new TypeError("Nesmen moldavite requires Three.js mesh primitives.");
+  }
+
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.attributes?.position;
+  if (!position?.getX || !position?.setXYZ) throw new TypeError("Nesmen moldavite geometry must expose positions.");
+
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const radial = 0.8 + moldaviteNoise(x, y, z) * 0.26;
+    position.setXYZ(index, x * radial * 1.1, y * radial * 0.88, z * radial * 0.7);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals?.();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x2d5a32,
+    emissive: 0x0a1f0d,
+    emissiveIntensity: 0.2,
+    roughness: 0.55,
+    metalness: 0.01,
+    transparent: true,
+    opacity: 0.94
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "nesmen-moldavite-finding";
+  mesh.position.z = 14;
+  mesh.rotation.x = 0.32;
+  mesh.rotation.y = -0.28;
+  mesh.scale.set(4.5, 3.8, 2.8);
+  mesh.userData.assetId = "procedural-nesmen-moldavite";
+  mesh.userData.findingVisual = "moldavite";
+  return mesh;
+}
+
 export class NesmenScene {
   constructor(options) {
     this.app = options.app;
@@ -54,6 +98,8 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -63,7 +109,9 @@ export class NesmenScene {
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
     this.interactions = new InteractionSystem({ events: this.events });
+    this.dig = new DigSystem({ events: this.events, sweetMin: 0.35, sweetMax: 0.65, speed: 1.1 });
     this.dig = new DigSystem({ events: this.events, ...NESMEN_DIG_CONFIG });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
   }
@@ -95,6 +143,8 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -341,6 +391,37 @@ export class NesmenScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateCollectionAnimation(dt);
+    this.updateNpcIdleAnimation(dt);
+  }
+
+  updateCollectionAnimation(dt) {
+    if (this.collectingEntity === null) return;
+    this.collectingElapsed += dt;
+    const duration = 0.3;
+    if (this.collectingElapsed >= duration) {
+      this.renderer.unbindEntity(this.collectingEntity);
+      this.app.world.destroyEntity(this.collectingEntity);
+      this.externalIdByEntity.delete(this.collectingEntity);
+      this.collectingEntity = null;
+      this.collectingElapsed = 0;
+      return;
+    }
+    const t = this.collectingElapsed / duration;
+    const scale = 1 + t * 0.5;
+    const visual = this.renderer.getVisual(this.collectingEntity);
+    if (visual && visual.material) {
+      visual.scale.set(scale, scale, 1);
+      visual.material.opacity = Math.max(0, 1 - t);
+    }
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.foresterEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.npcIdleTime += dt;
+    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
+    const visual = this.renderer.getVisual(this.foresterEntity);
+    if (visual) visual.scale.set(idleScale, idleScale, 1);
     this.visualTime += Math.max(0, Number(dt) || 0);
     updateIdlePulse(this.foresterIdleVisual, this.visualTime);
     if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
@@ -423,6 +504,7 @@ export class NesmenScene {
     const entity = this.activeProfileEntity;
     const spot = this.app.world.get(entity, "digSpot");
     spot.digQuality = this.dig.averageQuality();
+    spot.perfectDig = this.dig.perfectDig();
     spot.cleanDig = result.hits === DIG_REQUIRED_HITS && result.misses === 0;
     const interaction = this.app.world.get(entity, "interaction");
     this.dig.finish();
@@ -435,6 +517,7 @@ export class NesmenScene {
       visual.marker.visible = false;
       visual.hole.visible = true;
     }
+    if (spot.findingId) this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.perfectDig);
     if (spot.findingId) {
       this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.cleanDig);
       if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
@@ -464,6 +547,7 @@ export class NesmenScene {
     this.emitHud(true);
   }
 
+  spawnFinding(profileEntity, findingId, digQuality, perfect) {
   spawnFinding(profileEntity, findingId, digQuality, cleanDig) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
@@ -471,6 +555,27 @@ export class NesmenScene {
       transform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       previousTransform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 72, priority: 90, enabled: true },
+      findingQuality: { value: digQuality, perfect: perfect === true }
+    });
+    this.externalIdByEntity.set(this.findingEntity, findingId);
+    try {
+      const mesh = createNesmenMoldavite(this.THREE);
+      this.renderer.bindEntity(this.findingEntity, mesh, "effects");
+    } catch (error) {
+      console.warn("Procedural moldavite failed, falling back to sprite", error);
+      this.texture("finding-vltavin-nesmen").then(texture => {
+        if (this.findingEntity === null) return;
+        const sprite = this.renderer.createSprite(texture, {
+          width: 50,
+          height: 50,
+          z: 14,
+          anchorX: 0.5,
+          anchorY: 0.2,
+          assetId: "finding-vltavin-nesmen"
+        });
+        this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+      });
+    }
       findingQuality: { value: digQuality },
       cleanDig: { value: cleanDig === true }
     });
@@ -488,6 +593,14 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null || this.pickupTween) return;
     const entity = this.findingEntity;
+    const fq = this.app.world.get(entity, "findingQuality") ?? {};
+    const quality = fq.value ?? 0;
+    const perfect = fq.perfect === true;
+    const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, perfect));
+    this.collectingEntity = entity;
+    this.collectingElapsed = 0;
+    this.findingEntity = null;
     const interaction = this.app.world.get(entity, "interaction");
     if (interaction) interaction.enabled = false;
     const quality = this.app.world.get(entity, "findingQuality")?.value ?? 0;

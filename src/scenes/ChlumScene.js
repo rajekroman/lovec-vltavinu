@@ -47,6 +47,7 @@ export class ChlumScene {
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
     this.interactions = new InteractionSystem({ events: this.events });
     this.danger = new DangerSystem({ events: this.events, session: this.session });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "chlum" });
@@ -275,6 +276,15 @@ export class ChlumScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateNpcIdleAnimation(dt);
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.farmerEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.npcIdleTime += dt;
+    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
+    const visual = this.renderer.getVisual(this.farmerEntity);
+    if (visual) visual.scale.set(idleScale, idleScale, 1);
   }
 
   updateHud() { this.emitHud(false); }
