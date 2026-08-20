@@ -51,6 +51,23 @@ test("scaleScore scales from 70% to 130%", () => {
   assert.equal(scaleScore(100, 1), 130);
 });
 
+test("deterministic seed produces reproducible variant resolution", () => {
+  const rng1 = createRng(777);
+  const rng2 = createRng(777);
+  for (let q = 0; q <= 1; q += 0.25) {
+    const v1 = resolveVariant(VARIANTS, q, rng1);
+    const v2 = resolveVariant(VARIANTS, q, rng2);
+    assert.equal(v1.id, v2.id, `diverged at quality ${q}`);
+  }
+});
+
+test("deterministic seed yields stable scores through scaleScore", () => {
+  const variant = VARIANTS[1];
+  assert.equal(scaleScore(variant.score, 0.0), 63);
+  assert.equal(scaleScore(variant.score, 0.5), 90);
+  assert.equal(scaleScore(variant.score, 1.0), 117);
+});
+
 test("createFinding produces frozen object with scaled score", () => {
   const variant = { rarity: "B", weight: 1.2, score: 90 };
   const f = createFinding(variant, "test-1", "chlum", 0.8);

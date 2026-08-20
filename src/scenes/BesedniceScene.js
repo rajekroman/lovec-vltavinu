@@ -76,7 +76,6 @@ export class BesedniceScene {
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
-    this.lastDigQuality = 0.5;
     this.rng = createRng(this.session.state.seed ^ 0x42455345);
     this.resultShown = false;
     this.levelComplete = null;
@@ -347,8 +346,8 @@ export class BesedniceScene {
       info: result.hit ? `Zásah ${result.hits}/${DIG_REQUIRED_HITS}` : "Mimo rytmus — zkus to znovu."
     });
     if (!result.complete) return;
-    this.lastDigQuality = this.dig.averageQuality();
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot");
+    spot.digQuality = this.dig.averageQuality();
     const interaction = this.app.world.get(this.hedgehogEntity, "interaction");
     this.dig.finish();
     spot.dug = true;
@@ -383,8 +382,9 @@ export class BesedniceScene {
 
   collectHedgehog() {
     if (this.findingEntity === null) return false;
-    const variant = resolveVariant(BESEDNICE_FINDING_VARIANTS, this.lastDigQuality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", this.lastDigQuality));
+    const quality = this.app.world.get(this.hedgehogEntity, "digSpot")?.digQuality ?? 0;
+    const variant = resolveVariant(BESEDNICE_FINDING_VARIANTS, quality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality));
     const entity = this.findingEntity;
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);

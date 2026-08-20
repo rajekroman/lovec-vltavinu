@@ -53,6 +53,7 @@ export class DigSystem {
     const inside = active.position >= this.sweetMin && active.position <= this.sweetMax;
     if (!inside) {
       active.misses += 1;
+      active.qualities.push(0);
       this.events?.emit("dig:miss", { spot: active.spot, misses: active.misses });
       return { hit: false, complete: false, ...this.snapshot() };
     }

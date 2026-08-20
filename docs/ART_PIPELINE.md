@@ -16,14 +16,15 @@ Vytvoří dva soubory:
 
 | Soubor | Typ | Rozměr | Role |
 |---|---|---|---|
-| `assets/textures/terrain/slavia-event-plate-v7.png` | RGB PNG | 1440×880 | authored terrain plate celé lokality |
-| `assets/sprites/foreground/slavia-event-edge-v7.png` | RGBA PNG | 1440×880 | foreground occlusion (koruny stromů, girlandy) |
+| `assets/textures/terrain/slavia-event-plate-v7.webp` | lossy WebP | 1440×880 | authored terrain plate celé lokality |
+| `assets/sprites/foreground/slavia-event-edge-v7.webp` | lossy+alpha WebP | 1440×880 | foreground occlusion (koruny stromů, girlandy) |
 
 Vlastnosti:
 
 - **deterministický** — stejný commit vyprodukuje bajtově shodné soubory, takže SHA-256 v manifestu je ověřitelný (`npm run test:unit` to kontroluje v `tests/unit/slavia-production-contract.test.mjs`);
 - **bez závislostí** — vlastní softwarový rasterizér a PNG enkodér v `tools/art/raster.mjs`, žádný nativní modul, žádné stahování;
-- **build-time only** — `tools/` není součástí runtime grafu z `src/bootstrap.js` ani offline cache gameplay kódu.
+- **build-time only** — `tools/` není součástí runtime grafu z `src/bootstrap.js` ani offline cache gameplay kódu;
+- **WebP konverze** — po vygenerování PNG se výstup převede na WebP pomocí `cwebp -q 92 -m 6` (opaque) nebo `cwebp -q 92 -m 6 -alpha_q 95` (transparent). Vyžaduje systémový balíček `webp` (`apt install webp` / `brew install webp`). Manifest pak odkazuje na `.webp` soubory.
 
 ## Souřadnicový kontrakt
 
@@ -38,9 +39,10 @@ Plate je mapován 1:1 na `bounds` levelu z `src/data/levels.js`.
 
 1. Uprav generátor (`tools/art/*.mjs`) — ne binárku.
 2. Spusť generátor.
-3. Aktualizuj `assets/manifests/assets.json`: `metrics.bytes`, `budget.bytes`, `dimensions`, `sha256`.
-4. Přidej cestu do `sw.js` (`CORE`), jinak validátor selže.
-5. `npm test` — validátor kontroluje PNG signaturu, rozměry, textureMax i byte budget; unit testy kontrolují SHA-256 a lifecycle ownership.
+3. Převeď výstup na WebP: `cwebp -q 92 -m 6 input.png -o output.webp` (pro alpha: přidej `-alpha_q 95`).
+4. Aktualizuj `assets/manifests/assets.json`: `url` (`.webp`), `metrics.bytes`, `budget.bytes`, `dimensions`, `sha256`.
+5. Přidej cestu do `sw.js` (`CORE`), jinak validátor selže.
+6. `npm test` — validátor kontroluje RIFF/WEBP signaturu, byte budget; unit testy kontrolují SHA-256 a lifecycle ownership.
 
 ## Mrtvé assety
 

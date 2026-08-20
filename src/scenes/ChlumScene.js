@@ -42,7 +42,7 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
-    this.rng = createRng(this.session.state.seed ^ 0x43484C4D);
+    this.rng = null;
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = 0;
@@ -88,6 +88,7 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
+    this.rng = createRng(this.session.state.seed ^ 0x43484C4D);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudSignature = "";

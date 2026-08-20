@@ -16,6 +16,7 @@ test("each session reset produces a new seed", () => {
   session.reset();
   const second = session.state.seed;
   assert.equal(typeof second, "number");
+  assert.notEqual(first, second, "reset must produce a different seed");
 });
 
 test("seed survives level transitions", () => {

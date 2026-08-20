@@ -26,6 +26,28 @@ test("DigSystem tracks quality of each hit and computes average", () => {
   assert.ok(Math.abs(avg - 0.5) < 0.001, `expected ~0.5, got ${avg}`);
 });
 
+test("misses penalize average quality by contributing zero", () => {
+  const dig = new DigSystem({ sweetMin: 0.4, sweetMax: 0.6, speed: 1000 });
+  dig.start("penalty-spot");
+
+  dig.active.position = 0.1;
+  const miss = dig.strike();
+  assert.equal(miss.hit, false);
+  assert.equal(dig.active.qualities.length, 1);
+  assert.equal(dig.active.qualities[0], 0);
+
+  dig.active.position = 0.5;
+  dig.strike();
+  dig.active.position = 0.5;
+  dig.strike();
+  dig.active.position = 0.5;
+  dig.strike();
+
+  const avg = dig.averageQuality();
+  assert.ok(avg < 1.0, `one miss should lower avg below 1.0, got ${avg}`);
+  assert.ok(Math.abs(avg - 0.75) < 0.001, `expected ~0.75 (3×1.0 + 1×0) / 4, got ${avg}`);
+});
+
 test("averageQuality returns 0 when no hits recorded", () => {
   const dig = new DigSystem();
   assert.equal(dig.averageQuality(), 0);
