@@ -18,13 +18,10 @@ const manifest = JSON.parse(read("assets/manifests/assets.json"));
 const expectedAssets = Object.freeze([
   "npc-rival-karel",
   "finding-vltavin-besednice-hedgehog",
-  "terrain-besednice-quarry",
-  "terrain-besednice-clay-quarry-v1",
   "terrain-besednice-clay-quarry-v7",
   "foreground-besednice-quarry-edge-v7",
   "model-besednice-trace-marker",
-  "model-besednice-hedgehog-marker",
-  "model-besednice-rock"
+  "model-besednice-hedgehog-marker"
 ]);
 
 test("bootstrap registers one canonical instance of every production scene", () => {

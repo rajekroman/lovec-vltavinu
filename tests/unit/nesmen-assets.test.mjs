@@ -15,11 +15,8 @@ const EXPECTED_IDS = [
   "terrain-nesmen-forest-plate-v7",
   "foreground-nesmen-forest-edge-v7",
   "finding-vltavin-nesmen",
-  "terrain-nesmen-forest-floor",
   "terrain-nesmen-sand-profile",
-  "terrain-nesmen-reference-clearing-v2",
-  "model-nesmen-profile-marker",
-  "model-nesmen-tree-stump"
+  "model-nesmen-profile-marker"
 ];
 const fileFor = entry => path.join(root, entry.url.slice(2));
 const bufferFor = entry => fs.readFileSync(fileFor(entry));

@@ -37,6 +37,15 @@ test("production environment plates are not obscured by legacy decorative overla
   assert.equal(quarryPlate?.url, "./assets/textures/terrain/besednice-clay-quarry-v7.png");
   assert.ok(quarryPlate?.budget.bytes >= quarryPlate?.metrics.bytes);
 
-  assert.match(slavia, /terrain-slavia-malse-exterior-v1/);
+  assert.match(slavia, /terrain-slavia-event-plate-v7/);
+  assert.match(slavia, /foreground-slavia-event-edge-v7/);
+  assert.match(slavia, /createTerrainPlate\(environmentTexture/);
+  assert.match(slavia, /resolveSlaviaV7CameraZoom/);
+  assert.doesNotMatch(slavia, /environmentTexture\.repeat\.set/);
   assert.match(slavia, /building\.visible = false/);
+
+  const eventPlate = manifest.find(entry => entry.id === "terrain-slavia-event-plate-v7");
+  assert.deepEqual(eventPlate?.dimensions, { width: 1440, height: 880 });
+  assert.equal(eventPlate?.url, "./assets/textures/terrain/slavia-event-plate-v7.png");
+  assert.ok(eventPlate?.budget.bytes >= eventPlate?.metrics.bytes);
 });
