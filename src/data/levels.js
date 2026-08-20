@@ -101,21 +101,23 @@ const definitions = [
     theme: "quarry",
     music: "quarry",
     text: "Tři stopy vedou k ježkové vrstvě. Konkurenční hledač čeká, až nález vytáhne někdo jiný.",
-    goal: "Najdi 3 stopy, vykopej ježek a získej jej zpět od Karla.",
+    goal: "Promluv s místním znalcem, najdi 3 stopy, vykopej ježek a získej jej zpět od Karla.",
     briefing: {
-      context: "Na starém nalezišti jsou tři čitelné stopy a rival Karel sleduje každý kvalitní nález.",
-      goal: "Prozkoumej všechny stopy, zvládni kopání a nenech Karla s nálezem utéct."
+      context: "Na starém nalezišti čeká místní znalec. Nejdřív vysvětlí, jak číst tři stopy vedoucí k ježkové vrstvě; rival Karel mezitím sleduje každý kvalitní nález.",
+      goal: "Promluv se znalcem, prozkoumej všechny stopy, zvládni kopání a nenech Karla s nálezem utéct."
     },
     spawn: { x: 140, y: 1040 },
     bounds: { x: 0, y: 0, width: 1680, height: 1280 },
     walkable: { x: 100, y: 180, width: 1480, height: 980 },
     objective: { id: "besednice-hedgehog-recovery", type: "besednice-hedgehog-recovery", required: 1 },
     objectives: [
+      objective("local-briefing", "dialog", "besednice-guide", 1),
       objective("find-traces", "discover", "besednice-trace", 3),
       objective("dig-hedgehog", "dig", "besednice-hedgehog", 1, { requiredHits: DIG_REQUIRED_HITS }),
       objective("recover-hedgehog", "boss", "crystal-karel", 1)
     ],
     targets: [
+      target("besednice-guide", "npc", [{ x: 260, y: 980 }]),
       target("besednice-trace", "clue", [
         { x: 470, y: 890 },
         { x: 880, y: 620 },
