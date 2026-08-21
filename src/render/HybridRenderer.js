@@ -1,3 +1,8 @@
+// Kulisy popředí mají v alfa masce zbytkový poloprůhledný závoj kolem výřezu.
+// Při běžném prahu se závoj vykreslí jako obdélníkový flek přes scénu, proto se
+// u nich odřezává výrazně dřív než u postav.
+export const FOREGROUND_ALPHA_TEST = 0.35;
+
 // Malované podklady jsou dodané v sRGB. Bez explicitního colorSpace je Three.js
 // čte jako lineární data, což barvy vybělí a sníží kontrast — proto se nastavuje
 // centrálně tady, ne v jednotlivých scénách.

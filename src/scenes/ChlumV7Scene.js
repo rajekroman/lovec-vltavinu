@@ -2,6 +2,7 @@ import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
 import { CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
 import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { FOREGROUND_ALPHA_TEST } from "../render/HybridRenderer.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { syncSpriteVisual } from "../render/ThreeRenderer.js";
@@ -228,6 +229,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       height: 286,
       anchorX: 0.5,
       anchorY: 0.08,
+      alphaTest: FOREGROUND_ALPHA_TEST,
       assetId: "foreground-chlum-wet-verge-v7"
     });
     nearVerge.name = "chlum-v7-near-wet-verge";
@@ -241,6 +243,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       height: 220,
       anchorX: 0.5,
       anchorY: 0.08,
+      alphaTest: FOREGROUND_ALPHA_TEST,
       assetId: "foreground-chlum-wet-verge-v7"
     });
     farVerge.name = "chlum-v7-far-wet-verge";

@@ -4,6 +4,7 @@ import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { FOREGROUND_ALPHA_TEST } from "../render/HybridRenderer.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createWaterOverlay } from "../render/WaterOverlay.js";
 import { VisualEngine } from "../render/VisualEngine.js";
@@ -235,6 +236,7 @@ export class SlaviaScene {
       height: this.level.bounds.height,
       anchorX: 0.5,
       anchorY: 0.5,
+      alphaTest: FOREGROUND_ALPHA_TEST,
       assetId: V7_FOREGROUND_ASSET
     });
     eventEdge.name = "slavia-v7-event-edge";

@@ -8,6 +8,7 @@ import { BossSystem } from "../gameplay/BossSystem.js";
 import { createRng } from "../gameplay/SessionRng.js";
 import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { FOREGROUND_ALPHA_TEST } from "../render/HybridRenderer.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
@@ -294,6 +295,7 @@ export class BesedniceScene {
       height: this.level.bounds.height,
       anchorX: 0.5,
       anchorY: 0.5,
+      alphaTest: FOREGROUND_ALPHA_TEST,
       assetId: V7_FOREGROUND_ASSET
     });
     quarryEdge.name = "besednice-v7-quarry-edge";
