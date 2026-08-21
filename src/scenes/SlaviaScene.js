@@ -200,14 +200,15 @@ export class SlaviaScene {
         anchorY: 0.08,
         assetId
       });
-      this.renderer.bindEntity(entity, sprite, "actors");
+      let visual = sprite;
       if (entityId === "expert-eva") {
         this.evaIdleWrapper = createIdleWrapper(THREE, sprite, { amplitude: 0.018, frequency: 1.3 });
-        this.renderer.add(this.evaIdleWrapper, "actors");
+        visual = this.evaIdleWrapper;
       } else if (entityId === "thief-franta") {
         this.frantaIdleWrapper = createIdleWrapper(THREE, sprite, { amplitude: 0.02, frequency: 1.1 });
-        this.renderer.add(this.frantaIdleWrapper, "actors");
+        visual = this.frantaIdleWrapper;
       }
+      this.renderer.bindEntity(entity, visual, "actors");
     }
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
@@ -246,10 +247,10 @@ export class SlaviaScene {
     this.waterOverlay = createWaterOverlay(THREE, this.level.bounds, { opacity: 0.25 });
     this.renderer.add(this.waterOverlay.object, "ground");
 
-    this.dustEmitter = createDustEmitter(THREE, { color: 0xA0826D, maxParticles: 50 });
-    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xFFD700, maxParticles: 40 });
-    this.renderer.add(this.dustEmitter.object, "fx");
-    this.renderer.add(this.sparkleEmitter.object, "fx");
+    this.dustEmitter = createDustEmitter(THREE, { color: 0xA0826D });
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xFFD700 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.renderer.add(this.sparkleEmitter.object, "effects");
   }
 
   beginPlaying() {
