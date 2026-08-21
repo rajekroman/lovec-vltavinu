@@ -59,16 +59,27 @@
 
 ## In-Progress Phases
 
-### 🔄 UI/UX Refinement (Issue #275)
-- **Status:** PLANNING
+### 🟡 Visual Design Completion (Issue #275 - Phase 2D)
+- **Status:** BLOCKED - Foreground Assets Missing
 - **Scope:**
-  - Scene transition animations (fade overlays, 300-500ms)
-  - HUD polish (score pop/fade, health pulse, progress bar)
-  - Dialogue animations (typewriter effect, fade-in)
-  - Button states (hover, active, focus, disabled)
-  - Loading states (spinner, progress bar, timeout)
-  - Mobile optimizations (safe areas, responsive)
-  - prefers-reduced-motion respect
+  - Grid level foreground sprites (trees, stones, vegetation)
+  - Atmospheric perspective layering
+  - Character sprite rendering (replace simple circles)
+  - Environmental asset integration per location
+- **Blocking issue:** ChlumGridScene and other grid levels lack Phase 2D foreground assets
+- **Current gap:** See CHLUM_VISUAL_DESIGN_GAP.md for detailed analysis
+
+### 🔄 UI/UX Refinement (Issue #275 - Phase 2C)
+- **Status:** 90% COMPLETE
+- **Implemented:**
+  - Scene transition animations ✅
+  - HUD polish (score pop/fade, health pulse, progress bar) ✅
+  - Dialogue animations (typewriter effect, fade-in) ✅
+  - Button states (hover, active, focus, disabled) ✅
+  - Loading states (spinner, progress bar, timeout) ✅
+  - Mobile optimizations (safe areas, responsive) ✅
+  - prefers-reduced-motion respect ✅
+- **Still needed:** Grid level foreground asset integration (Phase 2D)
 
 ## Not Yet Started
 
@@ -153,15 +164,17 @@
 - [x] Issue #286: NPC sprites (✅ COMPLETE)
 - [x] Issue #273: Accessibility (✅ SUBSTANTIAL)
 - [x] Issue #274: PWA (✅ COMPLETE)
-- [x] Issue #275: UI/UX (✅ COMPLETE)
-- [ ] Issue #276: Audio (🔄 QUEUED)
+- [ ] Issue #275: UI/UX (🟡 BLOCKED - Grid visual design)
+  - Phase 2C (UI animations): ✅ COMPLETE
+  - Phase 2D (Foreground assets): ❌ BLOCKED - Asset generation pending
+- [ ] Issue #276: Audio (🔄 QUEUED - Blocked on ffmpeg)
 - [ ] Issue #277: Localization (❌ REMOVED - Czech only)
 - [ ] Issue #280: QA Matrix (⏳ QUEUED)
 - [ ] Issue #279: Documentation (⏳ QUEUED)
 - [ ] Issue #281: Launch (⏳ QUEUED)
 - [x] All tests passing (✅ 252/252)
 - [x] Validation passing (✅ 0 errors)
-- [x] Ready for GitHub Pages (✅ READY)
+- [x] Ready for GitHub Pages (⚠️ PENDING visual design completion)
 
 ---
 
