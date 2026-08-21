@@ -133,21 +133,26 @@ const createUiDocument = () => {
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo", "pausePlace", "pauseObjective", "pauseProgress",
     "digHits", "digHitCount", "digHitSymbols", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
-    "resultScore", "resultStats"
+    "resultScore", "resultStats", "journalList",
+    "masterVolumeRange", "musicVolumeRange", "effectsVolumeRange", "mutedCheckbox",
+    "highContrastCheckbox", "largeTextCheckbox", "colorBlindSelect"
   ]) document.add(id);
 
   document.getElementById("radarPanel").classList.add("hidden");
 
   for (const id of [
     "actionButton", "briefButton", "dialogButton", "digButton", "againButton",
-    "resultRecordsButton", "resumeButton", "menuButton"
+    "resultRecordsButton", "resumeButton", "menuButton", "journalButton",
+    "pauseStoryButton", "pauseSettingsButton", "journalCloseButton",
+    "settingsCloseButton", "storyCloseButton"
   ]) {
     if (!document.getElementById(id)) document.add(id, [], "BUTTON");
     else document.getElementById(id).tagName = "BUTTON";
   }
 
   for (const id of [
-    "titleScreen", "briefScreen", "dialogScreen", "digScreen", "resultScreen", "pauseScreen"
+    "titleScreen", "briefScreen", "dialogScreen", "digScreen", "resultScreen", "pauseScreen",
+    "journalScreen", "settingsScreen", "storyScreen"
   ]) document.add(id, ["screen"]);
 
   return document;
@@ -315,4 +320,91 @@ test("ScreenController renders a generic level result and restores playing overl
   assert.equal(screens.activeId, null);
   assert.equal(document.getElementById("hud").classList.contains("hidden"), false);
   assert.equal(document.getElementById("controls").classList.contains("hidden"), false);
+});
+
+test("ScreenController marks completed, current and upcoming localities on the journal screen", () => {
+  const document = createUiDocument();
+  const session = { state: { levelId: "nesmen", findings: [{ locality: "chlum", rarity: "B", weight: 1, score: 1 }] } };
+  const screens = new ScreenController(document, { session });
+  screens.showJournal({ onClose: () => {} });
+
+  assert.equal(screens.activeId, "journalScreen");
+  const rows = document.getElementById("journalList").children;
+  assert.equal(rows.length, 4);
+  assert.equal(rows[0].children[2].textContent, "Dokončeno · nalezeno kamenů: 1");
+  assert.equal(rows[1].children[2].textContent, "Právě zde");
+  assert.equal(rows[2].children[2].textContent, "Čeká");
+});
+
+test("ScreenController settings screen reads and writes through the injected audio engine", () => {
+  const document = createUiDocument();
+  const calls = [];
+  const audio = {
+    snapshot: () => ({ volume: 0.5, musicVolume: 0.25, effectsVolume: 0.75, muted: true }),
+    setVolume: value => calls.push(["volume", value]),
+    setMusicVolume: value => calls.push(["music", value]),
+    setEffectsVolume: value => calls.push(["effects", value]),
+    setMuted: value => calls.push(["muted", value])
+  };
+  const screens = new ScreenController(document, { audio });
+  let closed = 0;
+  screens.showSettings({ onClose: () => { closed += 1; } });
+
+  assert.equal(screens.activeId, "settingsScreen");
+  assert.equal(document.getElementById("masterVolumeRange").value, "50");
+  assert.equal(document.getElementById("musicVolumeRange").value, "25");
+  assert.equal(document.getElementById("effectsVolumeRange").value, "75");
+  assert.equal(document.getElementById("mutedCheckbox").checked, true);
+
+  document.getElementById("masterVolumeRange").value = "80";
+  document.getElementById("masterVolumeRange").oninput();
+  assert.deepEqual(calls, [["volume", 0.8]]);
+
+  document.getElementById("settingsCloseButton").onclick({ preventDefault() {} });
+  assert.equal(closed, 1);
+});
+
+test("ScreenController story screen just binds its close button", () => {
+  const document = createUiDocument();
+  const screens = new ScreenController(document);
+  let closed = 0;
+  screens.showStory({ onClose: () => { closed += 1; } });
+  assert.equal(screens.activeId, "storyScreen");
+  document.getElementById("storyCloseButton").onclick({ preventDefault() {} });
+  assert.equal(closed, 1);
+});
+
+test("ScreenController pause screen opens journal, story and settings and hands close back to the real resume callback", () => {
+  const document = createUiDocument();
+  const session = { state: { levelId: "chlum", findings: [] } };
+  const screens = new ScreenController(document, { session });
+  let resumedCount = 0;
+  // Mirrors what a scene's resume() does: fully restore gameplay, not just close the overlay.
+  const onResume = () => { resumedCount += 1; screens.play(); };
+
+  screens.showPause({ onResume, onMenu: () => {} });
+  document.getElementById("journalButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, "journalScreen");
+  document.getElementById("journalCloseButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, null);
+  assert.equal(resumedCount, 1);
+
+  screens.showPause({ onResume, onMenu: () => {} });
+  document.getElementById("pauseStoryButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, "storyScreen");
+  document.getElementById("storyCloseButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, null);
+  assert.equal(resumedCount, 2);
+
+  screens.showPause({ onResume, onMenu: () => {} });
+  document.getElementById("pauseSettingsButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, "settingsScreen");
+  document.getElementById("settingsCloseButton").onclick({ preventDefault() {} });
+  assert.equal(screens.activeId, null);
+  assert.equal(resumedCount, 3);
+
+  // Pause itself must still be reachable from the direct resume button, unaffected by the above.
+  screens.showPause({ onResume, onMenu: () => {} });
+  document.getElementById("resumeButton").onclick({ preventDefault() {} });
+  assert.equal(resumedCount, 4);
 });

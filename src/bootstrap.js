@@ -46,7 +46,7 @@ const renderer = new ThreeRenderer({
 const transition = new SceneTransition(documentRef);
 const app = new GameApp({ events, renderer, transition });
 const session = createGameSession();
-const screens = new ScreenController(documentRef);
+const screens = new ScreenController(documentRef, { session });
 const hud = new HudController({ document: documentRef, events });
 const audio = new AudioEngine({
   events,
@@ -55,6 +55,7 @@ const audio = new AudioEngine({
   window: windowRef,
   button: documentRef.getElementById("soundButton")
 });
+screens.audio = audio;
 const lifecycle = new AbortController();
 
 function resize() {
