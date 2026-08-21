@@ -10,17 +10,20 @@ export const LEVEL_SEQUENCE = [
 export class LevelProgression {
   constructor(options = {}) {
     this.logger = options.logger || console;
-    this.storageKey = options.storageKey || "moldavite-level-progress";
+    this.storageAdapter = options.storageAdapter || null;
+    this.keyPrefix = options.keyPrefix || "moldavite-level-progress";
     this.progress = this.loadProgress();
   }
 
   loadProgress() {
     try {
-      const data = localStorage.getItem(this.storageKey);
-      if (!data) {
-        return this.createDefaultProgress();
+      if (this.storageAdapter) {
+        const data = this.storageAdapter.load(this.keyPrefix);
+        if (data) {
+          return data;
+        }
       }
-      return JSON.parse(data);
+      return this.createDefaultProgress();
     } catch (error) {
       this.logger.warn(`Failed to load level progress: ${error.message}`);
       return this.createDefaultProgress();
@@ -41,7 +44,9 @@ export class LevelProgression {
 
   saveProgress() {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.progress));
+      if (this.storageAdapter) {
+        this.storageAdapter.save(this.keyPrefix, this.progress);
+      }
     } catch (error) {
       this.logger.error(`Failed to save level progress: ${error.message}`);
     }
@@ -170,6 +175,3 @@ export class LevelProgression {
     this.progress = null;
   }
 }
-
-// Global instance
-export const levelProgression = new LevelProgression();

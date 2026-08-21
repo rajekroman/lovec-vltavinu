@@ -11,6 +11,9 @@ import { ScreenController } from "./ui/ScreenController.js";
 import { SceneTransition } from "./ui/SceneTransition.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
+import { SettingsPanel } from "./ui/SettingsPanel.js";
+import { TutorialSystem } from "./ui/TutorialSystem.js";
+import { LevelProgression } from "./gameplay/LevelProgression.js";
 import { TitleScene } from "./scenes/TitleScene.js";
 import { ChlumV7Scene } from "./scenes/ChlumV7Scene.js";
 import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
@@ -28,6 +31,8 @@ if (!canvas) throw new Error("Missing #game canvas.");
 if (String(THREE.REVISION) !== GLTF_LOADER_REVISION) {
   throw new Error(`Three.js revision ${THREE.REVISION} does not match GLTFLoader revision ${GLTF_LOADER_REVISION}.`);
 }
+
+const storageAdapter = new StorageAdapter();
 
 const events = new EventBus({
   contracts: EVENT_CONTRACTS,
@@ -56,6 +61,19 @@ const audio = new AudioEngine({
   button: documentRef.getElementById("soundButton")
 });
 const lifecycle = new AbortController();
+
+// Initialize game systems (persistence adapter will be provided separately)
+const settingsPanel = new SettingsPanel({
+  document: documentRef,
+  logger: console
+});
+const tutorialSystem = new TutorialSystem({
+  document: documentRef,
+  logger: console
+});
+const levelProgression = new LevelProgression({
+  logger: console
+});
 
 function resize() {
   renderer.resizeToElement(canvas);
@@ -246,4 +264,4 @@ async function boot() {
 
 boot().catch(showFatalError);
 
-export { app, audio, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun };
+export { app, audio, events, renderer, session, title, chlum, nesmen, besednice, slavia, startNewRun, settingsPanel, tutorialSystem, levelProgression };
