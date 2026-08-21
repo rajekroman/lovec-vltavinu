@@ -3,8 +3,9 @@ import { CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
 import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
-import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { syncSpriteVisual } from "../render/ThreeRenderer.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
@@ -46,7 +47,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     ensureV7Theme();
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
-    this.farmerIdleVisual = null;
+    this.farmerAnimator = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
@@ -81,11 +82,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const plateAssetId = this.assetEntries.has(V7_PLATE_ASSET) ? V7_PLATE_ASSET : FALLBACK_PLATE_ASSET;
     this.visualMode = plateAssetId === V7_PLATE_ASSET ? "terrain-plate-v7" : "terrain-plate-fallback";
 
-    const [plateTexture, playerTexture, playerActionTexture, farmerTexture, tractorTexture, foregroundTexture] = await Promise.all([
+    const [plateTexture, playerTexture, playerActionTexture, farmerAtlasTexture, tractorTexture, foregroundTexture] = await Promise.all([
       this.texture(plateAssetId),
       this.texture("player-hunter-walk"),
       this.texture("player-hunter-actions-v7"),
-      this.texture("npc-farmer-vaclav"),
+      this.texture("npc-farmer-vaclav-atlas"),
       this.texture("hazard-chlum-tractor-v7"),
       this.texture("foreground-chlum-wet-verge-v7")
     ]);
@@ -141,19 +142,17 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     playerGroup.add(player, playerAction);
     this.playerWalkSprite = player;
     this.playerActionSprite = playerAction;
-    const farmer = this.renderer.createSprite(farmerTexture, {
-      ...actorSpriteOptions,
-      assetId: "npc-farmer-vaclav"
-    });
-    const farmerIdle = createIdleWrapper(THREE, farmer, {
-      name: "chlum-v7-farmer-idle",
-      amplitude: 0.02,
-      frequency: 1.35,
-      phase: 0.4
-    });
-    this.farmerIdleVisual = farmerIdle;
+    const farmerAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "farmer_vaclav",
+      { assetId: "npc-farmer-vaclav-atlas", width: 600, height: 160, texture: farmerAtlasTexture },
+      { width: actorSpriteOptions.width, height: actorSpriteOptions.height, z: actorSpriteOptions.z, anchorX: actorSpriteOptions.anchorX, anchorY: actorSpriteOptions.anchorY }
+    );
+    farmerAnimator.playAnimation("idle");
+    this.farmerAnimator = farmerAnimator;
     this.renderer.bindEntity(this.playerEntity, playerGroup, "actors");
-    this.renderer.bindEntity(this.farmerEntity, farmerIdle, "actors");
+    this.renderer.bindEntity(this.farmerEntity, farmerAnimator.sprite, "actors");
     this.syncPlayerActionVisual();
 
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
@@ -282,6 +281,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
   showPermissionDialog() {
     this.playHunterAction("talk", { interruptible: true });
+    if (this.farmerAnimator) playDialogueAnimation(this.farmerAnimator, "start");
     super.showPermissionDialog();
   }
 
@@ -363,7 +363,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   updateAnimations(dt) {
     super.updateAnimations(dt);
     this.visualTime += Math.max(0, Number(dt) || 0);
-    updateIdlePulse(this.farmerIdleVisual, this.visualTime);
+    if (this.farmerAnimator) this.farmerAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
     if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
       const entity = this.findingEntity;
       if (entity !== null) this.finishPickup(entity);
@@ -404,7 +404,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
-    this.farmerIdleVisual = null;
+    this.farmerAnimator = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
@@ -427,7 +427,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
         visualMode: this.visualMode,
         cameraZoom: this.renderer.camera?.zoom ?? null,
         farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true,
-        farmerIdleScaleY: this.farmerIdleVisual?.scale?.y ?? null,
+        farmerAnimation: this.farmerAnimator?.getState().animation ?? null,
         pickupActive: Boolean(this.pickupTween)
       }
     };

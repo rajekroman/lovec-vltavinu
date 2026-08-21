@@ -9,8 +9,9 @@ import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../ga
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
-import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-nesmen-forest-plate-v7";
@@ -86,7 +87,7 @@ export class NesmenScene {
     this.modelFactory = new ModelFactory({ renderer: this.renderer });
     this.visualRoot = null;
     this.foregroundRoot = null;
-    this.foresterIdleVisual = null;
+    this.foresterAnimator = null;
     this.pickupTween = null;
     this.dustEmitter = null;
     this.sparkleEmitter = null;
@@ -112,7 +113,6 @@ export class NesmenScene {
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
-    this.npcIdleTime = 0;
     this.interactions = new InteractionSystem({ events: this.events });
     this.dig = new DigSystem({ events: this.events, sweetMin: 0.35, sweetMax: 0.65, speed: 1.1 });
     this.dig = new DigSystem({ events: this.events, ...NESMEN_DIG_CONFIG });
@@ -225,12 +225,12 @@ export class NesmenScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "nesmen-vertical-slice";
-    const [environmentTexture, foregroundTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
+    const [environmentTexture, foregroundTexture, sandTexture, playerTexture, foresterAtlasTexture] = await Promise.all([
       this.texture(V7_PLATE_ASSET),
       this.texture(V7_FOREGROUND_ASSET),
       this.texture("terrain-nesmen-sand-profile"),
       this.texture("player-hunter-walk"),
-      this.texture("npc-forester-jan")
+      this.texture("npc-forester-jan-atlas")
     ]);
     sandTexture.repeat.set(2.2, 1.2);
 
@@ -264,23 +264,17 @@ export class NesmenScene {
       anchorY: 0.08,
       assetId: "player-hunter-walk"
     });
-    const forester = this.renderer.createSprite(foresterTexture, {
-      width: 82,
-      height: 108,
-      z: 12,
-      anchorX: 0.5,
-      anchorY: 0.08,
-      assetId: "npc-forester-jan"
-    });
-    const foresterIdle = createIdleWrapper(THREE, forester, {
-      name: "nesmen-v7-forester-idle",
-      amplitude: 0.018,
-      frequency: 1.5,
-      phase: 1.1
-    });
-    this.foresterIdleVisual = foresterIdle;
+    const foresterAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "forester_jan",
+      { assetId: "npc-forester-jan-atlas", width: 600, height: 160, texture: foresterAtlasTexture },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    foresterAnimator.playAnimation("idle");
+    this.foresterAnimator = foresterAnimator;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
-    this.renderer.bindEntity(this.foresterEntity, foresterIdle, "actors");
+    this.renderer.bindEntity(this.foresterEntity, foresterAnimator.sprite, "actors");
 
     for (const entity of this.profileEntities) {
       const group = new THREE.Group();
@@ -435,12 +429,8 @@ export class NesmenScene {
 
   updateNpcIdleAnimation(dt) {
     if (!this.foresterEntity || this.session.state.phase !== "playing" || this.modal) return;
-    this.npcIdleTime += dt;
-    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
-    const visual = this.renderer.getVisual(this.foresterEntity);
-    if (visual) visual.scale.set(idleScale, idleScale, 1);
     this.visualTime += Math.max(0, Number(dt) || 0);
-    updateIdlePulse(this.foresterIdleVisual, this.visualTime);
+    if (this.foresterAnimator) this.foresterAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
     if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
       const entity = this.findingEntity;
       if (entity !== null) this.finishPickup(entity);
@@ -463,6 +453,7 @@ export class NesmenScene {
   showPermissionDialog() {
     const dialogue = getDialogueDefinition("nesmen-permission");
     this.modal = "dialog";
+    if (this.foresterAnimator) playDialogueAnimation(this.foresterAnimator, "start");
     this.app.input.reset("dialog-open");
     this.screens.showDialog({
       name: dialogue.speaker.name,
@@ -603,13 +594,11 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null || this.pickupTween) return;
     const entity = this.findingEntity;
-    const transform = this.app.world.get(entity, "transform");
     const fq = this.app.world.get(entity, "findingQuality") ?? {};
     const quality = fq.value ?? 0;
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
     this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
-    if (this.sparkleEmitter && transform) this.sparkleEmitter.emitBurst(transform.x, transform.y, 14, 15, { speed: 4, spread: 0.8, lifetime: 0.6 });
     this.collectingEntity = entity;
     this.collectingElapsed = 0;
     this.findingEntity = null;
@@ -772,7 +761,7 @@ export class NesmenScene {
         loadedAssets: [...this.assetEntries.keys()].sort(),
         visualMode: this.visualMode,
         cameraZoom: this.renderer.camera?.zoom ?? null,
-        foresterIdleScaleY: this.foresterIdleVisual?.scale?.y ?? null,
+        foresterAnimation: this.foresterAnimator?.getState().animation ?? null,
         pickupActive: Boolean(this.pickupTween)
       },
       levelComplete: this.levelComplete
@@ -803,7 +792,7 @@ export class NesmenScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
-    this.foresterIdleVisual = null;
+    this.foresterAnimator = null;
     this.visualTime = 0;
     this.visualMode = "uninitialized";
   }
