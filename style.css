@@ -131,3 +131,16 @@ html.high-contrast .brief-card,html.high-contrast .dig-card,html.high-contrast .
 html.large-text .dialog-card p,html.large-text .brief-card>p:not(.eyebrow),html.large-text #hint,html.large-text .primary-button,html.large-text .secondary-button,html.large-text .how-grid p,html.large-text .story-list p,html.large-text .settings-toggle,html.large-text .settings-row label{font-size:1.18em}
 html[data-colorblind=deuteranopia],html[data-colorblind=protanopia]{--red:#d98a2b}
 html[data-colorblind=tritanopia]{--gold:#d768a6}
+
+/* v8.0 — colorblind-safe danger/threat indicators. The gameplay danger states
+   (heat meter, banner, boss-enraged glow, screen edge) are hardcoded reds from
+   the v4.5/v4.9 danger-feedback passes, not var(--red), so they need their own
+   override here — always paired with the existing KLID/KRITICKÉ text label. */
+html[data-colorblind=deuteranopia] .danger-meter.detected,html[data-colorblind=protanopia] .danger-meter.detected{background:rgba(58,34,10,.9);border-color:rgba(217,138,43,.58)}
+html[data-colorblind=deuteranopia] .danger-meter.detected .danger-copy strong,html[data-colorblind=protanopia] .danger-meter.detected .danger-copy strong{color:#f0c98a}
+html[data-colorblind=deuteranopia] .danger-meter.critical,html[data-colorblind=protanopia] .danger-meter.critical{box-shadow:0 0 0 1px rgba(217,138,43,.4),0 0 30px rgba(217,138,43,.24)}
+html[data-colorblind=deuteranopia] .danger-meter em,html[data-colorblind=protanopia] .danger-meter em{background:linear-gradient(90deg,#8e9673 0%,#d9a63c 56%,#d98a2b 100%)}
+html[data-colorblind=deuteranopia] .danger-banner,html[data-colorblind=protanopia] .danger-banner{border-color:rgba(217,138,43,.82);background:rgba(58,34,10,.9)}
+html[data-colorblind=deuteranopia] .boss-hud.enraged,html[data-colorblind=protanopia] .boss-hud.enraged{border-color:rgba(217,138,43,.7);box-shadow:0 0 0 1px rgba(217,138,43,.22),0 12px 36px rgba(0,0,0,.5),0 0 34px rgba(217,138,43,.2)}
+html[data-colorblind=deuteranopia] .boss-hud.enraged em,html[data-colorblind=protanopia] .boss-hud.enraged em{background:linear-gradient(90deg,#8c6b39,#e2b34d)}
+html[data-colorblind=deuteranopia] #app.danger-state:after,html[data-colorblind=protanopia] #app.danger-state:after{box-shadow:inset 0 0 65px rgba(191,140,43,.26)}
