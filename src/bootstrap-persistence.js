@@ -1,7 +1,7 @@
 // Bootstrap persistence layer initialization
 // Wires up storage adapters to game systems
 
-import { StorageAdapter } from './storage/StorageAdapter.js';
+import { StorageAdapter } from '../persistence/StorageAdapter.js';
 import { LevelProgression } from './gameplay/LevelProgression.js';
 import { SettingsPanel, DEFAULT_SETTINGS } from './ui/SettingsPanel.js';
 import { TutorialSystem } from './ui/TutorialSystem.js';
