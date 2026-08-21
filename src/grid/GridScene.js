@@ -1,7 +1,12 @@
 import { TileGrid } from "./TileGrid.js";
 import { IsometricRenderer } from "./IsometricRenderer.js";
+import { GridSceneVisuals } from "./GridSceneVisuals.js";
 import { getGridLevel, getSpawnPoint, gridSizeToWorldBounds } from "./GridLevels.js";
 import { TILE_SIZE } from "./TileDefinitions.js";
+import { gameplayMechanics } from "../gameplay/GameplayMechanics.js";
+import { EnvironmentTheme } from "../render/EnvironmentTheme.js";
+import { DigMechanics, createDigSite } from "../gameplay/DigMechanics.js";
+import { DialogueSystem } from "../gameplay/DialogueSystem.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -20,6 +25,7 @@ export class GridScene {
   resetRuntime() {
     this.grid = null;
     this.isometricRenderer = null;
+    this.visuals = null;
     this.visualRoot = null;
     this.playerGridX = 0;
     this.playerGridY = 0;
@@ -31,6 +37,13 @@ export class GridScene {
     this.documents = new Map();
     this.modal = null;
     this.resultShown = false;
+    this.levelStartTime = null;
+    this.levelFindings = [];
+    this.environmentTheme = new EnvironmentTheme(this.THREE);
+    this.digMechanics = new DigMechanics({ rng: () => Math.random() });
+    this.dialogueSystem = new DialogueSystem();
+    this.currentScore = 0;
+    this.digSitesCompleted = new Set();
   }
 
   async enter() {
@@ -42,9 +55,17 @@ export class GridScene {
     this.instantiateWorld();
     this.createVisualWorld();
     this.setCameraToPlayer();
+    this.levelStartTime = Date.now();
 
-    const levelDef = { title: `Úroveň ${this.levelId}`, goal: "Splň cíl úrovně" };
-    this.screens.showBrief(levelDef, 4, () => this.beginPlaying());
+    const levelDef = gameplayMechanics.getLevelDefinition(this.levelId) || {};
+    this.screens.showBrief(
+      {
+        title: levelDef.name || `Úroveň ${this.levelId}`,
+        goal: levelDef.description || "Splň cíl úrovně"
+      },
+      4,
+      () => this.beginPlaying()
+    );
   }
 
   instantiateWorld() {
@@ -88,19 +109,17 @@ export class GridScene {
     const gridGroup = this.isometricRenderer.renderGrid(this.grid);
     root.add(gridGroup);
 
+    this.visuals = new GridSceneVisuals(THREE, this.isometricRenderer);
+    this.visuals.addToScene(root);
+
     this.createPlayerMesh();
     root.add(this.playerMesh);
 
-    const lights = new THREE.Group();
-    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
-    const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-    directional.position.set(-20, 20, 30);
-    directional.castShadow = true;
-    lights.add(ambient, directional);
-    root.add(lights);
-
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+
+    // Apply environment theme (lighting and atmosphere)
+    this.environmentTheme.apply(root, this.levelId);
   }
 
   createPlayerMesh() {
@@ -127,6 +146,21 @@ export class GridScene {
     this.session.setPhase("playing");
     this.screens.play();
     this.app.input.reset("grid-scene-start");
+    this.highlightInteractiveElements();
+  }
+
+  highlightInteractiveElements() {
+    if (!this.visuals) return;
+
+    // Highlight dig sites
+    for (const { gridX, gridY } of this.digSites.values()) {
+      this.visuals.highlightDigSite(this.grid, gridX, gridY);
+    }
+
+    // Highlight NPCs
+    for (const { gridX, gridY } of this.npcs.values()) {
+      this.visuals.highlightNPC(this.grid, gridX, gridY);
+    }
   }
 
   updateControl(dt, time, input) {
@@ -145,6 +179,10 @@ export class GridScene {
     const newY = this.playerGridY + (move.y > 0 ? 1 : move.y < 0 ? -1 : 0);
 
     if (this.grid.isWalkable(newX, newY)) {
+      if (this.visuals) {
+        this.visuals.createMovementIndicator(this.grid, this.playerGridX, this.playerGridY, newX, newY);
+      }
+
       this.playerGridX = newX;
       this.playerGridY = newY;
       this.updatePlayerPosition();
@@ -194,18 +232,62 @@ export class GridScene {
     const site = this.digSites.get(siteIndex);
     if (!site) return;
 
+    const difficulty = this.session.state.difficulty || "normal";
+    const requiredHits = this.digMechanics.getRequiredHits(difficulty);
+
     this.screens.showDig({
       title: `Vykopávka ${siteIndex + 1}`,
-      requiredHits: 3,
+      requiredHits,
       onAction: () => this.completeDig(siteIndex)
     });
   }
 
   completeDig(siteIndex) {
     const site = this.digSites.get(siteIndex);
-    if (!site) return;
+    if (!site || this.digSitesCompleted.has(siteIndex)) return;
 
     this.screens.show(null, { playing: true });
+
+    if (this.visuals) {
+      this.visuals.createDigEffect(this.grid, site.gridX, site.gridY, 1);
+    }
+
+    // Resolve the dig using game mechanics
+    const difficulty = this.session.state.difficulty || "normal";
+    const digSiteData = createDigSite(this.levelId, siteIndex);
+
+    if (digSiteData) {
+      const digResult = this.digMechanics.resolveDig(digSiteData, difficulty);
+
+      // Handle danger
+      if (digResult.danger) {
+        this.events.emit("danger:triggered", digResult.danger);
+        this.session.setPhase("danger");
+        this.screens.showDanger(digResult.danger.message, () => {
+          this.session.setPhase("playing");
+          this.screens.show(null, { playing: true });
+        });
+      }
+
+      // Handle finding
+      if (digResult.finding) {
+        this.levelFindings.push(digResult.finding);
+        this.currentScore += digResult.score;
+        this.events.emit("finding:resolved", digResult.finding);
+
+        const rarityIcons = { A: "💎", B: "⭐", C: "🔑" };
+        const icon = rarityIcons[digResult.finding.rarity] || "🔑";
+        this.screens.showFinding({
+          finding: digResult.finding,
+          icon,
+          score: digResult.score,
+          perfect: digResult.perfect
+        });
+      }
+
+      this.digSitesCompleted.add(siteIndex);
+    }
+
     this.emitDugEvent(site.gridX, site.gridY);
     this.app.input.reset("grid-dig-complete");
   }
@@ -219,20 +301,29 @@ export class GridScene {
 
   performNPCDialog(npcId) {
     this.modal = "dialog";
-    const dialogText = {
-      "farmer-vaclav": "Vítej na poli! Hledáš vltavíny?",
-      "forester-jan": "V lese můžeš pracovat jen na vyznačených místech.",
-      "rival-karel": "Slabo! Já bych to zvládl lépe.",
-      "expert-eva": "Máš zajímavé nálezy!",
-      "thief-franta": "Psst, podívej se sem..."
-    };
+    const dialogue = this.dialogueSystem.getConversation(npcId);
+
+    if (!dialogue) {
+      this.modal = null;
+      return;
+    }
+
+    const options = dialogue.options || [];
+    const primaryOptionIndex = 0;
 
     this.screens.showDialog({
-      name: npcId.toUpperCase(),
-      text: dialogText[npcId] || "Ahoj!",
-      avatar: npcId[0].toUpperCase(),
-      buttonLabel: "OK",
+      name: dialogue.name || npcId.toUpperCase(),
+      text: dialogue.text,
+      avatar: dialogue.avatar || npcId[0].toUpperCase(),
+      buttonLabel: options[primaryOptionIndex]?.text || "OK",
       onConfirm: () => {
+        const result = this.dialogueSystem.handleChoice(npcId, primaryOptionIndex);
+
+        // Handle any effects
+        if (result?.effect) {
+          this.events.emit("npc:effect", { npcId, effect: result.effect });
+        }
+
         this.modal = null;
         this.screens.show(null, { playing: true });
       }
@@ -274,7 +365,17 @@ export class GridScene {
     }
   }
 
+  update(dt) {
+    if (this.visuals) {
+      this.visuals.update();
+    }
+  }
+
   destroyVisualWorld() {
+    if (this.visuals) {
+      this.visuals.dispose();
+      this.visuals = null;
+    }
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
