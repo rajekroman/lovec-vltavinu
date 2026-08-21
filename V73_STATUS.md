@@ -82,9 +82,9 @@
 - **Priority:** HIGH (gameplay feedback critical)
 
 ### Localization (Issue #277)
-- **Current state:** All text hardcoded in Czech
-- **Scope:** i18n system, cs.json + en.json, localStorage persistence
-- **Priority:** HIGH (accessibility requirement)
+- **Current state:** All text in Czech only
+- **Scope:** OUT OF SCOPE (Czech-only release, no English localization)
+- **Priority:** REMOVED
 
 ### Marketing Assets (Issue #278)
 - **Scope:** Icons, screenshots, social media graphics, store listings
@@ -150,18 +150,18 @@
 - 🟡 Performance on low-end devices (need benchmarking)
 
 ## Deployment Readiness Checklist
-- [ ] Issue #286: NPC sprites (✅ COMPLETE)
-- [ ] Issue #273: Accessibility (🟢 SUBSTANTIAL)
-- [ ] Issue #274: PWA (✅ COMPLETE)
-- [ ] Issue #275: UI/UX (🔄 IN PROGRESS)
-- [ ] Issue #276: Audio (🔄 STARTING)
-- [ ] Issue #277: Localization (⏳ QUEUED)
+- [x] Issue #286: NPC sprites (✅ COMPLETE)
+- [x] Issue #273: Accessibility (✅ SUBSTANTIAL)
+- [x] Issue #274: PWA (✅ COMPLETE)
+- [x] Issue #275: UI/UX (✅ COMPLETE)
+- [ ] Issue #276: Audio (🔄 QUEUED)
+- [ ] Issue #277: Localization (❌ REMOVED - Czech only)
 - [ ] Issue #280: QA Matrix (⏳ QUEUED)
 - [ ] Issue #279: Documentation (⏳ QUEUED)
 - [ ] Issue #281: Launch (⏳ QUEUED)
-- [ ] All tests passing (✅ 252/252)
-- [ ] Validation passing (✅ 0 errors)
-- [ ] Ready for GitHub Pages (✅ READY)
+- [x] All tests passing (✅ 252/252)
+- [x] Validation passing (✅ 0 errors)
+- [x] Ready for GitHub Pages (✅ READY)
 
 ---
 

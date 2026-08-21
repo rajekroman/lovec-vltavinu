@@ -77,11 +77,10 @@ Continued development from previous session where NPC sprite animations (PR #285
 **Status:** Documentation complete, awaiting audio conversion
 
 ### Phase: Localization i18n (Issue #277)
-**Priority:** HIGH  
-**Scope:** Czech/English language support  
-**Effort:** 3-4 hours  
-**Includes:** i18n infrastructure, 150+ translation strings, localStorage persistence  
-**Status:** Not started
+**Priority:** REMOVED  
+**Scope:** ~~Czech/English language support~~ → **Czech only** (no localization needed)
+**Effort:** CANCELLED  
+**Status:** OUT OF SCOPE
 
 ### Phase: Accessibility Audit (Issue #273)
 **Priority:** HIGH  
@@ -157,21 +156,19 @@ Continued development from previous session where NPC sprite animations (PR #285
 - [x] Accessibility infrastructure in place
 - [x] Animations and transitions working
 - [ ] Audio assets compressed and integrated
-- [ ] i18n system implemented
 - [ ] Marketing assets created
 - [ ] Documentation complete
 - [ ] QA matrix testing complete
 - [ ] Analytics configured
 - [ ] GitHub Pages deployed
 
-**Current readiness:** 62% (8/13 items)
+**Current readiness:** 67% (8/12 items) ⬆️ *removed localization*
 
 ## Next Steps (Recommended Priority)
 
 ### For Next Session
 1. **Audio compression** — Convert 22 WAV files to MP3 (requires local ffmpeg)
-2. **i18n infrastructure** — Set up Czech/English translation system
-3. **Accessibility audit** — Run Lighthouse, test with NVDA/VoiceOver
+2. **Accessibility audit** — Run Lighthouse, test with NVDA/VoiceOver
 
 ### Week 2
 4. **QA matrix testing** — Systematic testing across devices/browsers
@@ -223,9 +220,9 @@ The project is in **excellent shape** for a v7.3 launch. All core functionality 
 3. Marketing & documentation (presentation)
 4. QA testing (validation)
 
-**Estimated time to launch:** 2-3 weeks with concentrated effort  
+**Estimated time to launch:** 1.5-2 weeks with concentrated effort  
 **Risk level:** LOW (no architectural blockers)  
-**Readiness:** SUBSTANTIAL (62% complete)
+**Readiness:** STRONG (67% complete, removed localization scope)
 
 ---
 
