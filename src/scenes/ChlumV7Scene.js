@@ -116,6 +116,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+    this.createRadarSweepVisual();
 
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);

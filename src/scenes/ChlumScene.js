@@ -7,6 +7,7 @@ import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { createRng } from "../gameplay/SessionRng.js";
 import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
+import { createRadarSweep, resolveSignalStrength } from "../render/RadarSweep.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "chlum-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
@@ -42,6 +43,7 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
+    this.radarSweep = null;
     this.rng = null;
     this.resultShown = false;
     this.levelComplete = null;
@@ -186,6 +188,7 @@ export class ChlumScene {
     this.addDecorModel(root, "model-chlum-hay-bale", { x: 1360, y: 860, scale: 44, rotationZ: -0.25 });
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+    this.createRadarSweepVisual();
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
     const player = this.renderer.createSprite(playerTexture, { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "player-hunter-walk" });
@@ -277,6 +280,41 @@ export class ChlumScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.updateNpcIdleAnimation(dt);
+    this.updateRadarSweep(dt);
+  }
+
+  // Dosah, na kterem se sila signalu meri. Sirsi nez detekcni okruh, aby kuzel
+  // reagoval uz cestou, ne az tesne u loziska.
+  // Kuzel zije ve vrstve efektu, aby se kreslil pres teren, ale pod HUD.
+  createRadarSweepVisual() {
+    if (this.radarSweep) return this.radarSweep;
+    this.radarSweep = createRadarSweep(this.THREE);
+    this.renderer.add(this.radarSweep.object, "effects");
+    return this.radarSweep;
+  }
+
+  radarSweepRange() {
+    const searchSpot = this.searchEntity === null ? null : this.app.world.get(this.searchEntity, "searchSpot");
+    return (searchSpot?.detectionRange ?? 220) * 3.5;
+  }
+
+  updateRadarSweep(dt) {
+    if (!this.radarSweep) return;
+    const visible = this.radarEnabled && !this.surfaceSearched && !this.modal;
+    if (!visible) {
+      if (this.radarSweep.active) this.radarSweep.hide();
+      return;
+    }
+    if (!this.radarSweep.active) this.radarSweep.show();
+
+    const player = this.app.world.get(this.playerEntity, "transform");
+    this.radarSweep.object.position.set(player.x, player.y, 8);
+    const searchTransform = this.searchEntity === null ? null : this.app.world.get(this.searchEntity, "transform");
+    if (searchTransform) {
+      const distance = Math.hypot(player.x - searchTransform.x, player.y - searchTransform.y);
+      this.radarSweep.setSignal(resolveSignalStrength(distance, this.radarSweepRange()));
+    }
+    this.radarSweep.update(dt);
   }
 
   updateNpcIdleAnimation(dt) {
@@ -323,6 +361,9 @@ export class ChlumScene {
     const searchSpot = this.app.world.get(this.searchEntity, "searchSpot");
     const distance = Math.hypot(player.x - searchTransform.x, player.y - searchTransform.y);
     this.radarPulseCount += 1;
+    // Sken dostane obraz: prstenec vyrazi od hrace a jas kuzele rekne, jak blizko je.
+    this.radarSweep?.pulse();
+    this.radarSweep?.setSignal(resolveSignalStrength(distance, this.radarSweepRange()));
     if (distance > searchSpot.detectionRange) {
       this.radarMessage = distance <= 480
         ? "Radar: silný signál. Vltavín je velmi blízko."
@@ -474,6 +515,11 @@ export class ChlumScene {
   }
 
   destroyVisualWorld() {
+    if (this.radarSweep) {
+      this.renderer.remove(this.radarSweep.object);
+      this.radarSweep.dispose();
+      this.radarSweep = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
