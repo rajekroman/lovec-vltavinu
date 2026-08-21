@@ -26,13 +26,17 @@ export const LOCATION_VISUAL_PROFILES = {
     exposure: 1.0,
     contactShadow: { opacity: 0.42, width: 0.62, height: 0.17 }
   },
+  // Holé pole bez porostu: otevřená pláň bez zeleně, která ubíhá až k horizontu.
+  // Proti Chlumu je vzdálenější horizont a silnější sbíhání, protože rovinu není
+  // čím zaclonit; opar je suchý a prašný, ne travnatý, a slunce na nekryté půdě
+  // dělá tvrdší stíny.
   locenice: {
-    horizon: 0.84,
-    depthScaleRange: [0.55, 1.05],
-    hazeColor: 0xc6cbb4,
-    hazeStrength: 0.3,
-    exposure: 1.02,
-    contactShadow: { opacity: 0.38, width: 0.6, height: 0.16 }
+    horizon: 0.92,
+    depthScaleRange: [0.46, 1.08],
+    hazeColor: 0xcabfa8,
+    hazeStrength: 0.36,
+    exposure: 1.06,
+    contactShadow: { opacity: 0.5, width: 0.58, height: 0.15 }
   },
   nesmen: {
     horizon: 0.9,
