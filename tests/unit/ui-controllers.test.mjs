@@ -133,7 +133,7 @@ const createUiDocument = () => {
     "actionButton", "actionIcon", "actionText", "briefKicker", "briefTitle", "briefText",
     "briefGoal", "dialogName", "dialogText", "dialogAvatar", "digTitle", "digInfo", "pausePlace", "pauseObjective", "pauseProgress",
     "digHits", "digHitCount", "digHitSymbols", "digMarker", "sweetZone", "resultKicker", "resultTitle", "resultText",
-    "resultScore", "resultStats", "inventorySummary", "inventoryList", "journalList",
+    "resultScore", "resultStats", "journalList",
     "masterVolumeRange", "musicVolumeRange", "effectsVolumeRange", "mutedCheckbox",
     "highContrastCheckbox", "largeTextCheckbox", "colorBlindSelect"
   ]) document.add(id);
@@ -142,8 +142,8 @@ const createUiDocument = () => {
 
   for (const id of [
     "actionButton", "briefButton", "dialogButton", "digButton", "againButton",
-    "resultRecordsButton", "resumeButton", "menuButton", "inventoryButton", "journalButton",
-    "pauseStoryButton", "pauseSettingsButton", "inventoryCloseButton", "journalCloseButton",
+    "resultRecordsButton", "resumeButton", "menuButton", "journalButton",
+    "pauseStoryButton", "pauseSettingsButton", "journalCloseButton",
     "settingsCloseButton", "storyCloseButton"
   ]) {
     if (!document.getElementById(id)) document.add(id, [], "BUTTON");
@@ -152,7 +152,7 @@ const createUiDocument = () => {
 
   for (const id of [
     "titleScreen", "briefScreen", "dialogScreen", "digScreen", "resultScreen", "pauseScreen",
-    "inventoryScreen", "journalScreen", "settingsScreen", "storyScreen"
+    "journalScreen", "settingsScreen", "storyScreen"
   ]) document.add(id, ["screen"]);
 
   return document;
@@ -322,37 +322,6 @@ test("ScreenController renders a generic level result and restores playing overl
   assert.equal(document.getElementById("controls").classList.contains("hidden"), false);
 });
 
-test("ScreenController renders the collected findings on the inventory screen", () => {
-  const document = createUiDocument();
-  const session = {
-    state: {
-      levelId: "nesmen",
-      findings: [
-        { findingId: "chlum-finding-1", locality: "chlum", rarity: "B", weight: 12.5, score: 90 },
-        { findingId: "nesmen-finding-1", locality: "nesmen", rarity: "A", weight: 8, score: 140 }
-      ]
-    }
-  };
-  const screens = new ScreenController(document, { session });
-  let closed = 0;
-  screens.showInventory({ onClose: () => { closed += 1; } });
-
-  assert.equal(screens.activeId, "inventoryScreen");
-  assert.equal(document.getElementById("inventorySummary").textContent, "Nalezeno kamenů: 2 · Skóre: 230");
-  assert.equal(document.getElementById("inventoryList").children.length, 2);
-  assert.equal(document.getElementById("inventoryList").children[0].children[1].children[0].textContent, "Chlum · B");
-  document.getElementById("inventoryCloseButton").onclick({ preventDefault() {} });
-  assert.equal(closed, 1);
-});
-
-test("ScreenController shows an empty inventory state without a session", () => {
-  const document = createUiDocument();
-  const screens = new ScreenController(document);
-  screens.showInventory({ onClose: () => {} });
-  assert.equal(document.getElementById("inventorySummary").textContent, "Zatím nic. Vyraz do terénu.");
-  assert.equal(document.getElementById("inventoryList").children.length, 0);
-});
-
 test("ScreenController marks completed, current and upcoming localities on the journal screen", () => {
   const document = createUiDocument();
   const session = { state: { levelId: "nesmen", findings: [{ locality: "chlum", rarity: "B", weight: 1, score: 1 }] } };
@@ -405,7 +374,7 @@ test("ScreenController story screen just binds its close button", () => {
   assert.equal(closed, 1);
 });
 
-test("ScreenController pause screen opens inventory, journal, story and settings and hands close back to the real resume callback", () => {
+test("ScreenController pause screen opens journal, story and settings and hands close back to the real resume callback", () => {
   const document = createUiDocument();
   const session = { state: { levelId: "chlum", findings: [] } };
   const screens = new ScreenController(document, { session });
@@ -414,35 +383,28 @@ test("ScreenController pause screen opens inventory, journal, story and settings
   const onResume = () => { resumedCount += 1; screens.play(); };
 
   screens.showPause({ onResume, onMenu: () => {} });
-  document.getElementById("inventoryButton").onclick({ preventDefault() {} });
-  assert.equal(screens.activeId, "inventoryScreen");
-  document.getElementById("inventoryCloseButton").onclick({ preventDefault() {} });
-  assert.equal(screens.activeId, null);
-  assert.equal(resumedCount, 1);
-
-  screens.showPause({ onResume, onMenu: () => {} });
   document.getElementById("journalButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, "journalScreen");
   document.getElementById("journalCloseButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, null);
-  assert.equal(resumedCount, 2);
+  assert.equal(resumedCount, 1);
 
   screens.showPause({ onResume, onMenu: () => {} });
   document.getElementById("pauseStoryButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, "storyScreen");
   document.getElementById("storyCloseButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, null);
-  assert.equal(resumedCount, 3);
+  assert.equal(resumedCount, 2);
 
   screens.showPause({ onResume, onMenu: () => {} });
   document.getElementById("pauseSettingsButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, "settingsScreen");
   document.getElementById("settingsCloseButton").onclick({ preventDefault() {} });
   assert.equal(screens.activeId, null);
-  assert.equal(resumedCount, 4);
+  assert.equal(resumedCount, 3);
 
   // Pause itself must still be reachable from the direct resume button, unaffected by the above.
   screens.showPause({ onResume, onMenu: () => {} });
   document.getElementById("resumeButton").onclick({ preventDefault() {} });
-  assert.equal(resumedCount, 5);
+  assert.equal(resumedCount, 4);
 });

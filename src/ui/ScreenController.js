@@ -1,5 +1,5 @@
 import { DIG_REQUIRED_HITS } from "../data/levels.js";
-import { buildInventoryView, buildJournalView } from "./GameStatusPresenters.js";
+import { buildJournalView } from "./GameStatusPresenters.js";
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 
@@ -164,40 +164,10 @@ export class ScreenController {
     const menu = this.element("menuButton");
     menu.textContent = "ODEJÍT DO MENU";
     bindOnce(menu, onMenu);
-    bindOnce(this.element("inventoryButton"), () => this.showInventory({ onClose: onResume }));
     bindOnce(this.element("journalButton"), () => this.showJournal({ onClose: onResume }));
     bindOnce(this.element("pauseStoryButton"), () => this.showStory({ onClose: onResume }));
     bindOnce(this.element("pauseSettingsButton"), () => this.showSettings({ onClose: onResume }));
     return this.show("pauseScreen", { playing: false });
-  }
-
-  showInventory({ onClose } = {}) {
-    const { summary, items } = buildInventoryView(this.session);
-    this.element("inventorySummary").textContent = summary;
-
-    const list = this.element("inventoryList");
-    list.setAttribute("role", "list");
-    list.replaceChildren(...items.map(entry => {
-      const item = this.document.createElement("div");
-      item.className = "stone-card";
-      item.setAttribute("role", "listitem");
-      const icon = this.document.createElement("span");
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = "◆";
-      const body = this.document.createElement("div");
-      const title = this.document.createElement("strong");
-      title.textContent = entry.title;
-      const detail = this.document.createElement("small");
-      detail.textContent = entry.detail;
-      body.append(title, detail);
-      item.append(icon, body);
-      return item;
-    }));
-
-    const button = this.element("inventoryCloseButton");
-    button.textContent = "ZPĚT";
-    bindOnce(button, onClose);
-    return this.show("inventoryScreen", { playing: false });
   }
 
   showJournal({ onClose } = {}) {
