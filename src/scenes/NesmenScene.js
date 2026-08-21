@@ -459,7 +459,7 @@ export class NesmenScene {
     if (this.foresterAnimator) playDialogueAnimation(this.foresterAnimator, "start");
     this.app.input.reset("dialog-open");
     this.screens.showDialog({
-      name: dialogue.speaker.name,
+      name: dialogue.name,
       avatar: "J",
       text: dialogue.lines.join(" "),
       buttonLabel: dialogue.actionLabel,
@@ -742,7 +742,7 @@ export class NesmenScene {
   }
 
   snapshot() {
-    const player = this.findingEntity === null && this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
+    const player = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
     return {
       level: this.level.id,
       session: this.session.state,
