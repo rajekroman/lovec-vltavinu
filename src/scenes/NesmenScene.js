@@ -5,7 +5,7 @@ import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { createRng } from "../gameplay/SessionRng.js";
-import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
@@ -91,6 +91,7 @@ export class NesmenScene {
     this.pickupTween = null;
     this.dustEmitter = null;
     this.sparkleEmitter = null;
+    this.effectListeners = null;
     this.visualTime = 0;
     this.visualMode = "uninitialized";
     this.assetEntries = new Map();
@@ -114,7 +115,6 @@ export class NesmenScene {
     this.hudRevision = 0;
     this.hudSignature = "";
     this.interactions = new InteractionSystem({ events: this.events });
-    this.dig = new DigSystem({ events: this.events, sweetMin: 0.35, sweetMax: 0.65, speed: 1.1 });
     this.dig = new DigSystem({ events: this.events, ...NESMEN_DIG_CONFIG });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
   }
@@ -334,8 +334,11 @@ export class NesmenScene {
     this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0x2f6038 });
     this.renderer.add(this.sparkleEmitter.object, "effects");
 
-    this.events.on("dig:hit", ({ position }) => this.onDigHit(position));
-    this.events.on("dig:clean", () => this.onDigClean());
+    this.effectListeners?.abort();
+    this.effectListeners = new AbortController();
+    const { signal } = this.effectListeners;
+    this.events.on("dig:hit", ({ spot }) => this.onDigHit(spot), { signal });
+    this.events.on("dig:clean", () => this.onDigClean(), { signal });
   }
 
   beginPlaying() {
@@ -594,11 +597,20 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null || this.pickupTween) return;
     const entity = this.findingEntity;
+    const transform = this.app.world.get(entity, "transform");
     const fq = this.app.world.get(entity, "findingQuality") ?? {};
     const quality = fq.value ?? 0;
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
     this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 15, {
+        speed: 4,
+        spread: 0.8,
+        lifetime: 0.6,
+        size: 1.6
+      });
+    }
     this.collectingEntity = entity;
     this.collectingElapsed = 0;
     this.findingEntity = null;
@@ -769,6 +781,8 @@ export class NesmenScene {
   }
 
   destroyVisualWorld() {
+    this.effectListeners?.abort();
+    this.effectListeners = null;
     if (this.pickupTween) cancelPickupTween(this.pickupTween);
     this.pickupTween = null;
     if (this.dustEmitter) {
@@ -803,12 +817,13 @@ export class NesmenScene {
     this.app.assets.unload(MANIFEST_ENTRY.id, MANIFEST_ENTRY.type);
   }
 
-  onDigHit(position) {
+  onDigHit(spotId) {
     if (!this.dustEmitter) return;
-    const x = position?.x ?? 0;
-    const y = position?.y ?? 0;
-    const z = position?.z ?? 4;
-    this.dustEmitter.emitBurst(x, y, z, 12, {
+    const entity = this.entityByExternalId.get(spotId) ?? this.activeProfileEntity;
+    if (!Number.isInteger(entity)) return;
+    const transform = this.app.world.get(entity, "transform");
+    if (!transform) return;
+    this.dustEmitter.emitBurst(transform.x, transform.y, 4, 12, {
       speed: 2.5,
       spread: 0.7,
       lifetime: 0.35,
@@ -819,7 +834,7 @@ export class NesmenScene {
   onDigClean() {
     if (!this.sparkleEmitter) return;
     const activeEntity = this.activeProfileEntity;
-    if (!activeEntity) return;
+    if (!Number.isInteger(activeEntity)) return;
     const transform = this.app.world.get(activeEntity, "transform");
     if (!transform) return;
     this.sparkleEmitter.emitBurst(transform.x, transform.y, 6, 15, {

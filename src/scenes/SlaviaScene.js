@@ -6,6 +6,7 @@ import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createWaterOverlay } from "../render/WaterOverlay.js";
+import { createSparkleEmitter } from "../render/ParticleSystem.js";
 import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
@@ -14,7 +15,6 @@ const V7_FOREGROUND_ASSET = "foreground-slavia-event-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-// Czech counted nouns use three forms: 1, 2–4 and 0/5+.
 export function czechCount(count, one, few, many) {
   const value = Number.isFinite(Number(count)) ? Math.trunc(Number(count)) : 0;
   const form = Math.abs(value) === 1 ? one : Math.abs(value) >= 2 && Math.abs(value) <= 4 ? few : many;
@@ -72,6 +72,7 @@ export class SlaviaScene {
     this.visualRoot = null;
     this.foregroundRoot = null;
     this.waterOverlay = null;
+    this.sparkleEmitter = null;
     this.evaAnimator = null;
     this.frantaAnimator = null;
     this.visualMode = "uninitialized";
@@ -155,8 +156,6 @@ export class SlaviaScene {
     });
     ground.name = "slavia-v7-main-plate";
     this.visualMode = "event-plaza-v7";
-    // The authored plate already carries its final daylight; the lights below only
-    // serve the 3D props that stay bound to canonical entities.
     const ambient = new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55);
     const sun = new THREE.DirectionalLight(0xffe6bd, 1.75);
     sun.position.set(-220, 400, 560);
@@ -169,8 +168,6 @@ export class SlaviaScene {
       scale: 104,
       z: 2
     });
-    // The environment plate already contains the detailed, correctly scaled facade.
-    // Keep the canonical model bound to the destination entity without covering it.
     building.visible = false;
     this.renderer.bindEntity(buildingEntity, building, "props");
 
@@ -222,8 +219,6 @@ export class SlaviaScene {
     this.visualRoot = root;
     this.renderer.add(root, "ground");
 
-    // Foreground occlusion is its own render layer: crowns and bunting may cover the
-    // upper part of actors and create depth without touching collisions or gameplay.
     const foreground = new THREE.Group();
     foreground.name = "slavia-v7-foreground-occlusion";
     const eventEdge = this.renderer.createSprite(this.texture(V7_FOREGROUND_ASSET), {
@@ -243,6 +238,9 @@ export class SlaviaScene {
 
     this.waterOverlay = createWaterOverlay(THREE, this.level.bounds, { opacity: 0.25 });
     this.renderer.add(this.waterOverlay.object, "ground");
+
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xFFD700, maxParticles: 40 });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
   }
 
   beginPlaying() {
@@ -295,6 +293,7 @@ export class SlaviaScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     if (this.waterOverlay) this.waterOverlay.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
     const deltaMs = Math.max(0, Number(dt) || 0) * 1000;
     if (this.evaAnimator) this.evaAnimator.update(deltaMs);
     if (this.frantaAnimator) this.frantaAnimator.update(deltaMs);
@@ -354,6 +353,15 @@ export class SlaviaScene {
       boss.defeated = true;
       boss.state = "defeated";
     }
+    const transform = this.app.world.get(franta, "transform");
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 10, 18, {
+        speed: 4,
+        spread: 0.85,
+        lifetime: 0.65,
+        size: 1.8
+      });
+    }
     if (this.frantaAnimator) this.frantaAnimator.playAnimation("react_warning");
     this.availableInteraction = null;
     this.app.input.reset("slavia-franta-defeated");
@@ -363,6 +371,16 @@ export class SlaviaScene {
   receiveCertificate() {
     this.flow.receiveCertificate();
     this.session.setFlag("slaviaCertificate", true);
+    const eva = this.entityByExternalId.get("expert-eva");
+    const transform = this.app.world.get(eva, "transform");
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 10, 20, {
+        speed: 3.6,
+        spread: 0.8,
+        lifetime: 0.7,
+        size: 1.7
+      });
+    }
     this.modal = "certificate";
     if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-certificate");
@@ -543,6 +561,11 @@ export class SlaviaScene {
 
   destroyVisualWorld() {
     if (!this.renderer?.objectByEntity) return;
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.waterOverlay) {
       this.renderer.remove(this.waterOverlay.object);
