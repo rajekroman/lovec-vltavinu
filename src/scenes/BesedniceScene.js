@@ -11,6 +11,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { VisualEngine } from "../render/VisualEngine.js";
 import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
@@ -257,6 +258,18 @@ export class BesedniceScene {
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.guideEntity, guide, "actors");
     this.renderer.bindEntity(this.karelEntity, karelIdle, "actors");
+
+    // Lom je hluboká jáma se stupni — bez korekce by postava na dně vypadala
+    // stejně velká jako postava na horní hraně.
+    this.visualEngine = new VisualEngine({
+      three: THREE,
+      renderer: this.renderer,
+      locationId: "besednice",
+      bounds: this.level.bounds
+    });
+    this.visualEngine.track(player);
+    this.visualEngine.track(guide);
+    this.visualEngine.track(karelIdle);
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
         assetId: "model-besednice-trace-marker", layer: "props", rotationX: Math.PI / 2, scale: 38, z: 4
@@ -366,6 +379,8 @@ export class BesedniceScene {
       if (entity !== null) this.finishPickup(entity);
       else this.pickupTween = null;
     }
+    // Az po synchronizaci spritu, jinak by je prepsalo zpet na pevne meritko.
+    this.visualEngine?.update();
     this.updateParticles(dt);
   }
 
@@ -776,6 +791,8 @@ export class BesedniceScene {
   }
 
   destroyVisualWorld() {
+    this.visualEngine?.dispose();
+    this.visualEngine = null;
     if (!this.renderer?.objectByEntity) return;
     if (this.pickupTween) cancelPickupTween(this.pickupTween);
     this.pickupTween = null;

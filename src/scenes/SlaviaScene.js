@@ -6,6 +6,7 @@ import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createWaterOverlay } from "../render/WaterOverlay.js";
+import { VisualEngine } from "../render/VisualEngine.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-slavia-event-plate-v7";
@@ -171,17 +172,28 @@ export class SlaviaScene {
     building.visible = false;
     this.renderer.bindEntity(buildingEntity, building, "props");
 
+    // Poměr postavy ke kulturnímu domu je nejcitlivější měřítko ve hře — engine
+    // ho drží podle hloubky, ve které postava před budovou stojí.
+    this.visualEngine = new VisualEngine({
+      three: this.THREE,
+      renderer: this.renderer,
+      locationId: "slavia",
+      bounds: this.level.bounds
+    });
+
     const playerTexture = this.texture("player-hunter-walk");
     playerTexture.repeat.set(0.25, 0.25);
     playerTexture.offset.set(0, 0.75);
-    this.renderer.bindEntity(this.playerEntity, this.renderer.createSprite(playerTexture, {
+    const playerSprite = this.renderer.createSprite(playerTexture, {
       width: 82,
       height: 108,
       z: 12,
       anchorX: 0.5,
       anchorY: 0.08,
       assetId: "player-hunter-walk"
-    }), "actors");
+    });
+    this.renderer.bindEntity(this.playerEntity, playerSprite, "actors");
+    this.visualEngine.track(playerSprite);
 
     for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-thief-franta"]]) {
       const entity = this.entityByExternalId.get(entityId);
@@ -194,6 +206,7 @@ export class SlaviaScene {
         assetId
       });
       this.renderer.bindEntity(entity, sprite, "actors");
+      this.visualEngine.track(sprite);
     }
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
@@ -283,6 +296,8 @@ export class SlaviaScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     if (this.waterOverlay) this.waterOverlay.update(dt);
+    // Až po synchronizaci spritů, jinak by je přepsalo zpět na pevné měřítko.
+    this.visualEngine?.update();
   }
 
   updateHud() {
@@ -524,6 +539,8 @@ export class SlaviaScene {
   }
 
   destroyVisualWorld() {
+    this.visualEngine?.dispose();
+    this.visualEngine = null;
     if (!this.renderer?.objectByEntity) return;
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.waterOverlay) {

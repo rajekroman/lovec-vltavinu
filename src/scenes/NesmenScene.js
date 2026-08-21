@@ -10,6 +10,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { VisualEngine } from "../render/VisualEngine.js";
 import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
@@ -92,6 +93,7 @@ export class NesmenScene {
     this.sparkleEmitter = null;
     this.visualTime = 0;
     this.visualMode = "uninitialized";
+    this.visualEngine = null;
     this.assetEntries = new Map();
     this.loadedModels = new Map();
     this.entityByExternalId = new Map();
@@ -282,6 +284,17 @@ export class NesmenScene {
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.foresterEntity, foresterIdle, "actors");
 
+    // Les má hluboký prostor mezi kmeny — bez korekce by postava u vzdálených
+    // stromů působila jako obr.
+    this.visualEngine = new VisualEngine({
+      three: THREE,
+      renderer: this.renderer,
+      locationId: "nesmen",
+      bounds: this.level.bounds
+    });
+    this.visualEngine.track(player);
+    this.visualEngine.track(foresterIdle);
+
     for (const entity of this.profileEntities) {
       const group = new THREE.Group();
       group.name = `profile-${this.externalIdByEntity.get(entity)}`;
@@ -405,6 +418,8 @@ export class NesmenScene {
     this.updateCollectionAnimation(dt);
     this.updateNpcIdleAnimation(dt);
     this.updateParticles(dt);
+    // Až po synchronizaci spritů, jinak by je přepsalo zpět na pevné měřítko.
+    this.visualEngine?.update();
   }
 
   updateParticles(dt) {
@@ -780,6 +795,8 @@ export class NesmenScene {
   destroyVisualWorld() {
     if (this.pickupTween) cancelPickupTween(this.pickupTween);
     this.pickupTween = null;
+    this.visualEngine?.dispose();
+    this.visualEngine = null;
     if (this.dustEmitter) {
       this.renderer.remove(this.dustEmitter.object);
       this.dustEmitter.dispose();

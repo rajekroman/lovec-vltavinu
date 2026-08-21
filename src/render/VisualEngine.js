@@ -97,6 +97,17 @@ export function resolveDepthScale(depth, profile = DEFAULT_VISUAL_PROFILE) {
   return lerp(foregroundScale, horizonScale, clamp01(depth));
 }
 
+// Pořadí kreslení podle hloubky (malířův algoritmus): co je blíž, kreslí se
+// později, a tedy přes to vzdálenější. Bez toho se postavy překrývají v pořadí,
+// v jakém byly přidány do scény, a mohou se přeplácnout přes objekt, za kterým
+// mají stát.
+export const ACTOR_LAYER_ORDER = 20;
+const DEPTH_ORDER_RESOLUTION = 1000;
+
+export function resolveRenderOrder(depth) {
+  return Math.round((1 - clamp01(depth)) * DEPTH_ORDER_RESOLUTION);
+}
+
 // Síla vzdušného oparu pro daný objekt.
 export function resolveHazeAmount(depth, profile = DEFAULT_VISUAL_PROFILE) {
   const strength = clamp01(Number(profile.hazeStrength) ?? 0);
@@ -180,11 +191,18 @@ export class VisualEngine {
     if (!object) return null;
     const baseWidth = Math.abs(object.scale?.x ?? 1) || 1;
     const baseHeight = Math.abs(object.scale?.y ?? 1) || 1;
+    const layerOrder = options.layerOrder ?? ACTOR_LAYER_ORDER;
+    // Vnořená skupina přepisuje groupOrder svých potomků vlastním renderOrder,
+    // takže obalení aktéři by jinak vypadli z pořadí vrstvy. Srovnáme skupinu na
+    // hodnotu vrstvy a hloubku řešíme až na jednotlivých spritech.
+    if (object.isGroup) object.renderOrder = layerOrder;
+
     const entry = {
       object,
       baseScale: options.baseScale ?? 1,
       baseWidth,
       baseHeight,
+      layerOrder,
       haze: options.haze !== false,
       shadow: null
     };
@@ -224,11 +242,24 @@ export class VisualEngine {
       object.scale.set(flipped ? -width : width, entry.baseHeight * scale, 1);
     }
 
+    this.applyRenderOrder(object, resolveRenderOrder(depth));
+
     if (entry.haze) {
       const amount = resolveHazeAmount(depth, this.profile);
       this.applyHaze(object, amount);
     }
     return { depth, scale };
+  }
+
+  // Hloubkové pořadí patří na kreslené sprity, ne na obalovou skupinu.
+  applyRenderOrder(object, order) {
+    const assign = node => {
+      if (!node || node.isGroup) return;
+      // Stín leží pod svým aktérem, ale nad vzdálenějšími aktéry.
+      node.renderOrder = node.name === "contact-shadow" ? order - 1 : order;
+    };
+    assign(object);
+    for (const child of object.children ?? []) assign(child);
   }
 
   applyHaze(object, amount) {
