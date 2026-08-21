@@ -1,12 +1,37 @@
-export function prepareSpriteTexture(texture, cloneTexture = true) {
+// Malované podklady jsou dodané v sRGB. Bez explicitního colorSpace je Three.js
+// čte jako lineární data, což barvy vybělí a sníží kontrast — proto se nastavuje
+// centrálně tady, ne v jednotlivých scénách.
+export function applyTextureColorSpace(texture, THREE) {
+  if (!texture || THREE?.SRGBColorSpace === undefined) return texture;
+  if (texture.colorSpace !== THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+// Anizotropní filtrování drží plátno ostré i při zmenšení a natočení kamery.
+export function applyTextureSharpness(texture, THREE, renderer) {
+  if (!texture) return texture;
+  const maxAnisotropy = renderer?.capabilities?.getMaxAnisotropy?.();
+  if (Number.isFinite(maxAnisotropy) && maxAnisotropy > 1) {
+    texture.anisotropy = Math.min(maxAnisotropy, 8);
+  }
+  if (THREE?.LinearMipmapLinearFilter !== undefined && texture.generateMipmaps !== false) {
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+  }
+  if (THREE?.LinearFilter !== undefined) texture.magFilter = THREE.LinearFilter;
+  return texture;
+}
+
+export function prepareSpriteTexture(texture, cloneTexture = true, THREE = null, renderer = null) {
   if (!texture) return null;
   const spriteTexture = cloneTexture ? texture.clone?.() ?? texture : texture;
   if (!Number.isInteger(spriteTexture.channel) || spriteTexture.channel < 0) spriteTexture.channel = 0;
+  applyTextureColorSpace(spriteTexture, THREE);
+  applyTextureSharpness(spriteTexture, THREE, renderer);
   if (spriteTexture !== texture) spriteTexture.needsUpdate = true;
   return spriteTexture;
 }
 
-export function prepareTerrainPlateTexture(texture, THREE, cloneTexture = true) {
+export function prepareTerrainPlateTexture(texture, THREE, cloneTexture = true, renderer = null) {
   if (!texture) return null;
   const plateTexture = cloneTexture ? texture.clone?.() ?? texture : texture;
   if (!Number.isInteger(plateTexture.channel) || plateTexture.channel < 0) plateTexture.channel = 0;
@@ -16,6 +41,8 @@ export function prepareTerrainPlateTexture(texture, THREE, cloneTexture = true) 
   }
   plateTexture.repeat?.set?.(1, 1);
   plateTexture.offset?.set?.(0, 0);
+  applyTextureColorSpace(plateTexture, THREE);
+  applyTextureSharpness(plateTexture, THREE, renderer);
   if (plateTexture !== texture) plateTexture.needsUpdate = true;
   return plateTexture;
 }
@@ -41,6 +68,19 @@ export class HybridRenderer {
       powerPreference: options.powerPreference ?? "high-performance"
     });
     this.renderer.setClearColor(this.clearColor, 1);
+
+    // Výstup do sRGB, aby malovaná grafika seděla barevně s předlohou.
+    if (THREE.SRGBColorSpace !== undefined && "outputColorSpace" in this.renderer) {
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    }
+    // Podklady jsou už barevně vyladěné malbou, takže tone mapping zůstává vypnutý
+    // a expozicí se jen dolaďuje nálada scény.
+    if (THREE.NoToneMapping !== undefined && "toneMapping" in this.renderer) {
+      this.renderer.toneMapping = options.toneMapping ?? THREE.NoToneMapping;
+    }
+    if ("toneMappingExposure" in this.renderer) {
+      this.renderer.toneMappingExposure = options.exposure ?? 1;
+    }
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, options.near ?? -1000, options.far ?? 1000);
@@ -123,7 +163,7 @@ export class HybridRenderer {
     sprite.userData.baseScaleX = Math.abs(sprite.scale.x);
 
     const applyTexture = texture => {
-      material.map = prepareSpriteTexture(texture, options.cloneTexture !== false);
+      material.map = prepareSpriteTexture(texture, options.cloneTexture !== false, this.THREE, this.renderer);
       material.needsUpdate = true;
       return material.map;
     };
@@ -155,7 +195,7 @@ export class HybridRenderer {
     plate.userData.terrainPlate = true;
 
     const applyTexture = texture => {
-      material.map = prepareTerrainPlateTexture(texture, this.THREE, options.cloneTexture !== false);
+      material.map = prepareTerrainPlateTexture(texture, this.THREE, options.cloneTexture !== false, this.renderer);
       material.needsUpdate = true;
       return material.map;
     };

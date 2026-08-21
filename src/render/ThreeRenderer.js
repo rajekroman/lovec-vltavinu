@@ -52,7 +52,10 @@ export function syncSpriteVisual(object, sprite) {
 export class ThreeRenderer extends HybridRenderer {
   constructor(options = {}) {
     super(options);
-    this.maxInternalPixels = options.maxInternalPixels ?? 1_800_000;
+    // Rozpočet interních pixelů. Nižší hodnota viditelně rozmazávala malované
+    // podklady na displejích s vysokou hustotou; 2,6 Mpx (~2160x1200) drží detail
+    // plátna a zůstává v rozumné zátěži i na mobilu.
+    this.maxInternalPixels = options.maxInternalPixels ?? 2_600_000;
     this.objectByEntity = new Map();
   }
 

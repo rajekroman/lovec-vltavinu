@@ -32,8 +32,6 @@ if (String(THREE.REVISION) !== GLTF_LOADER_REVISION) {
   throw new Error(`Three.js revision ${THREE.REVISION} does not match GLTFLoader revision ${GLTF_LOADER_REVISION}.`);
 }
 
-const storageAdapter = new StorageAdapter();
-
 const events = new EventBus({
   contracts: EVENT_CONTRACTS,
   strict: true,
@@ -44,7 +42,7 @@ const renderer = new ThreeRenderer({
   canvas,
   viewHeight: 720,
   pixelRatioCap: 2,
-  maxInternalPixels: 1_800_000,
+  maxInternalPixels: 2_600_000,
   clearColor: 0x17150f,
   antialias: true
 });
@@ -63,6 +61,8 @@ const audio = new AudioEngine({
 const lifecycle = new AbortController();
 
 // Initialize game systems (persistence adapter will be provided separately)
+// Persistence není součástí cílové architektury: tyto systémy běží bez úložiště
+// a validace hlídá, že se do runtime grafu žádná save vrstva nedostane.
 const settingsPanel = new SettingsPanel({
   document: documentRef,
   logger: console

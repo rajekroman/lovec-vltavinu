@@ -5,6 +5,7 @@ import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
 import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { syncSpriteVisual } from "../render/ThreeRenderer.js";
+import { VisualEngine } from "../render/VisualEngine.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
@@ -54,6 +55,7 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.pickupTween = null;
     this.visualTime = 0;
     this.visualMode = "uninitialized";
+    this.visualEngine = null;
   }
 
   async enter(context) {
@@ -156,6 +158,16 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.bindEntity(this.farmerEntity, farmerIdle, "actors");
     this.syncPlayerActionVisual();
 
+    // Aktéři se od teď drží perspektivy malovaného pole místo pevné velikosti.
+    this.visualEngine = new VisualEngine({
+      three: THREE,
+      renderer: this.renderer,
+      locationId: "chlum",
+      bounds: this.level.bounds
+    });
+    this.visualEngine.track(playerGroup);
+    this.visualEngine.track(farmerIdle);
+
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
       assetId: "model-chlum-field-marker",
       layer: "props",
@@ -184,6 +196,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.app.world.get(this.tractorEntity, "transform").rotation = 0;
     this.tractorSprite = tractor;
     this.renderer.bindEntity(this.tractorEntity, tractor, "actors");
+    // Traktor brázdí v hloubce pole, takže musí ubývat spolu s terénem.
+    this.visualEngine?.track(tractor, { shadow: false });
 
     const farmerTransform = this.app.world.get(this.farmerEntity, "transform");
     const interactionRing = new THREE.Mesh(
@@ -370,6 +384,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       else this.pickupTween = null;
     }
     this.syncPlayerActionVisual();
+    // Až po synchronizaci spritů, jinak by je přepsalo zpět na pevné měřítko.
+    this.visualEngine?.update();
   }
 
   setCameraToPlayer(options = {}) {
@@ -410,6 +426,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.playerActionSprite = null;
     this.findingActionStage = null;
     this.visualTime = 0;
+    this.visualEngine?.dispose();
+    this.visualEngine = null;
     super.destroyVisualWorld();
   }
 
