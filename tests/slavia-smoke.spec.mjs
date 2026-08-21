@@ -493,6 +493,8 @@ async function completeBesednice(page, input, testInfo) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
   await moveTo(page, input, 1510, 900, "recover", 15_000);
   await performAction(page, input);
+  await expect(page.locator("#dialogName")).toHaveText("KAREL");
+  await input.activateUi(page.locator("#dialogButton"));
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
@@ -534,6 +536,8 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1020, 260, "recover-best-finding");
   await performAction(page, input);
+  await expect(page.locator("#dialogName")).toHaveText("FRANTIŠEK");
+  await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1450, 430, "receive-certificate");
   await performAction(page, input);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);

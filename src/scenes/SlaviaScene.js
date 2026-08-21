@@ -1,5 +1,6 @@
 import { LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
 import { SLAVIA_DOCUMENT_IDS, SLAVIA_ENTITY_DEFINITIONS } from "../data/slavia.js";
+import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
@@ -330,11 +331,12 @@ export class SlaviaScene {
     this.modal = "expert";
     if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-expert");
+    const dialogue = getDialogueDefinition("slavia-expert-consultation");
     this.screens.showDialog({
-      name: "Eva — znalkyně",
-      text: "Dokumentace sedí. Franta se ale pokusil odnést nejlepší kus; zastav ho a vrať se pro certifikát.",
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
       avatar: "EV",
-      buttonLabel: "ZASTAVIT FRANTU",
+      buttonLabel: dialogue.actionLabel,
       onConfirm: () => {
         this.modal = null;
         this.screens.play();
@@ -364,7 +366,22 @@ export class SlaviaScene {
     }
     if (this.frantaAnimator) this.frantaAnimator.playAnimation("react_warning");
     this.availableInteraction = null;
+    this.modal = "dialog";
     this.app.input.reset("slavia-franta-defeated");
+    const dialogue = getDialogueDefinition("slavia-franta-defeated");
+    this.screens.showDialog({
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
+      avatar: "F",
+      buttonLabel: dialogue.actionLabel,
+      onConfirm: () => {
+        this.modal = null;
+        this.screens.play();
+        this.syncInteractions();
+        this.app.input.reset("slavia-franta-defeated-close");
+        this.emitHud(true);
+      }
+    });
     this.emitHud(true);
   }
 
@@ -384,11 +401,12 @@ export class SlaviaScene {
     this.modal = "certificate";
     if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-certificate");
+    const dialogue = getDialogueDefinition("slavia-certification");
     this.screens.showDialog({
-      name: "Eva — porota",
-      text: "Sbírka je ověřena a může do finálního hodnocení akce Na Zelené Vlně.",
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
       avatar: "EV",
-      buttonLabel: "KE VSTUPU",
+      buttonLabel: dialogue.actionLabel,
       onConfirm: () => {
         this.modal = null;
         this.screens.play();
