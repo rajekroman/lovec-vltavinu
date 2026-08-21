@@ -34,17 +34,20 @@ export class SettingsPanel {
   constructor(options = {}) {
     this.document = options.document;
     this.logger = options.logger || console;
+    this.storageAdapter = options.storageAdapter || null;
     this.settings = this.loadSettings();
     this.listeners = [];
   }
 
   loadSettings() {
     try {
-      const saved = localStorage.getItem("moldavite-settings");
-      if (!saved) {
-        return { ...DEFAULT_SETTINGS };
+      if (this.storageAdapter) {
+        const saved = this.storageAdapter.load();
+        if (saved) {
+          return { ...DEFAULT_SETTINGS, ...saved };
+        }
       }
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      return { ...DEFAULT_SETTINGS };
     } catch (error) {
       this.logger.warn(`Failed to load settings: ${error.message}`);
       return { ...DEFAULT_SETTINGS };
@@ -53,7 +56,9 @@ export class SettingsPanel {
 
   saveSettings() {
     try {
-      localStorage.setItem("moldavite-settings", JSON.stringify(this.settings));
+      if (this.storageAdapter) {
+        this.storageAdapter.save(this.settings);
+      }
       this.notifyListeners("settings-changed", this.settings);
     } catch (error) {
       this.logger.error(`Failed to save settings: ${error.message}`);
@@ -446,5 +451,5 @@ export class SettingsPanel {
   }
 }
 
-// Global instance
+// Global instance - will be initialized with storage adapter in bootstrap
 export const settingsPanel = new SettingsPanel();
