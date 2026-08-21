@@ -14,6 +14,8 @@
     "test": "npm run validate && npm run validate:modules && npm run test:unit"
   },
   "devDependencies": {
-    "@playwright/test": "1.61.1"
+    "@playwright/test": "1.61.1",
+    "sharp": "^0.35.3",
+    "svg2png": "^4.1.1"
   }
 }

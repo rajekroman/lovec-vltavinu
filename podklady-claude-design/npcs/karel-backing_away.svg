@@ -1,0 +1,12 @@
+<svg viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- karel: backing_away pose -->
+  
+      <circle cx="30" cy="19" r="10" fill="#d4a574" stroke="#8b9d6f" stroke-width="1"/>
+      <path d="M 20 23 Q 30 25 40 23" fill="none" stroke="#8b9d6f" stroke-width="1.5" opacity="0.6"/>
+      <path d="M 30 29 Q 28 41 28 62 L 32 62 Q 32 41 30 29" fill="#3d4a2b" stroke="#1a2a0a" stroke-width="1" opacity="0.9"/>
+      <line x1="28" y1="36" x2="18" y2="40" stroke="#5a6b4a" stroke-width="2"/>
+      <line x1="32" y1="36" x2="42" y2="40" stroke="#5a6b4a" stroke-width="2"/>
+      <line x1="29" y1="62" x2="27" y2="82" stroke="#1a2a0a" stroke-width="2"/>
+      <line x1="33" y1="62" x2="35" y2="82" stroke="#1a2a0a" stroke-width="2"/>
+    
+</svg>
