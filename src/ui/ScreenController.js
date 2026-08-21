@@ -175,13 +175,9 @@ export class ScreenController {
     return this.show("briefScreen", { playing: false });
   }
 
-  showFinding({ finding, icon = "🔑", score = 0, perfect = false }) {
-    const rarityNames = { A: "Velmi vzácný", B: "Vzácný", C: "Běžný" };
-    const rarityText = rarityNames[finding.rarity] || "Neznámý";
-    const perfectionText = perfect ? " ✨ DOKONALÝ NÁLEZ! ✨" : "";
-
+  showFinding({ text = "Nález", icon = "🔑", score = 0 }) {
     this.element("dialogName").textContent = `${icon} NÁLEZ`;
-    this.element("dialogText").textContent = `${rarityText}\n+${score} bodů${perfectionText}`;
+    this.element("dialogText").textContent = `${text}${score > 0 ? `\n+${score} bodů` : ""}`;
     this.element("dialogAvatar").textContent = icon;
     const button = this.element("dialogButton");
     button.textContent = "POKRAČOVAT";
@@ -197,6 +193,42 @@ export class ScreenController {
     button.textContent = "POCHOPENO";
     bindOnce(button, onDismiss);
     return this.show("dialogScreen", { playing: false });
+  }
+
+  showDialogue({ character = "", lines = [], choices = null, avatar = "?", onChoice }) {
+    const dialogScreen = this.element("dialogScreen");
+    this.element("dialogName").textContent = String(character ?? "").toUpperCase();
+    this.element("dialogAvatar").textContent = String(avatar ?? "?").slice(0, 2).toUpperCase();
+
+    if (choices && choices.length > 0) {
+      this.element("dialogText").textContent = lines[0] ?? "";
+      const choicesContainer = this.document.querySelector(".dialogue-choices") || this.createChoicesContainer();
+      choicesContainer.replaceChildren(...choices.map((choice, index) => {
+        const button = this.document.createElement("button");
+        button.className = "choice-button";
+        button.textContent = choice.text || choice;
+        button.onclick = () => onChoice?.(choice);
+        return button;
+      }));
+    } else {
+      const textElement = this.element("dialogText");
+      textElement.textContent = lines.join("\n");
+      const button = this.element("dialogButton");
+      button.textContent = "POKRAČOVAT";
+      bindOnce(button, onChoice);
+    }
+
+    return this.show("dialogScreen", { playing: false });
+  }
+
+  createChoicesContainer() {
+    const container = this.document.createElement("div");
+    container.className = "dialogue-choices";
+    container.setAttribute("role", "group");
+    container.setAttribute("aria-label", "Volby dialogu");
+    const dialogScreen = this.element("dialogScreen");
+    dialogScreen.appendChild(container);
+    return container;
   }
 
   play() {

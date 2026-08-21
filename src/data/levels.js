@@ -55,7 +55,15 @@ const definitions = [
     ],
     hazards: ["tractor"],
     assetGroups: ["common", "level:chlum"],
-    next: "nesmen"
+    next: "nesmen",
+    dialogues: {
+      "farmer-vaclav": {
+        characterKey: "farmer",
+        onEnter: ["introduction"],
+        onPermissionGranted: ["permission_granted"],
+        onExit: ["leaving"]
+      }
+    }
   },
   {
     order: 1,
@@ -90,7 +98,15 @@ const definitions = [
     ],
     hazards: ["forester", "noise-alert"],
     assetGroups: ["common", "level:nesmen"],
-    next: "besednice"
+    next: "besednice",
+    dialogues: {
+      "forester": {
+        characterKey: "forester",
+        onEnter: ["introduction", "knowledge_test"],
+        onPermissionGranted: ["permission_granted"],
+        onLevelComplete: ["inspection"]
+      }
+    }
   },
   {
     order: 2,
@@ -128,7 +144,19 @@ const definitions = [
     ],
     hazards: ["crystal-karel", "quarry-edge"],
     assetGroups: ["common", "level:besednice"],
-    next: "slavia"
+    next: "slavia",
+    dialogues: {
+      "besednice-guide": {
+        characterKey: "forester",
+        onEnter: ["introduction"]
+      },
+      "crystal-karel": {
+        characterKey: "karel",
+        onEncounter: ["confrontation", "challenge"],
+        onDefeat: ["defeat"],
+        onVictory: ["respect"]
+      }
+    }
   },
   {
     order: 3,
@@ -168,7 +196,22 @@ const definitions = [
     hazards: ["thief-franta", "traffic"],
     assetGroups: ["common", "level:slavia"],
     next: null,
-    final: true
+    final: true,
+    dialogues: {
+      "thief-franta": {
+        characterKey: "franta",
+        onEncounter: ["offer"],
+        onTemptation: ["temptation", "sales_pitch"],
+        onRefuse: ["refuse_reaction"],
+        onAccept: ["accept_reaction"]
+      },
+      "expert-eva": {
+        characterKey: "jury",
+        onConsultation: ["introduction"],
+        onEvaluation: ["evaluation_excellent", "evaluation_good", "evaluation_weak", "evaluation_suspicious"],
+        onFinale: ["final_ethical", "final_corrupt"]
+      }
+    }
   }
 ];
 
