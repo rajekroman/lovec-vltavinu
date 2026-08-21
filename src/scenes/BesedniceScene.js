@@ -568,6 +568,7 @@ export class BesedniceScene {
   collectHedgehog() {
     if (this.findingEntity === null || this.pickupTween) return false;
     const entity = this.findingEntity;
+    const transform = this.app.world.get(entity, "transform");
     const interaction = this.app.world.get(entity, "interaction");
     if (interaction) interaction.enabled = false;
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot") ?? {};
@@ -577,6 +578,7 @@ export class BesedniceScene {
     this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality, {
       scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
     }));
+    if (this.sparkleEmitter && transform) this.sparkleEmitter.emitBurst(transform.x, transform.y, 14, 15, { speed: 4, spread: 0.8, lifetime: 0.6 });
     this.boss.start(this.app.world, this.karelEntity);
     const visual = this.renderer.objectByEntity.get(entity);
     this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });

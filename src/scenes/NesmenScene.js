@@ -603,11 +603,13 @@ export class NesmenScene {
   collectFinding() {
     if (this.findingEntity === null || this.pickupTween) return;
     const entity = this.findingEntity;
+    const transform = this.app.world.get(entity, "transform");
     const fq = this.app.world.get(entity, "findingQuality") ?? {};
     const quality = fq.value ?? 0;
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
     this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
+    if (this.sparkleEmitter && transform) this.sparkleEmitter.emitBurst(transform.x, transform.y, 14, 15, { speed: 4, spread: 0.8, lifetime: 0.6 });
     this.collectingEntity = entity;
     this.collectingElapsed = 0;
     this.findingEntity = null;
