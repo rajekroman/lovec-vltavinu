@@ -10,8 +10,9 @@ import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../ga
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
-import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
+import { createAnimatedNPC } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
@@ -119,7 +120,7 @@ export class BesedniceScene {
     this.traceVisuals = new Map();
     this.visualRoot = null;
     this.foregroundRoot = null;
-    this.karelIdleVisual = null;
+    this.karelAnimator = null;
     this.pickupTween = null;
     this.dustEmitter = null;
     this.sparkleEmitter = null;
@@ -213,11 +214,12 @@ export class BesedniceScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
-    const [environmentTexture, foregroundTexture, playerTexture, karelTexture] = await Promise.all([
+    const [environmentTexture, foregroundTexture, playerTexture, karelTexture, karelAtlasTexture] = await Promise.all([
       this.texture(V7_PLATE_ASSET),
       this.texture(V7_FOREGROUND_ASSET),
       this.texture("player-hunter-walk"),
-      this.texture("npc-rival-karel")
+      this.texture("npc-rival-karel"),
+      this.texture("npc-rival-karel-atlas")
     ]);
     const ground = this.renderer.createTerrainPlate(environmentTexture, {
       x: this.level.bounds.x,
@@ -244,19 +246,18 @@ export class BesedniceScene {
       width: 78, height: 104, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xb9d8a5, assetId: "npc-rival-karel"
     });
     guide.scale.x *= -1;
-    const karel = this.renderer.createSprite(karelTexture, {
-      width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
-    });
-    const karelIdle = createIdleWrapper(THREE, karel, {
-      name: "besednice-v7-karel-idle",
-      amplitude: 0.02,
-      frequency: 1.65,
-      phase: 2.2
-    });
-    this.karelIdleVisual = karelIdle;
+    const karelAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "rival_karel",
+      { assetId: "npc-rival-karel-atlas", width: 600, height: 160, texture: karelAtlasTexture },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72 }
+    );
+    karelAnimator.playAnimation("idle");
+    this.karelAnimator = karelAnimator;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.guideEntity, guide, "actors");
-    this.renderer.bindEntity(this.karelEntity, karelIdle, "actors");
+    this.renderer.bindEntity(this.karelEntity, karelAnimator.sprite, "actors");
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
         assetId: "model-besednice-trace-marker", layer: "props", rotationX: Math.PI / 2, scale: 38, z: 4
@@ -358,9 +359,7 @@ export class BesedniceScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.visualTime += Math.max(0, Number(dt) || 0);
-    const bossState = this.karelEntity === null ? null : this.app.world.get(this.karelEntity, "boss");
-    const bossMoving = bossState?.started === true && bossState.defeated !== true;
-    updateIdlePulse(this.karelIdleVisual, this.visualTime, bossMoving ? 0 : 1);
+    if (this.karelAnimator) this.karelAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
     if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
       const entity = this.findingEntity;
       if (entity !== null) this.finishPickup(entity);
@@ -578,6 +577,7 @@ export class BesedniceScene {
       scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
     }));
     this.boss.start(this.app.world, this.karelEntity);
+    if (this.karelAnimator) this.karelAnimator.playAnimation("react_aggressive");
     const visual = this.renderer.objectByEntity.get(entity);
     this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
     this.availableInteraction = null;
@@ -600,6 +600,7 @@ export class BesedniceScene {
     const interaction = this.app.world.get(this.karelEntity, "interaction");
     if (interaction?.enabled !== true) return false;
     if (!this.boss.defeat(this.app.world, this.karelEntity)) return false;
+    if (this.karelAnimator) this.karelAnimator.playAnimation("action_back_away");
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("besednice-boss-defeated");
@@ -768,7 +769,7 @@ export class BesedniceScene {
           label: this.availableInteraction.interaction.label
         } : null,
         loadedAssets: [...this.assetEntries.keys()].sort(),
-        karelIdleScaleY: this.karelIdleVisual?.scale?.y ?? null,
+        karelAnimation: this.karelAnimator?.getState().animation ?? null,
         pickupActive: Boolean(this.pickupTween)
       },
       levelComplete: this.levelComplete
@@ -800,7 +801,7 @@ export class BesedniceScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
-    this.karelIdleVisual = null;
+    this.karelAnimator = null;
     this.visualTime = 0;
   }
 
