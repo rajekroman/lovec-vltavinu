@@ -459,7 +459,7 @@ export class NesmenScene {
     if (this.foresterAnimator) playDialogueAnimation(this.foresterAnimator, "start");
     this.app.input.reset("dialog-open");
     this.screens.showDialog({
-      name: dialogue.name,
+      name: dialogue.speaker.name,
       avatar: "J",
       text: dialogue.lines.join(" "),
       buttonLabel: dialogue.actionLabel,
