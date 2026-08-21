@@ -300,9 +300,45 @@ If issues arise, revert to static textures:
 2. Can switch scene back to old `createSprite(texture)` approach
 3. Deprecation timeline allows gradual migration
 
+## Manifest Integration Timeline
+
+### Phase 2A (Current)
+- ✅ PNG sprite atlases generated and stored in `assets/sprites/npcs/`
+- ✅ SHA256 hashes and metrics calculated in `SPRITE_ATLAS_MANIFEST.json`
+- ✅ Asset entries documented and ready (NOT in `assets.json` yet)
+- ✅ Integration guide and generation tools provided
+
+### Phase 2B (Next)
+- Add sprite atlas entries to `assets/manifests/assets.json` when scenes are updated
+- Entries will be added with proper preload directives only when runtime uses them
+- This ensures manifest validation passes and assets are cached appropriately
+
+## Why Assets Aren't in Manifest Yet
+
+The validation tool (`tools/validate.mjs`) enforces that all preloaded assets must be referenced in the production runtime. Since the animated NPC system isn't integrated into scenes yet:
+
+1. **No runtime reference** → Asset IDs not found in source code
+2. **No usage** → Assets shouldn't be preloaded/cached
+3. **Validation failure** → CI validation would fail
+
+**Solution:** Add manifest entries during Phase 2B when scenes import and use the sprite atlas system.
+
+## Readiness Checklist
+
+- [x] All 5 PNG atlases generated (17.2 KB total)
+- [x] Asset metrics calculated (SHA256, file sizes, budgets)
+- [x] Manifest entries documented in SPRITE_ATLAS_MANIFEST.json
+- [x] Integration guide with code examples complete
+- [x] CI validation passes
+- [ ] Scene integration (Phase 2B)
+- [ ] Manifest entries activated (Phase 2B)
+- [ ] Animation testing (Phase 2B)
+
 ## Next Steps
 
-1. Update ChlumV7Scene.js to use animated farmer
-2. Integrate dialogue system animations
-3. Test all scene interactions with animations
-4. Proceed to Phase 2B: Animation frame sequences refinement
+1. Phase 2B: Update ChlumV7Scene.js to use animated farmer sprite atlas
+2. Import SpriteAtlas and NPCAnimationSystem in scene files
+3. Add new asset entries to manifest when scenes reference them
+4. Integrate dialogue system animations
+5. Test all scene interactions with animations
+6. Proceed to Phase 2C: UI screen implementation
