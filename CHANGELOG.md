@@ -1,8 +1,13 @@
 # Changelog
 
-## 7.3.0 — Postavy, příchody a přístupnost
+## Nevydáno — Postavy, obrazovky a přístupnost
 
-Třetí iterace V7 doplňuje živostí přes animované postavy, přidá sekvenční UI obrazovky pro příběh a deník, zpřístupňuje hru pro screen readery a offline hratelnost přes Progressive Web App.
+Práce vedená v dokumentaci jako „v7.3“. Produkt zatím nese verzi 7.0 na všech
+distribučních plochách (`index.html`, cache service workeru, `package.json`);
+číslo se povýší až samostatným release issue s explicitním candidate SHA a
+zelenou QA maticí, jak vyžaduje `docs/PROJECT_CONTROL.md`.
+
+Tato iterace V7 doplňuje animované postavy, přidává sekundární UI obrazovky pro příběh a deník, zpřístupňuje hru pro screen readery a nabízí offline hratelnost přes Progressive Web App.
 
 ### Animované postavy (Issue #286 / PR #285)
 - Pět postav s animovanými sety (Václav, Jan, Eva, Karel, František)
