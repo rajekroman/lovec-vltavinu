@@ -330,15 +330,33 @@ The validation tool (`tools/validate.mjs`) enforces that all preloaded assets mu
 - [x] Manifest entries documented in SPRITE_ATLAS_MANIFEST.json
 - [x] Integration guide with code examples complete
 - [x] CI validation passes
-- [ ] Scene integration (Phase 2B)
-- [ ] Manifest entries activated (Phase 2B)
-- [ ] Animation testing (Phase 2B)
+- [x] ChlumV7Scene integration (Václav) — Phase 2B
+- [x] Manifest entry activated for `npc-farmer-vaclav-atlas` (Phase 2B)
+- [ ] NesmenScene, BesednicScene, SlaviaScene integration (Jan, Karel, Eva, František)
+- [ ] Animation testing in browser
+
+## ChlumV7Scene Status (Complete)
+
+`src/scenes/ChlumV7Scene.js` now uses `createAnimatedNPC()` from `NPCAnimationSystem.js`
+for Václav instead of a static texture + idle-pulse wrapper:
+
+- Loads `npc-farmer-vaclav-atlas` (600×160 spritesheet, added to `assets/manifests/assets.json`
+  with `preload: "level:chlum"`).
+- `this.farmerAnimator` replaces the old `this.farmerIdleVisual`; `updateAnimations()` drives
+  it with `deltaMs` each frame instead of the sine-based idle pulse.
+- `showPermissionDialog()` triggers `playDialogueAnimation(this.farmerAnimator, "start")`.
+- `sw.js` CORE cache list and `tools/validate.mjs` preload counts (Chlum: 15 → 16) were updated
+  to match; `tests/unit/chlum-assets.test.mjs` EXPECTED_IDS was updated accordingly.
+- `NPCAnimationSystem.createAnimatedNPC()` was fixed to accept an actual loaded `texture` in
+  `spriteSpec` (it previously passed `null` to `renderer.createSprite`, which never bound a map).
+- The legacy `npc-farmer-vaclav` single-frame texture is untouched — it's still used by the
+  base (non-V7) `ChlumScene.js`, which stays on static rendering.
 
 ## Next Steps
 
-1. Phase 2B: Update ChlumV7Scene.js to use animated farmer sprite atlas
-2. Import SpriteAtlas and NPCAnimationSystem in scene files
-3. Add new asset entries to manifest when scenes reference them
-4. Integrate dialogue system animations
-5. Test all scene interactions with animations
-6. Proceed to Phase 2C: UI screen implementation
+1. Phase 2B: Repeat this pattern for NesmenScene.js (Jan), BesednicScene.js (Karel),
+   SlaviaScene.js (Eva & František) — add their `*-atlas` manifest entries, update
+   `tools/validate.mjs`/`sw.js`/relevant tests the same way.
+2. Integrate dialogue system animations (reaction/action triggers) beyond the "start" hook.
+3. Test all scene interactions with animations in a browser.
+4. Proceed to Phase 2C: UI screen implementation.

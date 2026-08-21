@@ -13,6 +13,7 @@ const EXPECTED_IDS = [
   "player-hunter-walk",
   "player-hunter-actions-v7",
   "npc-farmer-vaclav",
+  "npc-farmer-vaclav-atlas",
   "hazard-chlum-tractor-v7",
   "foreground-chlum-wet-verge-v7",
   "finding-vltavin-common",

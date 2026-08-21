@@ -165,7 +165,7 @@ else {
   if (deadAssetIds.length) fail(`Manifest preloaduje assety, které produkční runtime nikdy nepoužije: ${deadAssetIds.join(", ")}.`);
   chlumAssetCount = assetManifest.filter(entry => entry.preload === "common" || entry.preload === "level:chlum").length;
   nesmenAssetCount = assetManifest.filter(entry => entry.preload === "level:nesmen").length;
-  if (chlumAssetCount !== 15) fail(`Chlum/common preload musí obsahovat 15 assetů; nalezeno: ${chlumAssetCount}.`);
+  if (chlumAssetCount !== 16) fail(`Chlum/common preload musí obsahovat 16 assetů; nalezeno: ${chlumAssetCount}.`);
   if (nesmenAssetCount !== 6) fail(`Nesměň preload musí obsahovat 6 assetů; nalezeno: ${nesmenAssetCount}.`);
 }
 

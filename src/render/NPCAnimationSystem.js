@@ -10,15 +10,15 @@ import { getCharacterAnimation, getCharacterFrame, SpriteAnimator } from "./Spri
  * @param {object} THREE - Three.js module
  * @param {object} renderer - ThreeRenderer instance
  * @param {string} characterKey - NPC key from SpriteAtlas.NPC_SPRITES
- * @param {object} spriteSpec - Asset loader reference for the atlas
+ * @param {object} spriteSpec - { assetId, width, height, texture } — texture is the already-loaded atlas texture
  * @param {object} options - Position/scale options
  * @returns {object} { sprite, animator, playAnimation, setFrame }
  */
 export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, options = {}) {
-  const { assetId, width, height } = spriteSpec;
+  const { assetId, width, height, texture } = spriteSpec;
 
   // Create sprite using atlas texture
-  const sprite = renderer.createSprite(null, {
+  const sprite = renderer.createSprite(texture, {
     width: options.width || width,
     height: options.height || height,
     z: options.z || 10,

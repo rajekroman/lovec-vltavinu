@@ -78,6 +78,34 @@
     "sha256": "837759db87c4e0e351ce0b7904cd1aacb57ec5c21aff5296f54940ba563a33e8"
   },
   {
+    "id": "npc-farmer-vaclav-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/farmer-vaclav-atlas.png",
+    "preload": "level:chlum",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 3513
+    },
+    "budget": {
+      "bytes": 100000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:chlum",
+    "sha256": "36aa457002c43bccfdd51c603aba89417b0007a4e174ac77e3be88bb50b255ac"
+  },
+  {
     "id": "hazard-chlum-tractor-v7",
     "type": "texture",
     "url": "./assets/sprites/hazards/tractor-chlum-v7.png",
