@@ -6,6 +6,8 @@ import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createWaterOverlay } from "../render/WaterOverlay.js";
+import { createIdleWrapper, updateIdlePulse, createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-slavia-event-plate-v7";
@@ -71,6 +73,10 @@ export class SlaviaScene {
     this.visualRoot = null;
     this.foregroundRoot = null;
     this.waterOverlay = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
+    this.evaIdleWrapper = null;
+    this.frantaIdleWrapper = null;
     this.visualMode = "uninitialized";
     this.cameraZoom = 0.9;
     this.playerEntity = null;
@@ -81,6 +87,7 @@ export class SlaviaScene {
     this.evaluation = null;
     this.hudRevision = this.hudRevision ?? 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
   }
 
   async loadAssets() {
@@ -194,6 +201,13 @@ export class SlaviaScene {
         assetId
       });
       this.renderer.bindEntity(entity, sprite, "actors");
+      if (entityId === "expert-eva") {
+        this.evaIdleWrapper = createIdleWrapper(THREE, sprite, { amplitude: 0.018, frequency: 1.3 });
+        this.renderer.add(this.evaIdleWrapper, "actors");
+      } else if (entityId === "thief-franta") {
+        this.frantaIdleWrapper = createIdleWrapper(THREE, sprite, { amplitude: 0.02, frequency: 1.1 });
+        this.renderer.add(this.frantaIdleWrapper, "actors");
+      }
     }
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
@@ -231,6 +245,11 @@ export class SlaviaScene {
 
     this.waterOverlay = createWaterOverlay(THREE, this.level.bounds, { opacity: 0.25 });
     this.renderer.add(this.waterOverlay.object, "ground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0xA0826D, maxParticles: 50 });
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xFFD700, maxParticles: 40 });
+    this.renderer.add(this.dustEmitter.object, "fx");
+    this.renderer.add(this.sparkleEmitter.object, "fx");
   }
 
   beginPlaying() {
@@ -283,6 +302,15 @@ export class SlaviaScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     if (this.waterOverlay) this.waterOverlay.update(dt);
+    this.updateParticleEffects(dt);
+  }
+
+  updateParticleEffects(dt) {
+    this.npcIdleTime += dt;
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
+    if (this.evaIdleWrapper) updateIdlePulse(this.evaIdleWrapper, this.npcIdleTime, 0.7);
+    if (this.frantaIdleWrapper) updateIdlePulse(this.frantaIdleWrapper, this.npcIdleTime, 0.6);
   }
 
   updateHud() {
@@ -524,6 +552,14 @@ export class SlaviaScene {
   }
 
   destroyVisualWorld() {
+    if (this.dustEmitter) {
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     if (!this.renderer?.objectByEntity) return;
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.waterOverlay) {
