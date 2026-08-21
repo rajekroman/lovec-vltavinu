@@ -175,13 +175,11 @@ export class ScreenController {
     return this.show("briefScreen", { playing: false });
   }
 
-  showFinding({ finding, icon = "🔑", score = 0, perfect = false }) {
-    const rarityNames = { A: "Velmi vzácný", B: "Vzácný", C: "Běžný" };
-    const rarityText = rarityNames[finding.rarity] || "Neznámý";
-    const perfectionText = perfect ? " ✨ DOKONALÝ NÁLEZ! ✨" : "";
+  showFinding({ text = "Nález", icon = "🔑", score = 0 }) {
+    const perfectionText = score > 0 ? "" : "";
 
     this.element("dialogName").textContent = `${icon} NÁLEZ`;
-    this.element("dialogText").textContent = `${rarityText}\n+${score} bodů${perfectionText}`;
+    this.element("dialogText").textContent = `${text}\n+${score} bodů${perfectionText}`;
     this.element("dialogAvatar").textContent = icon;
     const button = this.element("dialogButton");
     button.textContent = "POKRAČOVAT";
