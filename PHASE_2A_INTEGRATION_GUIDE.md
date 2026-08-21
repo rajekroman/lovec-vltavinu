@@ -331,8 +331,10 @@ The validation tool (`tools/validate.mjs`) enforces that all preloaded assets mu
 - [x] Integration guide with code examples complete
 - [x] CI validation passes
 - [x] ChlumV7Scene integration (Václav) — Phase 2B
-- [x] Manifest entry activated for `npc-farmer-vaclav-atlas` (Phase 2B)
-- [ ] NesmenScene, BesednicScene, SlaviaScene integration (Jan, Karel, Eva, František)
+- [x] NesmenScene integration (Jan) — Phase 2B
+- [x] BesedniceScene integration (Karel) — Phase 2B
+- [x] SlaviaScene integration (Eva & František) — Phase 2B
+- [x] All 5 `*-atlas` manifest entries activated (Phase 2B)
 - [ ] Animation testing in browser
 
 ## ChlumV7Scene Status (Complete)
@@ -352,11 +354,30 @@ for Václav instead of a static texture + idle-pulse wrapper:
 - The legacy `npc-farmer-vaclav` single-frame texture is untouched — it's still used by the
   base (non-V7) `ChlumScene.js`, which stays on static rendering.
 
+## NesmenScene, BesedniceScene, SlaviaScene Status (Complete)
+
+Same pattern applied to the remaining four characters:
+
+- **NesmenScene.js (Jan)** — `this.foresterAnimator` replaces the old idle-wrapper sprite;
+  `showPermissionDialog()` triggers the talk animation. `npc-forester-jan-atlas` added with
+  `preload: "level:nesmen"`.
+- **BesedniceScene.js (Karel)** — `this.karelAnimator` replaces the old idle-wrapper sprite.
+  The guide ("Milan") sprite still reuses the static `npc-rival-karel` texture (tinted/mirrored
+  placeholder, unrelated to the atlas). `collectHedgehog()` plays `react_aggressive` when Karel's
+  chase starts; `recoverHedgehog()` plays `action_back_away` when he's stopped. `npc-rival-karel-atlas`
+  added with `preload: "level:besednice"`.
+- **SlaviaScene.js (Eva & František)** — `this.evaAnimator`/`this.frantaAnimator` replace the old
+  static sprites. `consultExpert()`/`receiveCertificate()` trigger Eva's talk animation;
+  `recoverFinding()` plays František's `react_warning` when he's stopped. `npc-expert-eva-atlas`
+  and `npc-thief-franta-atlas` added with `preload: "level:slavia"`.
+
+All five `*-atlas` manifest entries are now active with proper preload directives, `sw.js`
+offline cache and `tools/validate.mjs` preload counts were updated to match (Nesměň: 6 → 7),
+and the relevant asset/scene tests were updated for the new source shape.
+
 ## Next Steps
 
-1. Phase 2B: Repeat this pattern for NesmenScene.js (Jan), BesednicScene.js (Karel),
-   SlaviaScene.js (Eva & František) — add their `*-atlas` manifest entries, update
-   `tools/validate.mjs`/`sw.js`/relevant tests the same way.
-2. Integrate dialogue system animations (reaction/action triggers) beyond the "start" hook.
-3. Test all scene interactions with animations in a browser.
-4. Proceed to Phase 2C: UI screen implementation.
+1. Test all scene interactions with animations in a browser.
+2. Consider wiring more reaction/action animations into existing dialogue branches
+   (currently only the "start"/key-moment triggers are wired; idle is always the default).
+3. Proceed to Phase 2C: UI screen implementation.

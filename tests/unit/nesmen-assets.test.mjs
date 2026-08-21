@@ -12,6 +12,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "assets/manifests/as
 const entries = manifest.filter(entry => entry.preload === "level:nesmen");
 const EXPECTED_IDS = [
   "npc-forester-jan",
+  "npc-forester-jan-atlas",
   "terrain-nesmen-forest-plate-v7",
   "foreground-nesmen-forest-edge-v7",
   "finding-vltavin-nesmen",

@@ -6,6 +6,7 @@ import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createWaterOverlay } from "../render/WaterOverlay.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-slavia-event-plate-v7";
@@ -71,6 +72,8 @@ export class SlaviaScene {
     this.visualRoot = null;
     this.foregroundRoot = null;
     this.waterOverlay = null;
+    this.evaAnimator = null;
+    this.frantaAnimator = null;
     this.visualMode = "uninitialized";
     this.cameraZoom = 0.9;
     this.playerEntity = null;
@@ -183,18 +186,27 @@ export class SlaviaScene {
       assetId: "player-hunter-walk"
     }), "actors");
 
-    for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-thief-franta"]]) {
-      const entity = this.entityByExternalId.get(entityId);
-      const sprite = this.renderer.createSprite(this.texture(assetId), {
-        width: 82,
-        height: 108,
-        z: 12,
-        anchorX: 0.5,
-        anchorY: 0.08,
-        assetId
-      });
-      this.renderer.bindEntity(entity, sprite, "actors");
-    }
+    const evaEntity = this.entityByExternalId.get("expert-eva");
+    this.evaAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "expert_eva",
+      { assetId: "npc-expert-eva-atlas", width: 600, height: 160, texture: this.texture("npc-expert-eva-atlas") },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    this.evaAnimator.playAnimation("idle");
+    this.renderer.bindEntity(evaEntity, this.evaAnimator.sprite, "actors");
+
+    const frantaEntity = this.entityByExternalId.get("thief-franta");
+    this.frantaAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "thief_franta",
+      { assetId: "npc-thief-franta-atlas", width: 600, height: 160, texture: this.texture("npc-thief-franta-atlas") },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    this.frantaAnimator.playAnimation("idle");
+    this.renderer.bindEntity(frantaEntity, this.frantaAnimator.sprite, "actors");
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
       const entity = this.entityByExternalId.get(documentId);
@@ -283,6 +295,9 @@ export class SlaviaScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     if (this.waterOverlay) this.waterOverlay.update(dt);
+    const deltaMs = Math.max(0, Number(dt) || 0) * 1000;
+    if (this.evaAnimator) this.evaAnimator.update(deltaMs);
+    if (this.frantaAnimator) this.frantaAnimator.update(deltaMs);
   }
 
   updateHud() {
@@ -314,6 +329,7 @@ export class SlaviaScene {
   consultExpert() {
     this.flow.consultExpert();
     this.modal = "expert";
+    if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-expert");
     this.screens.showDialog({
       name: "Eva — znalkyně",
@@ -338,6 +354,7 @@ export class SlaviaScene {
       boss.defeated = true;
       boss.state = "defeated";
     }
+    if (this.frantaAnimator) this.frantaAnimator.playAnimation("react_warning");
     this.availableInteraction = null;
     this.app.input.reset("slavia-franta-defeated");
     this.emitHud(true);
@@ -347,6 +364,7 @@ export class SlaviaScene {
     this.flow.receiveCertificate();
     this.session.setFlag("slaviaCertificate", true);
     this.modal = "certificate";
+    if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-certificate");
     this.screens.showDialog({
       name: "Eva — porota",
@@ -541,6 +559,8 @@ export class SlaviaScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.evaAnimator = null;
+    this.frantaAnimator = null;
   }
 
   unloadAssets() {

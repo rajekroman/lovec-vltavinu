@@ -460,6 +460,34 @@
     "sha256": "f9401bd6dfaf9db23f4e2dd2e57d78211acaf6ed92fdec3f53020905d65eacb2"
   },
   {
+    "id": "npc-forester-jan-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/forester-jan-atlas.png",
+    "preload": "level:nesmen",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 3455
+    },
+    "budget": {
+      "bytes": 100000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:nesmen",
+    "sha256": "5a03cc34b71f9bfe19b6e07420aefb7db2023b24debbb06ba7493d3150add6e9"
+  },
+  {
     "id": "terrain-nesmen-forest-plate-v7",
     "type": "texture",
     "url": "./assets/textures/terrain/nesmen-forest-plate-v7.webp",
@@ -606,6 +634,34 @@
     },
     "disposeOwner": "LevelScene:besednice",
     "sha256": "9a7f7e71d492184a12e8f3bcb37b04492adf454fe09b8c073da6d862f1a402be"
+  },
+  {
+    "id": "npc-rival-karel-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/rival-karel-atlas.png",
+    "preload": "level:besednice",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 3635
+    },
+    "budget": {
+      "bytes": 100000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:besednice",
+    "sha256": "2219875597f9b06bb4dd145c0dd7981b2ac1572a85c7b5d1178fbdf2329723ad"
   },
   {
     "id": "finding-vltavin-besednice-hedgehog",
@@ -893,6 +949,34 @@
     "sha256": "4a3d451ad0bd1aea85cc174ff6dbe55feb2d5a5da2ff7e15f748fc6085ad13da"
   },
   {
+    "id": "npc-expert-eva-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/expert-eva-atlas.png",
+    "preload": "level:slavia",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 3321
+    },
+    "budget": {
+      "bytes": 100000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:slavia",
+    "sha256": "45592b8df13e8e0eebe838a564e05b5cefb31e5f609cbf9241b6cf05579d4547"
+  },
+  {
     "id": "npc-thief-franta",
     "type": "texture",
     "url": "./assets/sprites/npcs/thief-franta-v2.png",
@@ -913,6 +997,34 @@
     },
     "disposeOwner": "LevelScene:slavia",
     "sha256": "192af78466f0502779fdae21c2d4a942c747dd09e5abf7ed9ce68ca8ca7e2cce"
+  },
+  {
+    "id": "npc-thief-franta-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/thief-franta-atlas.png",
+    "preload": "level:slavia",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 3686
+    },
+    "budget": {
+      "bytes": 100000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:slavia",
+    "sha256": "8cea3c9422e08c790710cd5108ff0116a41578ef58175c1793c2e1430e510e1c"
   },
   {
     "id": "audio-music-journey",

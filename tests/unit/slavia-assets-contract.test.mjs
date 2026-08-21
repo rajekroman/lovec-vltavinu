@@ -18,6 +18,8 @@ const expectedAssets = Object.freeze([
   "npc-thief-franta"
 ]);
 
+const expectedAnimatedNpcAssets = Object.freeze(["npc-expert-eva-atlas", "npc-thief-franta-atlas"]);
+
 const sha256 = buffer => crypto.createHash("sha256").update(buffer).digest("hex");
 const localPath = url => {
   assert.match(url, /^\.\/assets\//);
@@ -38,6 +40,29 @@ test("Slavia asset pack has stable canonical IDs, budgets and lifecycle ownershi
     assert.match(entry.sha256, /^[a-f0-9]{64}$/);
   }
   assert.equal(byId.has("npc-rival-franta"), false);
+});
+
+test("Slavia animated NPC sprite atlases have stable canonical IDs, budgets and lifecycle ownership", () => {
+  const byId = new Map(manifest.map(entry => [entry.id, entry]));
+  for (const id of expectedAnimatedNpcAssets) {
+    const entry = byId.get(id);
+    assert.ok(entry, `missing ${id}`);
+    assert.equal(entry.type, "spritesheet");
+    assert.equal(entry.preload, "level:slavia");
+    assert.equal(entry.disposeOwner, "LevelScene:slavia");
+    assert.deepEqual(entry.dimensions, { width: 600, height: 160 });
+    assert.ok(entry.metrics.bytes <= entry.budget.bytes, `${id} exceeds byte budget`);
+    assert.match(entry.sha256, /^[a-f0-9]{64}$/);
+    const buffer = readBuffer(localPath(entry.url));
+    assert.equal(buffer.byteLength, entry.metrics.bytes, `${id} byte metric mismatch`);
+    assert.equal(sha256(buffer), entry.sha256, `${id} SHA-256 mismatch`);
+    assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  }
+  assert.match(slaviaScene, /createAnimatedNPC\(/);
+  assert.match(slaviaScene, /"expert_eva"/);
+  assert.match(slaviaScene, /"thief_franta"/);
+  assert.match(slaviaScene, /assetId: "npc-expert-eva-atlas"/);
+  assert.match(slaviaScene, /assetId: "npc-thief-franta-atlas"/);
 });
 
 test("Slavia manifest integrity matches physical production asset files", () => {
@@ -100,7 +125,7 @@ test("Slavia data and canonical scene references resolve through the manifest", 
   assert.match(slaviaScene, /this\.model\("model-slavia-document-folder"\)/);
   assert.match(slaviaScene, /this\.texture\(V7_PLATE_ASSET\)/);
   assert.match(slaviaScene, /scale: 104/);
-  assert.match(slaviaScene, /\["thief-franta", "npc-thief-franta"\]/);
+  assert.match(slaviaScene, /entityByExternalId\.get\("thief-franta"\)/);
   assert.doesNotMatch(slaviaScene, /npc-rival-franta|ProductionSlaviaScene/);
 });
 
