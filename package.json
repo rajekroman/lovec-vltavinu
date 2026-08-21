@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.61.1"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
   }
 }

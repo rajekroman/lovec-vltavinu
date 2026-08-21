@@ -1,4 +1,5 @@
 import * as THREE from "../vendor/three.module.min.js";
+import { injectSpeedInsights } from "../node_modules/@vercel/speed-insights/dist/index.mjs";
 import { AudioEngine } from "./audio/AudioEngine.js";
 import { EventBus } from "./core/EventBus.js";
 import { EVENT_CONTRACTS, validateEventPayload } from "./core/GameEvents.js";
@@ -233,6 +234,9 @@ function installDebugApi() {
 }
 
 async function boot() {
+  // Initialize Vercel Speed Insights
+  injectSpeedInsights();
+  
   resize();
   installLifecycleHandlers();
   installDebugApi();
