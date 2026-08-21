@@ -71,6 +71,7 @@ export class TutorialSystem {
   constructor(options = {}) {
     this.document = options.document;
     this.logger = options.logger || console;
+    this.storageAdapter = options.storageAdapter || null;
     this.currentStep = null;
     this.completedSteps = new Set();
     this.isEnabled = options.enabled !== false;
@@ -82,9 +83,11 @@ export class TutorialSystem {
 
   loadProgress() {
     try {
-      const saved = localStorage.getItem("moldavite-tutorial-progress");
-      if (saved) {
-        this.completedSteps = new Set(JSON.parse(saved));
+      if (this.storageAdapter) {
+        const saved = this.storageAdapter.load();
+        if (saved && Array.isArray(saved)) {
+          this.completedSteps = new Set(saved);
+        }
       }
     } catch (error) {
       this.logger.warn(`Failed to load tutorial progress: ${error.message}`);
@@ -93,7 +96,9 @@ export class TutorialSystem {
 
   saveProgress() {
     try {
-      localStorage.setItem("moldavite-tutorial-progress", JSON.stringify(Array.from(this.completedSteps)));
+      if (this.storageAdapter) {
+        this.storageAdapter.save(Array.from(this.completedSteps));
+      }
     } catch (error) {
       this.logger.error(`Failed to save tutorial progress: ${error.message}`);
     }
@@ -339,5 +344,5 @@ export class TutorialSystem {
   }
 }
 
-// Global instance
+// Global instance - will be initialized with storage adapter in bootstrap
 export const tutorialSystem = new TutorialSystem();
