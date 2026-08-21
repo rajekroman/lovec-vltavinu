@@ -1,0 +1,13 @@
+<svg viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- karel: warning pose -->
+  
+      <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#8b9d6f" stroke-width="1"/>
+      <path d="M 20 20 Q 30 23 40 20" fill="none" stroke="#8b9d6f" stroke-width="1.5" opacity="0.7"/>
+      <path d="M 30 28 Q 26 40 26 60 L 34 60 Q 34 40 30 28" fill="#3d4a2b" stroke="#1a2a0a" stroke-width="1"/>
+      <line x1="26" y1="35" x2="10" y2="32" stroke="#5a6b4a" stroke-width="2.5"/>
+      <line x1="34" y1="35" x2="50" y2="32" stroke="#5a6b4a" stroke-width="2.5"/>
+      <line x1="27" y1="60" x2="25" y2="80" stroke="#1a2a0a" stroke-width="2"/>
+      <line x1="33" y1="60" x2="35" y2="80" stroke="#1a2a0a" stroke-width="2"/>
+      <line x1="28" y1="19" x2="32" y2="19" stroke="#d4a574" stroke-width="1.5" opacity="0.7"/>
+    
+</svg>
