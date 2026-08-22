@@ -30,13 +30,6 @@ A complete 32×32 tile-based grid system with isometric rendering for the Moldav
 - Entity metadata embedding (NPCs, dig sites, documents)
 - Spawn point definitions per level
 
-**CharacterSprites.js**
-- Canvas-based procedural character sprites
-- 8-directional orientation support
-- Hunter (main character) + 5 NPC types
-- Object sprites (rocks, trees, bushes, dig sites)
-- No external image dependencies
-
 **GridScene.js**
 - Base scene class for grid-based gameplay
 - 8-directional movement (cardinal + diagonal)
@@ -92,7 +85,8 @@ await app.changeScene('nesmen-grid');
 
 ### Creating Custom Levels
 ```javascript
-import { TileGrid, TILE_TYPES } from './grid/index.js';
+import { TileGrid } from './grid/TileGrid.js';
+import { TILE_TYPES } from './grid/TileDefinitions.js';
 
 const grid = new TileGrid(50, 50);
 grid.fillRect(0, 0, 50, 50, TILE_TYPES.GRASS);
@@ -106,7 +100,7 @@ grid.setMetadata(10, 10, 'npc', 'farmer-vaclav');
 
 ### Rendering a Grid
 ```javascript
-import { IsometricRenderer } from './grid/index.js';
+import { IsometricRenderer } from './grid/IsometricRenderer.js';
 
 const renderer = new IsometricRenderer(THREE);
 const group = renderer.renderGrid(grid);

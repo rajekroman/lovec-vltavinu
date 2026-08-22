@@ -80,6 +80,7 @@ Normativní pravidla jsou v:
 - `AGENTS.md` — pravidla práce, vlastnictví cest a Definition of Done;
 - `docs/ARCHITECTURE_CONTRACT.md` — modulární, eventový, renderovací a datový kontrakt;
 - `docs/PROJECT_CONTROL.md` — aktuální integrační stav a certifikační evidence;
+- `docs/V73_STAV.md` — stav rozpracované v7.3 práce nad vydaným `v7.0.0`;
 - `docs/V7_VISUAL_CONTRACT.md` — vizuální cíl jednotlivých lokalit;
 - `docs/ART_PIPELINE.md` — původ, reprodukce a metadata produkčních assetů.
 

@@ -31,6 +31,9 @@ export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   return 1.08;
 }
 
+// v7.css je staticky linkovaný v index.html, takže HUD má styly i při vstupu
+// rovnou do pozdější lokality (changeScene("nesmen") mimo kanonický průchod).
+// Tahle funkce je jen idempotentní pojistka pro dokumenty bez toho linku.
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
   if (documentRef.getElementById(V7_STYLESHEET_ID)) return true;

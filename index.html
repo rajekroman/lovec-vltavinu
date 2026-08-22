@@ -13,6 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-180.png">
   <link rel="stylesheet" href="./style.css">
+  <link id="lovec-v7-visual-theme" rel="stylesheet" href="./v7.css">
   <style id="slavia-final-ui-contract">
     .primary-button,.secondary-button,.text-button{min-height:44px}
     #resultScreen{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
@@ -62,23 +63,12 @@
       <i class="radar-track"><em id="radarFill"></em></i>
       <strong id="radarState" class="radar-state">VYPNUTO</strong>
     </div>
-    <div id="bossHud" class="boss-hud hidden">
-      <div><small>HROZBA</small><strong id="bossName">KRYSTALOVÝ KAREL</strong></div>
-      <i><em id="bossFill"></em></i>
-      <span id="bossPhase">STOPUJ HO</span>
-    </div>
     <div id="dangerBanner" class="danger-banner hidden"><span>⚠</span><strong id="dangerText">VE SVĚTLE</strong></div>
     <div id="combo" class="combo hidden">KOMBO ×2</div>
     <div id="hint" class="hint hidden">Rozhlédni se po okolí</div>
     <div id="toast" class="toast"></div>
   </section>
 
-  <div id="bossIntro" class="boss-intro hidden" aria-live="assertive">
-    <div class="boss-intro-line"></div>
-    <small id="bossIntroKicker">HROZBA V LOKALITĚ</small>
-    <strong id="bossIntroName">KRYSTALOVÝ KAREL</strong>
-    <span id="bossIntroText">Nenech ho zmizet se vzácným nálezem.</span>
-  </div>
 
   <section id="controls" class="controls hidden" aria-label="Dotykové ovládání">
     <div id="moveZone" class="move-zone"><div id="stick" class="stick"></div></div>
@@ -127,18 +117,6 @@
     </div>
   </section>
 
-  <section id="identifyScreen" class="screen transparent">
-    <div class="identify-card">
-      <p class="eyebrow">RYCHLÉ URČENÍ</p>
-      <div id="sampleGem" class="sample-gem">◆</div>
-      <h2 id="sampleTitle">Zelený vzorek</h2>
-      <p id="sampleDescription"></p>
-      <div class="identify-buttons">
-        <button id="realButton" class="primary-button" type="button">VLTAVÍN</button>
-        <button id="glassButton" class="secondary-button" type="button">SKLO</button>
-      </div>
-    </div>
-  </section>
 
   <section id="dialogScreen" class="screen transparent">
     <div class="dialog-card">
@@ -148,23 +126,7 @@
     </div>
   </section>
 
-  <section id="perkScreen" class="screen">
-    <div class="perk-card">
-      <p class="eyebrow">VÝPRAVA SÍLÍ</p>
-      <h2>Vyber jednu výhodu</h2>
-      <div id="perkList" class="perk-list"></div>
-    </div>
-  </section>
 
-  <section id="juryScreen" class="screen">
-    <div class="jury-card">
-      <p class="eyebrow">KD SLÁVIE · NA ZELENÉ VLNĚ</p>
-      <h2>Vyber tři kameny do vitríny</h2>
-      <p>Vzácnost, stav a doložený původ rozhodnou o výsledku.</p>
-      <div id="juryList" class="jury-list"></div>
-      <div class="jury-footer"><span id="juryCount">0 / 3</span><button id="juryButton" class="primary-button" type="button" disabled>POSTAVIT VITRÍNU</button></div>
-    </div>
-  </section>
 
   <section id="resultScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText" aria-live="polite">
     <div class="result-card">

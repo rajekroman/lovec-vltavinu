@@ -27,20 +27,29 @@ const forbiddenLegacyFiles = [
   "src/adapters/LegacySaveAdapter.js",
   "src/adapters/LegacyDataAdapter.js",
   "src/state/GameState.js",
-  "src/domain/index.js"
+  "src/domain/index.js",
+  "persistence/StorageAdapter.js",
+  "src/storage/index.js",
+  "src/bootstrap-persistence.js"
 ];
 forbiddenLegacyFiles.forEach(relativePath => { if (exists(relativePath)) fail(`Legacy runtime soubor nesmí existovat: ${relativePath}`); });
 
 // Save systém se v cílové architektuře nevyvíjí: persistence nesmí být ani v modulu mimo runtime graf.
+// Kontrola záměrně nesmí být omezená na src/: persistence vrstva se dřív schovala do kořenového
+// adresáře persistence/, kde ji scan omezený na src/ neviděl.
+const PERSISTENCE_SCAN_SKIP = new Set([
+  "node_modules", "vendor", "tests", "tools", "test-results", "playwright-report", ".git", "assets", "docs"
+]);
 const collectSourceFiles = (directory, collected = []) => {
   for (const entry of fs.readdirSync(absolute(directory), { withFileTypes: true })) {
-    const child = `${directory}/${entry.name}`;
+    if (PERSISTENCE_SCAN_SKIP.has(entry.name)) continue;
+    const child = directory === "." ? entry.name : `${directory}/${entry.name}`;
     if (entry.isDirectory()) collectSourceFiles(child, collected);
-    else if (entry.name.endsWith(".js")) collected.push(child);
+    else if (entry.name.endsWith(".js") || entry.name.endsWith(".mjs")) collected.push(child);
   }
   return collected;
 };
-const sourceFiles = exists("src") ? collectSourceFiles("src") : [];
+const sourceFiles = collectSourceFiles(".");
 const persistenceOffenders = sourceFiles.filter(relativePath => /localStorage|sessionStorage|indexedDB/.test(read(relativePath)));
 if (persistenceOffenders.length) fail(`Zdrojové moduly nesmí obsahovat persistence vrstvu: ${persistenceOffenders.join(", ")}.`);
 const distributionArchives = fs.readdirSync(root).filter(entry => entry.endsWith(".zip"));
