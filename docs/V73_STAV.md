@@ -59,6 +59,14 @@ kterou lze udělat mechanicky. Do té doby zůstávají atlasy beze změny.
 ### 3.3 Mobilní QA matice
 Průchod na reálném iPhonu a Androidu v portrait i landscape režimu.
 
+**Pozor na výklad CI:** workflow `Validate game` záměrně přeskakuje projekty
+`iphone-portrait` a `iphone-landscape`, pokud událost je `pull_request` —
+drahé plné mobilní průchody běží jen na push do `main` a při ručním release
+gate. Přeskočené joby se v GitHub Actions reportují jako **success**, ne jako
+skipped, takže zelená fajfka u těchto dvou checků na PR neznamená, že plný
+mobilní průchod proběhl. Pro release evidenci platí jen běhy z `main` nebo
+`workflow_dispatch`.
+
 ## 4. Co bylo odstraněno a proč
 
 Audit celého stromu (22. 8. 2026) našel a odstranil:
