@@ -61,8 +61,8 @@ const entities = [
       interaction: { kind: "dig", label: "KOPAT", action: CONTEXT_ACTION, range: 62, priority: 60, enabled: false },
       digSpot: {
         profileIndex: index,
-        findingId: index === 0 ? "nesmen-finding-1" : null,
-        variantId: index === 0 ? "nesmen-standard" : null,
+        findingId: `nesmen-finding-${index + 1}`,
+        variantId: "nesmen-standard",
         dug: false,
         filled: false
       }

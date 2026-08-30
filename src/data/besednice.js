@@ -129,6 +129,16 @@ const entities = [
 export const BESEDNICE_ENTITY_DEFINITIONS = deepFreeze(entities);
 const entityById = new Map(BESEDNICE_ENTITY_DEFINITIONS.map(entity => [entity.id, entity]));
 
+// The three traces are collectable moldavites, not just hints. They stay in
+// their own table so the hedgehog keeps its single A-rarity identity: adding
+// tiers to BESEDNICE_FINDING_VARIANTS would make resolveVariant pick a random
+// one for the hedgehog too.
+export const BESEDNICE_TRACE_VARIANTS = deepFreeze([
+  { id: "besednice-trace-small", rarity: "C", weight: 1, score: 80, assetId: "finding-vltavin-common" },
+  { id: "besednice-trace-standard", rarity: "B", weight: 1.6, score: 130, assetId: "finding-vltavin-standard" },
+  { id: "besednice-trace-rare", rarity: "A", weight: 2.2, score: 200, assetId: "finding-vltavin-rare" }
+]);
+
 export const BESEDNICE_FINDING_VARIANTS = deepFreeze([
   {
     id: "besednice-hedgehog",
