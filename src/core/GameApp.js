@@ -72,28 +72,16 @@ export class GameApp {
     return this.scenes.transitionTo(id, context);
   }
 
-  resolveSceneWalkability(scene, dt, input) {
+  resolveSceneWalkability(scene) {
     if (!scene?.level) return false;
     if (!Number.isInteger(scene.playerEntity)) return false;
     const transform = this.world.get(scene.playerEntity, "transform");
     const previous = this.world.get(scene.playerEntity, "previousTransform");
     if (!transform || !previous) return false;
 
-    const player = this.world.get(scene.playerEntity, "player");
     const collider = this.world.get(scene.playerEntity, "collider");
     const clearance = collider?.shape === "circle" ? Math.max(0, Number(collider.radius) || 0) : 0;
-    const move = input?.axes?.move ?? { x: 0, y: 0 };
-    const speed = Number(player?.speed) || 0;
-    const canMove = scene.session?.state?.phase === "playing"
-      && !scene.modal
-      && !scene.resultShown;
-    const desired = canMove
-      ? {
-          x: previous.x + (Number(move.x) || 0) * speed * dt,
-          y: previous.y + (Number(move.y) || 0) * speed * dt
-        }
-      : { x: transform.x, y: transform.y };
-
+    const desired = { x: transform.x, y: transform.y };
     const resolved = resolveWalkablePosition(scene.level, previous, desired, clearance);
     const changed = resolved.x !== transform.x || resolved.y !== transform.y;
     transform.x = resolved.x;
@@ -135,7 +123,7 @@ export class GameApp {
           setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
         }
         scene[name]?.(dt, time, input);
-        if (name === "updateMovement") this.resolveSceneWalkability(scene, dt, input);
+        if (name === "updateMovement") this.resolveSceneWalkability(scene);
       }
     } else {
       setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
