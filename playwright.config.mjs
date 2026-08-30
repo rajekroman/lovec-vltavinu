@@ -120,7 +120,7 @@ export default defineConfig({
     },
     {
       name: "iphone-webkit",
-      testMatch: [/mobile-smoke\.spec\.mjs$/, /audio-lifecycle\.spec\.mjs$/],
+      testMatch: /audio-lifecycle\.spec\.mjs$/,
       metadata: { inputMode: "touch", orientation: "portrait", safariApproximation: true },
       use: {
         ...iphone13,

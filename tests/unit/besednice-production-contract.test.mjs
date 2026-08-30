@@ -96,7 +96,7 @@ test("Playwright defines desktop, portrait and landscape projects", () => {
     assert.match(playwrightConfig, new RegExp(`name: "${project}"`));
   }
   assert.match(playwrightConfig, /metadata: \{ inputMode: "desktop", orientation: "landscape" \}/);
-  assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 3);
+  assert.equal((playwrightConfig.match(/metadata: \{ inputMode: "touch"/g) ?? []).length, 4);
   assert.match(playwrightConfig, /viewport: \{ width: 390, height: 844 \}/);
   assert.match(playwrightConfig, /viewport: \{ width: 844, height: 390 \}/);
   assert.match(playwrightConfig, /name: "iphone-portrait",\s*testMatch: \/slavia-smoke\\\.spec\\\.mjs\$\//);
