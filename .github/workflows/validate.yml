@@ -29,8 +29,6 @@ jobs:
         with:
           node-version: 24
 
-      # Discover sources instead of listing them: a hardcoded list silently skips
-      # new files and hard-fails the whole job on ones that get deleted.
       - name: Check JavaScript syntax
         run: |
           find tools src tests -type f \( -name '*.js' -o -name '*.mjs' \) -print0 \
@@ -79,42 +77,52 @@ jobs:
         project:
           - desktop-chromium
           - desktop-firefox
+          - desktop-webkit
           - offline-chromium
           - audio-lifecycle-chromium
           - iphone-portrait
           - iphone-portrait-smoke
           - iphone-landscape
+          - iphone-webkit
 
     steps:
-      # Pull requests already exercise real touch input, portrait rendering and
-      # an 844×390 orientation transition in iphone-portrait-smoke. Keep the
-      # expensive full mobile journeys for main pushes and manual release gates.
       - name: Checkout
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         uses: actions/checkout@v5
 
       - name: Setup Node.js
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         uses: actions/setup-node@v6
         with:
           node-version: 24
 
       - name: Install test dependencies
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         run: npm install --no-audit --no-fund --no-package-lock
 
-      - name: Install Chromium headless shell
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
-        run: |
-          npx playwright install --with-deps --only-shell chromium
-          npx playwright install --with-deps firefox
+      - name: Install Chromium
+        if: ${{ matrix.project != 'desktop-firefox' && matrix.project != 'desktop-webkit' && matrix.project != 'iphone-webkit' }}
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Install Firefox
+        if: ${{ matrix.project == 'desktop-firefox' }}
+        run: npx playwright install --with-deps firefox
+
+      - name: Install WebKit
+        if: ${{ matrix.project == 'desktop-webkit' || matrix.project == 'iphone-webkit' }}
+        run: npx playwright install --with-deps webkit
+
+      - name: Run Firefox smoke under Xvfb
+        if: ${{ matrix.project == 'desktop-firefox' }}
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          GALLIUM_DRIVER: llvmpipe
+          MOZ_WEBRENDER: "1"
+        run: xvfb-run --auto-servernum npm run test:smoke -- --project="${{ matrix.project }}"
 
       - name: Run ${{ matrix.project }}
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
+        if: ${{ matrix.project != 'desktop-firefox' }}
         run: npm run test:smoke -- --project="${{ matrix.project }}"
 
       - name: Upload Playwright report
-        if: ${{ !cancelled() && (github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape')) }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.project }}
