@@ -171,8 +171,8 @@ export class ScreenController {
       input.checked = selected.has(finding.findingId);
       input.onchange = () => {
         if (input.checked && selected.size >= required) input.checked = false;
-        if (input.checked) selected.add(input.value);
-        else selected.delete(input.value);
+        if (input.checked) selected.add(finding.findingId);
+        else selected.delete(finding.findingId);
         update();
       };
       const text = this.document.createElement("span");
