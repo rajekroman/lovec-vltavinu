@@ -14,11 +14,11 @@ const V7_STYLESHEET_ID = "lovec-v7-visual-theme";
 const V7_ROOT_CLASS = "v7-visual-rebuild";
 const HUNTER_ACTION_CLIPS = Object.freeze({
   search: Object.freeze({ frames: Object.freeze([0]), fps: 2.5, loop: false }),
-  "pick-up": Object.freeze({ frames: Object.freeze([1]), fps: 2.2, loop: false }),
-  talk: Object.freeze({ frames: Object.freeze([2]), fps: 1.6, loop: false }),
-  caught: Object.freeze({ frames: Object.freeze([3]), fps: 2.5, loop: false }),
-  dig: Object.freeze({ frames: Object.freeze([4]), fps: 2.5, loop: false }),
-  celebration: Object.freeze({ frames: Object.freeze([5]), fps: 1.8, loop: false })
+  "pick-up": Object.freeze({ frames: Object.freeze([2, 3, 4, 3]), fps: 2.2, loop: false }),
+  talk: Object.freeze({ frames: Object.freeze([1]), fps: 1.6, loop: false }),
+  caught: Object.freeze({ frames: Object.freeze([5, 6, 7, 6]), fps: 2.5, loop: false }),
+  dig: Object.freeze({ frames: Object.freeze([8, 9, 10, 11, 10, 9]), fps: 2.5, loop: false }),
+  celebration: Object.freeze({ frames: Object.freeze([12, 13, 14, 15, 14, 13]), fps: 1.8, loop: false })
 });
 
 export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
@@ -282,8 +282,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     if (actionVisible) {
       syncSpriteVisual(this.playerActionSprite, {
         frame: animation.frame,
-        columns: 3,
-        rows: 2,
+        columns: 4,
+        rows: 4,
         flipX: false
       });
     } else {
