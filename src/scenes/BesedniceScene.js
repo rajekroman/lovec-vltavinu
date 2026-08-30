@@ -1,5 +1,5 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, BESEDNICE_FINDING_VARIANTS } from "../data/besednice.js";
+import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, BESEDNICE_FINDING_VARIANTS, BESEDNICE_TRACE_VARIANTS } from "../data/besednice.js";
 import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
@@ -416,8 +416,24 @@ export class BesedniceScene {
     if (!clue || clue.discovered === true) return false;
     clue.discovered = true;
     interaction.enabled = false;
+    // Each trace yields its own moldavite. The id comes from the entity so the
+    // three stay distinct: recordFinding rejects duplicates with an error.
+    const findingId = this.externalIdByEntity.get(entity);
+    if (typeof findingId !== "string" || !findingId) throw new Error("Besednice trace is missing its external id.");
+    const traceQuality = this.rng();
+    const traceVariant = resolveVariant(BESEDNICE_TRACE_VARIANTS, traceQuality, this.rng);
+    this.objectives.recordFinding(createFinding(traceVariant, findingId, "besednice", traceQuality));
     const visual = this.traceVisuals.get(entity);
     if (visual) visual.visible = false;
+    const traceTransform = this.app.world.get(entity, "transform");
+    if (this.sparkleEmitter && traceTransform) {
+      this.sparkleEmitter.emitBurst(traceTransform.x, traceTransform.y, 6, 12, {
+        speed: 3.4,
+        spread: 0.8,
+        lifetime: 0.5,
+        size: 1.5
+      });
+    }
     this.availableInteraction = null;
     this.interactions.clear();
     this.syncLocks();
