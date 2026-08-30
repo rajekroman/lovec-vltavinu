@@ -6,6 +6,11 @@ import { AssetLoader } from "./AssetLoader.js";
 import { World } from "../ecs/World.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { AnimationSystem } from "../systems/AnimationSystem.js";
+import {
+  endActiveDialogueAnimations,
+  setNpcAnimationsPaused,
+  updateActiveDialogueAnimations
+} from "../render/NPCAnimationSystem.js";
 import { SceneTransition } from "../ui/SceneTransition.js";
 
 export class GameApp {
@@ -54,6 +59,8 @@ export class GameApp {
 
   async changeScene(id, context = {}) {
     if (this.disposed) throw new Error("Cannot change scene on a disposed GameApp.");
+    endActiveDialogueAnimations();
+    setNpcAnimationsPaused(false);
     this.input.reset("scene-transition");
     if (this.transition) {
       await this.transition.fadeOut(300);
@@ -66,6 +73,7 @@ export class GameApp {
 
   updateFixed(dt, time) {
     if (this.scenes.transitioning) {
+      setNpcAnimationsPaused(false);
       this.input.endFrame();
       return;
     }
@@ -73,6 +81,7 @@ export class GameApp {
     const scene = this.scenes.activeScene;
     const input = this.input.snapshot();
     if (!scene) {
+      setNpcAnimationsPaused(false);
       this.input.endFrame();
       return;
     }
@@ -90,10 +99,23 @@ export class GameApp {
     ];
     const hasPipeline = phases.some(name => typeof scene[name] === "function");
     if (hasPipeline) {
-      for (const name of phases) scene[name]?.(dt, time, input);
+      for (const name of phases) {
+        if (name === "updateAnimations") {
+          setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
+        }
+        scene[name]?.(dt, time, input);
+      }
     } else {
+      setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
       scene.update?.(dt, time, input);
     }
+
+    if (scene.modal === "dialog") {
+      updateActiveDialogueAnimations(Math.max(0, Number(dt) || 0) * 1000);
+    } else {
+      endActiveDialogueAnimations();
+    }
+    setNpcAnimationsPaused(false);
     this.input.endFrame();
   }
 
@@ -101,6 +123,8 @@ export class GameApp {
     if (this.disposed) return;
     this.stop();
     this.disposed = true;
+    endActiveDialogueAnimations();
+    setNpcAnimationsPaused(false);
     for (const remove of this.removeCoreSystems.splice(0)) remove();
     this.removeCoreRenderer?.();
     this.removeCoreRenderer = null;

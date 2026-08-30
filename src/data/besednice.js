@@ -32,7 +32,7 @@ const entities = [
       animation: {
         clip: "walk",
         frames: [0, 1, 2, 3],
-        fps: 6,
+        fps: 8,
         loop: true,
         playing: false,
         index: 0,
