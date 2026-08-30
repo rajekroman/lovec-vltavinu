@@ -1,7 +1,7 @@
 const CACHE = "lovec-vltavinu-v7-3";
 const CORE = [
   "./", "./index.html", "./style.css", "./v7.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
-  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/AudioRegistry.js",
+  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/V73AudioEngine.js", "./src/audio/AudioRegistry.js",
   "./src/core/EventBus.js", "./src/core/GameEvents.js", "./src/core/GameApp.js", "./src/core/GameLoop.js", "./src/core/SceneManager.js", "./src/core/InputManager.js", "./src/core/AssetLoader.js",
   "./src/ecs/World.js", "./src/systems/CollisionSystem.js", "./src/systems/AnimationSystem.js",
   "./src/data/levels.js", "./src/data/chlum.js", "./src/data/nesmen.js", "./src/data/besednice.js", "./src/data/slavia.js", "./src/data/dialogues.js",
