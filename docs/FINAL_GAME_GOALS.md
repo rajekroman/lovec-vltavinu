@@ -91,10 +91,11 @@ Projekt je dokončen pouze tehdy, když:
 
 ## Navazující pracovní proudy
 
-- nálezy: #298 / PR #301, PR #296;
-- finální výběr poroty: #299 / draft PR #300;
+- dokončené integrační důkazy: PR #296, PR #301, PR #315 a PR #321 jsou sloučené do `main`; nejsou samostatnou otevřenou release bránou;
+- zbývající produktové assety: vlastní transparentní pětisnímkový atlas Milana a skutečné vícesnímkové atlasové sekvence hráče pro `pick-up`, `caught`, `dig` a `celebration`;
+- finální výběr poroty a zachování deseti nálezů: kryté sloučeným full-flow důkazem PR #321;
 - mobilní stabilita: #270;
 - UI/UX a animační čitelnost: #275;
 - produkční QA matice: #280;
 - dokumentace a release notes: #279;
-- ruční vizuální release audit: #226.
+- ruční vizuální release audit: #226; začne až po integraci zbývajících assetů a zmrazení jediného `RELEASE_SHA`.
