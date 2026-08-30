@@ -78,6 +78,7 @@ jobs:
       matrix:
         project:
           - desktop-chromium
+          - desktop-firefox
           - offline-chromium
           - audio-lifecycle-chromium
           - iphone-portrait
@@ -104,7 +105,9 @@ jobs:
 
       - name: Install Chromium headless shell
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
-        run: npx playwright install --with-deps --only-shell chromium
+        run: |
+          npx playwright install --with-deps --only-shell chromium
+          npx playwright install --with-deps firefox
 
       - name: Run ${{ matrix.project }}
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}

@@ -285,8 +285,8 @@ export class ScreenController {
     return this.show("briefScreen", { playing: false });
   }
 
-  showFinding({ text = "Nález", icon = "🔑", score = 0 }) {
-    const perfectionText = score > 0 ? "" : "";
+  showFinding({ text = "Nález", icon = "🔑", score = 0, perfect = false }) {
+    const perfectionText = perfect ? " ⭐" : "";
 
     this.element("dialogName").textContent = `${icon} NÁLEZ`;
     this.element("dialogText").textContent = `${text}\n+${score} bodů${perfectionText}`;
@@ -294,7 +294,40 @@ export class ScreenController {
     const button = this.element("dialogButton");
     button.textContent = "POKRAČOVAT";
     bindOnce(button, () => {});
-    return this.show("dialogScreen", { playing: false });
+
+    const screen = this.show("dialogScreen", { playing: false });
+    this.showScorePopup(score);
+    return screen;
+  }
+
+  showScorePopup(score) {
+    const popup = this.document.createElement("div");
+    popup.className = "score-popup";
+    popup.textContent = `+${score}`;
+    popup.style.left = "50%";
+    popup.style.top = "50%";
+    const container = this.document.getElementById("app");
+    if (container) {
+      container.appendChild(popup);
+      popup.offsetHeight;
+      popup.addEventListener("animationend", () => popup.remove(), { once: true });
+    }
+  }
+
+  animateFindingsCounter() {
+    const counter = this.document.querySelector(".findings-counter");
+    if (!counter) return;
+    counter.classList.remove("new-finding");
+    counter.offsetHeight;
+    counter.classList.add("new-finding");
+  }
+
+  animateHealthDamage() {
+    const hearts = this.document.querySelector(".health-hearts");
+    if (!hearts) return;
+    hearts.classList.remove("damage");
+    hearts.offsetHeight;
+    hearts.classList.add("damage");
   }
 
   showDanger(message = "⚠️ Nebezpečí!", onDismiss) {
