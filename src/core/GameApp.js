@@ -6,6 +6,7 @@ import { AssetLoader } from "./AssetLoader.js";
 import { World } from "../ecs/World.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { AnimationSystem } from "../systems/AnimationSystem.js";
+import { resolveWalkablePosition } from "../gameplay/Walkability.js";
 import { SceneTransition } from "../ui/SceneTransition.js";
 
 export class GameApp {
@@ -64,6 +65,21 @@ export class GameApp {
     return this.scenes.transitionTo(id, context);
   }
 
+  resolveSceneWalkability(scene) {
+    if (!scene?.level || !Array.isArray(scene.level.blockedZones) || scene.level.blockedZones.length === 0) return false;
+    if (!Number.isInteger(scene.playerEntity)) return false;
+    const transform = this.world.get(scene.playerEntity, "transform");
+    const previous = this.world.get(scene.playerEntity, "previousTransform");
+    if (!transform || !previous) return false;
+    const collider = this.world.get(scene.playerEntity, "collider");
+    const clearance = collider?.shape === "circle" ? Math.max(0, Number(collider.radius) || 0) : 0;
+    const resolved = resolveWalkablePosition(scene.level, previous, transform, clearance);
+    const changed = resolved.x !== transform.x || resolved.y !== transform.y;
+    transform.x = resolved.x;
+    transform.y = resolved.y;
+    return changed;
+  }
+
   updateFixed(dt, time) {
     if (this.scenes.transitioning) {
       this.input.endFrame();
@@ -90,7 +106,10 @@ export class GameApp {
     ];
     const hasPipeline = phases.some(name => typeof scene[name] === "function");
     if (hasPipeline) {
-      for (const name of phases) scene[name]?.(dt, time, input);
+      for (const name of phases) {
+        scene[name]?.(dt, time, input);
+        if (name === "updateMovement") this.resolveSceneWalkability(scene);
+      }
     } else {
       scene.update?.(dt, time, input);
     }
