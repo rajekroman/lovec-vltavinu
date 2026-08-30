@@ -33,6 +33,36 @@ export default defineConfig({
       }
     },
     {
+      name: "desktop-firefox",
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
+      metadata: { inputMode: "desktop", orientation: "landscape" },
+      use: {
+        ...devices["Desktop Firefox"],
+        browserName: "firefox",
+        viewport: { width: 1280, height: 720 },
+        // Firefox headless disables WebGL on GitHub's GPU-less Linux runners.
+        // CI launches this project through Xvfb in headed mode so Mesa/llvmpipe
+        // can provide the same WebGL path used by a normal desktop browser.
+        headless: false,
+        launchOptions: {
+          firefoxUserPrefs: {
+            "webgl.force-enabled": true,
+            "webgl.disabled": false
+          }
+        }
+      }
+    },
+    {
+      name: "desktop-webkit",
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
+      metadata: { inputMode: "desktop", orientation: "landscape", safariApproximation: true },
+      use: {
+        ...devices["Desktop Safari"],
+        browserName: "webkit",
+        viewport: { width: 1280, height: 720 }
+      }
+    },
+    {
       // The only project that lets the service worker run: it proves the CORE
       // list in sw.js still covers everything the first level loads.
       name: "offline-chromium",
@@ -89,21 +119,14 @@ export default defineConfig({
       }
     },
     {
-      name: "desktop-firefox",
-      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
-      metadata: { inputMode: "desktop", orientation: "landscape" },
+      name: "iphone-webkit",
+      testMatch: [/mobile-smoke\.spec\.mjs$/, /audio-lifecycle\.spec\.mjs$/],
+      metadata: { inputMode: "touch", orientation: "portrait", safariApproximation: true },
       use: {
-        ...devices["Desktop Firefox"],
-        browserName: "firefox",
-        viewport: { width: 1280, height: 720 },
-        // GitHub-hosted Linux runners are GPU-less. Firefox disables WebGL2
-        // there by default (AllowWebgl2:false), which prevents Three.js from
-        // bootstrapping. Force Firefox's software WebGL path for CI smoke tests.
-        launchOptions: {
-          firefoxUserPrefs: {
-            "webgl.force-enabled": true
-          }
-        }
+        ...iphone13,
+        browserName: "webkit",
+        viewport: { width: 390, height: 844 },
+        screen: { width: 390, height: 844 }
       }
     }
   ],
