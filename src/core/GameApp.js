@@ -66,7 +66,7 @@ export class GameApp {
   }
 
   resolveSceneWalkability(scene) {
-    if (!scene?.level || !Array.isArray(scene.level.blockedZones) || scene.level.blockedZones.length === 0) return false;
+    if (!scene?.level) return false;
     if (!Number.isInteger(scene.playerEntity)) return false;
     const transform = this.world.get(scene.playerEntity, "transform");
     const previous = this.world.get(scene.playerEntity, "previousTransform");
