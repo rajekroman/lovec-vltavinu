@@ -367,7 +367,7 @@ async function completeChlum(page, input, testInfo) {
   const sites = [
     { x: 1020, y: 720 },
     { x: 760, y: 920 },
-    { x: 1320, y: 860 }
+    { x: 1240, y: 820 }
   ];
   await moveAxisTo(page, input, "x", sites[0].x);
   await moveAxisTo(page, input, "y", 410);
@@ -375,9 +375,6 @@ async function completeChlum(page, input, testInfo) {
 
   for (const [index, site] of sites.entries()) {
     if (index === 2) {
-      // The authored Chlum scene has a solid hay bale around (1270, 930).
-      // Approach the third radar pocket through the open lane above it instead
-      // of teaching the full-flow test to walk through visible geometry.
       await moveAxisTo(page, input, "y", 780);
       await moveAxisTo(page, input, "x", 1240);
     } else {
@@ -605,7 +602,10 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   const beforeJury = await runtimeSnapshot(page);
   expect(beforeJury.session.findings).toEqual(originalFindings);
   expect(beforeJury.session.score).toBe(originalScore);
-  expect(beforeJury.slavia.flow.complete).toBe(true);
+  expect(beforeJury.slavia.flow.phase).toBe("jury-selection");
+  expect(beforeJury.slavia.flow.complete).toBe(false);
+  expect(beforeJury.slavia.flow.enteredEvent).toBe(true);
+  expect(beforeJury.slavia.flow.jurySubmitted).toBe(false);
   expect(beforeJury.slavia.evaluation).toBeNull();
   await captureEvidence(page, testInfo, "slavia-jury-selection");
 
@@ -647,7 +647,9 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   const completed = await runtimeSnapshot(page);
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
+  expect(completed.slavia.flow.phase).toBe("complete");
   expect(completed.slavia.flow.complete).toBe(true);
+  expect(completed.slavia.flow.jurySubmitted).toBe(true);
   expect(completed.session.findings).toEqual(originalFindings);
   expect(completed.session.findings).toHaveLength(10);
   expect(completed.session.score).toBe(originalScore);
