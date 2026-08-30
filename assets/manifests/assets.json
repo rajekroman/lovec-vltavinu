@@ -226,7 +226,7 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 695052
+      "bytes": 542840
     },
     "budget": {
       "bytes": 4000000,
@@ -234,7 +234,7 @@
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:chlum",
-    "sha256": "f41d5f96c7f9e63b1956f10563d2c1f1e9340c9f3d8620a896874d2a0aeb56a5"
+    "sha256": "183dda175c5e0cd04b2ef999c43552f15764515a97c491ccb94a614737890d1f"
   },
   {
     "id": "terrain-chlum-field",
@@ -498,7 +498,7 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 683152
+      "bytes": 695866
     },
     "budget": {
       "bytes": 3600000,
@@ -506,7 +506,7 @@
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:nesmen",
-    "sha256": "cd95bc1e6052f7261fbfcce5b3854fac3d643a88d34f19ad3ab1ad08c73ec403"
+    "sha256": "753a81580c3ae44c941a73aed4d273da1f5a1fcfeaf899f9334aa29c3b5966d2"
   },
   {
     "id": "foreground-nesmen-forest-edge-v7",
@@ -735,7 +735,7 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 570152
+      "bytes": 574268
     },
     "budget": {
       "bytes": 3200000,
@@ -743,7 +743,7 @@
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:besednice",
-    "sha256": "7c8cb95f499f729f985240424bf9cd47518ec51d7968f6d9bbab2b7fbf291e46"
+    "sha256": "dfe2f843e320f1f4967ca0cc38b2a8db429796fa765f3d9d5967285f44ad4c15"
   },
   {
     "id": "foreground-besednice-quarry-edge-v7",
@@ -855,7 +855,7 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 243420
+      "bytes": 550624
     },
     "budget": {
       "bytes": 1650000,
@@ -863,7 +863,7 @@
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:slavia",
-    "sha256": "70678a885d33cf6c1e0804a55a5c49553b3bb0a808b029d7d3e832de676957fd"
+    "sha256": "1cb16b2d89c9213d2be8d9c6088b49111efabfce2477c16a66058b214fbc2c82"
   },
   {
     "id": "foreground-slavia-event-edge-v7",
