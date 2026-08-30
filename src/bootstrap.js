@@ -125,10 +125,38 @@ const title = new TitleScene({
   onStart: () => startNewRun().catch(showFatalError)
 });
 
-const chlumGrid = new ChlumGridScene({ app, events, renderer, three: THREE, screens, session });
-const nesmenGrid = new NesmenGridScene({ app, events, renderer, three: THREE, screens, session });
-const besedniceGrid = new BesedniceGridScene({ app, events, renderer, three: THREE, screens, session });
-const slaviaGrid = new SlaviaGridScene({ app, events, renderer, three: THREE, screens, session });
+const chlumGrid = new ChlumGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const nesmenGrid = new NesmenGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const besedniceGrid = new BesedniceGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const slaviaGrid = new SlaviaGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
 
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
@@ -148,7 +176,11 @@ async function startNewRun() {
 function showFatalError(error) {
   console.error(error);
   const message = error instanceof Error ? error.message : String(error);
-  screens.showFatal({ title: "Hru se nepodařilo spustit", text: message, onRetry: () => windowRef.location.reload() });
+  screens.showFatal({
+    title: "Hru se nepodařilo spustit",
+    text: message,
+    onRetry: () => windowRef.location.reload()
+  });
 }
 
 function installLifecycleHandlers() {
@@ -175,7 +207,12 @@ function installDebugApi() {
       scene: app.scenes.activeId,
       running: app.loop.running,
       screen: screens.activeId ?? "playing",
-      renderer: { width: renderer.width, height: renderer.height, pixelRatio: renderer.pixelRatio, type: "three-webgl-orthographic" },
+      renderer: {
+        width: renderer.width,
+        height: renderer.height,
+        pixelRatio: renderer.pixelRatio,
+        type: "three-webgl-orthographic"
+      },
       audio: audio.snapshot(),
       session: session.state,
       chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
