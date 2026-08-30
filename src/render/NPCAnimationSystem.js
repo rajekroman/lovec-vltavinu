@@ -22,12 +22,14 @@ export function areNpcAnimationsPaused() {
  * @param {object} THREE - Three.js module
  * @param {object} renderer - ThreeRenderer instance
  * @param {string} characterKey - NPC key from SpriteAtlas.NPC_SPRITES
- * @param {object} spriteSpec - { assetId, width, height, texture } — texture is the already-loaded atlas texture
+ * @param {object} spriteSpec - { assetId, width, height, texture } — width/height may describe the full atlas; per-frame slicing comes from NPC_SPRITES metadata
  * @param {object} options - Position/scale options
  * @returns {object} { sprite, animator, playAnimation, setFrame, update, getState }
  */
 export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, options = {}) {
   const { assetId, width, height, texture } = spriteSpec;
+  const character = NPC_SPRITES[characterKey];
+  const frameWidth = character?.width ?? width;
 
   const sprite = renderer.createSprite(texture, {
     width: options.width || width,
@@ -53,7 +55,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
       animationName !== "idle" && animSpec.loop === false
     );
     animator.playAnimation(animSpec);
-    updateSpriteFrame(sprite, animator.getCurrentFrame(), width, characterKey);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), frameWidth, characterKey);
     return true;
   };
 
@@ -62,7 +64,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
 
     const wasPlaying = animator.isPlaying;
     const isPlaying = animator.update(deltaMs);
-    updateSpriteFrame(sprite, animator.getCurrentFrame(), width, characterKey);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), frameWidth, characterKey);
 
     if (wasPlaying && !isPlaying && returnToIdleOnComplete && currentAnimationName !== "idle") {
       startAnimation("idle", { returnToIdle: false });
@@ -87,7 +89,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
         returnToIdleOnComplete = false;
         animator.isPlaying = false;
         animator.currentFrame = frameIdx;
-        updateSpriteFrame(sprite, frameIdx, width, characterKey);
+        updateSpriteFrame(sprite, frameIdx, frameWidth, characterKey);
       }
     },
 

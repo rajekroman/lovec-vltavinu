@@ -146,7 +146,9 @@ export class ScreenController {
     button.textContent = buttonLabel;
     bindOnce(button, onContinue);
     resultScreen.setAttribute("aria-busy", "false");
-    return this.show("resultScreen", { playing: false });
+    const screen = this.show("resultScreen", { playing: false });
+    void this.audio?.playLevelResult?.();
+    return screen;
   }
 
   showJurySelection({ findings = [], selectedFindingIds = [], required = 4, onSelectionChange, onSubmit }) {

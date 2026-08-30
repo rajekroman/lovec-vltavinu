@@ -1,41 +1,36 @@
 # Chat 2 — Browser matrix status
 
-A0 reporting note for the CI/browser workstream.
+Updated: 2026-08-30
 
-## Current integration candidate
+## Current clean candidate
 
-- Base: `main@f9ff4799bb55f5839f6014b610568523b6b28641`
-- Branch: `fix/v73-browser-matrix-f9ff`
-- Purpose: clean consolidation of the Firefox CI gate and full mobile PR matrix on top of the corrective #344 input lifecycle.
-- No historical #341 click-suppression patch is carried.
-- Runtime/gameplay/input code is unchanged by this branch.
+Base: `main@8b2794692caa82e08d2541e0763b9ff5da569c22`
 
-## Required browser gate
+Branch: `fix/v73-mobile-pr-matrix-8b279`
 
-A candidate is PASS only when the same exact SHA has all of the following executed successfully:
+Scope is CI-only:
+- full `iphone-portrait` and `iphone-landscape` jobs execute on pull requests;
+- existing Firefox Xvfb/software-GL fix already merged via #332 is preserved unchanged;
+- Playwright report upload runs for all non-cancelled matrix jobs;
+- no runtime, input, gameplay, UI, session, findings, evaluator, or assertion changes.
 
-- static/unit validation
-- desktop Chromium
-- desktop Firefox
-- full iPhone portrait (`390×844` Chromium emulation) — actual test execution, never wrapper-only skipped SUCCESS
-- iPhone portrait smoke
-- full iPhone landscape (`844×390` Chromium emulation) — actual test execution, never wrapper-only skipped SUCCESS
-- offline Chromium
-- audio lifecycle Chromium
+Historical context:
+- #332 proved Firefox CI can execute successfully, but portrait/landscape PR jobs were false-green because substantive steps were skipped;
+- #339/#343/#346 demonstrated the corrected full mobile PR matrix;
+- #344 is the current production mobile input solution on main;
+- #345 is historical stacked evidence only and its click-suppression implementation must not be reintroduced.
 
-## Historical evidence
+Required exact-head gate:
+- static/unit PASS;
+- desktop Chromium PASS;
+- desktop Firefox PASS;
+- iPhone portrait 390×844 full flow executes and PASS;
+- iPhone landscape 844×390 full flow executes and PASS;
+- portrait smoke PASS;
+- offline PASS;
+- audio lifecycle PASS.
 
-- #332 proved desktop Firefox could pass under headed Xvfb/software GL, while PR mobile jobs were still false-green skips.
-- #339 removed those PR skip guards and exposed the mobile action lifecycle defect.
-- #341 was merged only into the historical stacked CI branch and must not reach main.
-- #340 moved mobile action commit from pointerdown to pointerup, but later exact full portrait evidence showed pointerup was still too early.
-- #344 corrects the shared lifecycle by committing the touch action on the following browser click activation; validation-only #342 proved full portrait and landscape PASS on that exact production candidate.
-- This branch therefore starts fresh from post-#344 main and carries CI-only changes.
-
-## WebKit / Safari terminology
-
-WebKit is out of this integration candidate. If pursued, it must be a separate scoped PR.
-
-- Playwright WebKit may only be reported as **WebKit CI PASS**.
-- It must never be reported as **real Safari PASS** or **real iOS Safari PASS**.
-- Real Safari requires separate evidence from actual Safari/device execution.
+Terminology:
+- Playwright WebKit, if added in a separate scoped PR, is `WebKit CI PASS` only;
+- it is never `real Safari PASS` or `real iOS Safari PASS`;
+- green CI is not A6 visual PASS.
