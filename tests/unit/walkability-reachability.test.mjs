@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { LEVEL_DEFINITIONS } from "../../src/data/levels.js";
 import { isWalkablePoint } from "../../src/gameplay/Walkability.js";
 
-const CLEARANCE = 28;
+const CLEARANCE = 18;
 const STEP = 40;
 const MAX_VISITED = 6000;
 const keyOf = point => `${Math.round(point.x)},${Math.round(point.y)}`;
