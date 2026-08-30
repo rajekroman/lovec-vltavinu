@@ -34,6 +34,41 @@ const definitions = [
       "Až všechny přečteš, poznáš správný profil. Vykopej ho přesně a hlídej si Karla — na dobrý nález čeká."
     ],
     actionLabel: "JDU PO STOPÁCH"
+  },
+  {
+    id: "besednice-karel-defeated",
+    speaker: { entityId: "crystal-karel", name: "Karel", role: "rival" },
+    lines: [
+      "Tenhle kousek měl být můj.",
+      "Vezmi si ho — příště budu rychlejší."
+    ],
+    actionLabel: "MÁM JEŽKA ZPĚT"
+  },
+  {
+    id: "slavia-expert-consultation",
+    speaker: { entityId: "expert-eva", name: "Eva — znalkyně", role: "expert" },
+    lines: [
+      "Dokumentace sedí.",
+      "Franta se ale pokusil odnést nejlepší kus; zastav ho a vrať se pro certifikát."
+    ],
+    actionLabel: "ZASTAVIT FRANTU"
+  },
+  {
+    id: "slavia-franta-defeated",
+    speaker: { entityId: "thief-franta", name: "František", role: "thief" },
+    lines: [
+      "Dobře, dobře — nikdo se nezraní.",
+      "Nález je tvůj. Jen si pamatuj, kdo ti ho skoro vzal."
+    ],
+    actionLabel: "NÁLEZ ZAJIŠTĚN"
+  },
+  {
+    id: "slavia-certification",
+    speaker: { entityId: "expert-eva", name: "Eva — porota", role: "expert" },
+    lines: [
+      "Sbírka je ověřena a může do finálního hodnocení akce Na Zelené Vlně."
+    ],
+    actionLabel: "KE VSTUPU"
   }
 ];
 
