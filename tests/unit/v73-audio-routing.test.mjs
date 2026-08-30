@@ -73,7 +73,7 @@ test("danger and ambience routing cover exactly four canonical runtime scene ids
   assert.equal(resolveAmbienceId("title"), null);
 });
 
-test("event handlers route miss, clean, rarity, caught and rising danger exactly", async () => {
+test("event handlers route miss, clean, rarity, caught, result and rising danger exactly", async () => {
   const { engine, played } = createEngine();
   engine.currentScene = "nesmen";
 
@@ -81,6 +81,7 @@ test("event handlers route miss, clean, rarity, caught and rising danger exactly
   engine.handleDigClean();
   engine.handleFinding({ rarity: "A" });
   engine.handleCaught();
+  engine.handleLevelComplete();
   engine.handleDanger({ previous: 10, current: 20 });
   engine.handleDanger({ previous: 20, current: 20 });
 
@@ -90,6 +91,7 @@ test("event handlers route miss, clean, rarity, caught and rising danger exactly
     DIG_CLEAN_ID,
     FINDING_IDS.A,
     CAUGHT_ID,
+    UI_IDS.result,
     DANGER_IDS.nesmen
   ]);
 });
