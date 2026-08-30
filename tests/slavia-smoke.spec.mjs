@@ -406,6 +406,7 @@ async function enterLevel(page, input, buttonText, kicker, scene) {
 }
 
 async function completeNesmen(page, input, testInfo) {
+  await moveAxisTo(page, input, "y", 240);
   await moveTo(page, input, 280, 240, "permission");
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("JAN");
