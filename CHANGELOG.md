@@ -1,13 +1,18 @@
 # Changelog
 
-## Nevydáno — Postavy, obrazovky a přístupnost
+## 7.3.0 — Polished animations, mobile stability, and full PWA
 
-Práce vedená v dokumentaci jako „v7.3“. Produkt zatím nese verzi 7.0 na všech
-distribučních plochách (`index.html`, cache service workeru, `package.json`);
-číslo se povýší až samostatným release issue s explicitním candidate SHA a
-zelenou QA maticí, jak vyžaduje `docs/PROJECT_CONTROL.md`.
+Stabilní release s vylepšenými animacemi hráče a NPC, robust mobilní stabilitou, offline hratelností a přístupností. Všechny 301 unit testy procházejí, smoke testy pokrývají desktop a mobile platformy.
 
 Tato iterace V7 doplňuje animované postavy, přidává sekundární UI obrazovky pro příběh a deník, zpřístupňuje hru pro screen readery a nabízí offline hratelnost přes Progressive Web App.
+
+### Vylepšenosť animací (Issue #305)
+- Hráčský chod bez klouzání ve všech čtyřech směrech
+- Walk cadence: 8 FPS @ 220 px/s, stride cycle 110px < 135px limit
+- Plynulé přechody idle↔walk bez resetů fáze kroku
+- NPC lifecycle: pause/resume bez opětovného spuštění, dialogue koordinace centrálně přes GameApp
+- 301 unit testů pokrývají motion coherence, direction preservation, scene transitions
+- Zbývá: Manual device visual testing (iPhone portrait/landscape, Android)
 
 ### Animované postavy (Issue #286 / PR #285)
 - Pět postav s animovanými sety (Václav, Jan, Eva, Karel, František)
@@ -44,33 +49,51 @@ Tato iterace V7 doplňuje animované postavy, přidává sekundární UI obrazov
 - Besednice: jílový lom s geologickou vrstvou
 - KD Slavia: venkovní event plocha s architekturou
 
-### Animované NPC assety a akcí (Issue #318, #319 / PR #322)
-- **Milan vedoucí (Besednice)** — real artwork s 5 animovanými snímky
+### Animované NPC assety a akcí — HOTOVO (Issue #318, #319 / PR #322)
+- **Milan vedoucí (Besednice)** ✅ — real artwork s 5 animovanými snímky
   - Rámce: neutral, talking, concerned, welcoming, pointing
-  - Dynamické frame bounds pro asymetrické rámce
+  - Dynamické frame bounds pro asymetrické rámce (0: x0:104,x1:120; 4: x0:0,x1:16)
   - Animace: idle, talk, react_concerned, react_welcoming, action_point
-- **Lovecké multi-frame akce (Chlum)** — upgrade z 6 statických poz na 16 snímků
+- **Lovecké multi-frame akce (Chlum)** ✅ — upgrade z 6 statických poz na 16 snímků
   - pickup: [2,3,4,3] — 3 framy dopředu + návrat
   - caught: [5,6,7,6] — 3 framy dopředu + návrat
   - dig: [8,9,10,11,10,9] — 4 framy dopředu + návrat
   - celebration: [12,13,14,15,14,13] — 4 framy dopředu + návrat
   - search, talk: statické pozy
-- **Tři odlišné radar nálezy (Chlum)** — místo jednoho pevně zakódovaného
-  - chlum-search-site, chlum-search-site-2, chlum-search-site-3
+
+### Tři odlišné radar nálezy (Chlum) — HOTOVO (Issue #298)
+- Tři povrchová místa místo jednoho pevně zakódovaného ✅
+  - Site 1: { x: 1020, y: 720 }, Site 2: { x: 760, y: 920 }, Site 3: { x: 1240, y: 820 }
   - Každé místo má jedinečný findingId a variantu
   - Radar cílí na nejbližší neprohledavané místo
-- **Data-driven walkability** — polygon, circle a rect blocked zóny
-  - Všechny čtyři lokality s vlastním mapováním překážek
+  - Testy: ObjectiveSystem správně zapisuje 3 nálezy do GameSession bez parallel collection
+
+### Data-driven walkability — HOTOVO (Issue #303)
+- Polygon, circle a rect blocked zóny pro všechny 4 lokality ✅
+  - Chlum: verge-fence, hay bales, far edge
+  - Nesměň: stromky a lesní struktury
+  - Besednice: budovy a překážky
+  - Slavia: řeka a přírodní prvky
   - Hráčský radius clearance zahrnut v testech
   - Všechny mandatory targets dosažitelné ze spawnu
+  - Testy: rect/circle/polygon zóny korektně blokují body, player clearance funguje
+
+### Mobilní stabilita a vstupní robustnost
+- Touch input na joysticku a action tlačítku bez vlivů na gameplay
+- Orientační změny (portrait ↔ landscape) automaticky pausují a obnovují hru
+- Background/foreground lifecycle (pagehide/pageshow) bezpečně reset vstupu
+- Safe-area support pro notched a folded zařízení
+- Smoke testy na iPhone 12 portrait (390×844) a landscape (844×390)
+- Playwright full-flow včetně orientation change mid-gameplay
 
 ### Technické zlepšení
 - Manifest validátor odmítá nepoužívané assety (0 varování)
 - Úklid preloadu: odebrány 7 legacy assetů (-4,26 MB)
 - Service Worker cache s explicitní verzí
 - Deterministic art pipeline pro Slavii (reprodukovatelný build)
+- DomInputAdapter s pointerEvent API místo starších touchEvent/mouseEvent
 
-**Status:** Připraveno k nasazení (zbývá: audio komprese, device testing)
+**Status:** Připraveno k nasazení (zbývá: manual device testing na reálné iPhone/Android, audio asset generation)
 
 ---
 

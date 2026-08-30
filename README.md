@@ -1,16 +1,25 @@
-# Lovec vltavínů 7.0.0
+# Lovec vltavínů 7.3.0
 
 Mobilní browserová arkádová hra z jihočeských nalezišť vltavínů. Hráč projde čtyři kanonické kapitoly **Chlum → Nesměň → Besednice → KD Slávie**, sestaví výstavní kolekci a získá finální hodnocení poroty.
+
+## Co je nového v 7.3
+
+- **Vylepšené animace**: Plynulý chod hráče bez klouzání ve všech čtyřech směrech
+- **NPC animace**: Václav, Jan, Milan, Karel, Eva a František s idle, talk a reakčními animacemi
+- **Mobilní stabilita**: Orientační změny, pause/resume lifecycle a bezproblémový vstup ze dotykového joysticku
+- **Data-driven procházka**: Polygon, kruh a rect. kolizní zóny pro všechny 4 lokality
+- **Tři Chlumské nálezy**: Radarový systém s unikátními povrchními místy a nálezy
 
 ## Stav produktu
 
 - jeden modulární ES-module runtime spuštěný z `src/bootstrap.js`;
-- jeden Three.js `WebGLRenderer` s ortografickou kamerou;
-- desktopové ovládání klávesnicí a dotykové ovládání pro iPhone portrait i landscape;
+- jeden Three.js `WebGLRenderer` s ortografickou kamerou a bounded follow kamerou;
+- desktopové ovládání klávesnicí a dotykové ovládání s pointerEvent API;
 - in-memory herní session bez save systému, `localStorage`, IndexedDB a inventářového UI;
 - hudba a zvuky odemykané uživatelským gestem s lifecycle obsluhou pro pozadí, návrat a `pagehide`;
 - service worker slouží pouze jako distribuční cache statických souborů;
-- plný průchod končí výsledkem poroty a čistým restartem nové výpravy.
+- plný průchod končí výsledkem poroty a čistým restartem nové výpravy;
+- 301 unit testů s full-flow smoke testy na desktop a mobile platformách.
 
 ## Herní průchod
 
