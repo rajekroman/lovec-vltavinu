@@ -265,6 +265,7 @@ export class GridScene {
         const dangerValue = Math.min(100, previous + (digResult.danger.damage ?? 25));
         this.session.setDanger(dangerValue);
         this.events.emit("danger:changed", { previous, current: dangerValue, cause: "dig" });
+        this.screens.animateHealthDamage();
         this.screens.showDanger(digResult.danger.message, () => {
           this.screens.show(null, { playing: true });
         });
@@ -280,11 +281,12 @@ export class GridScene {
         const rarityIcons = { A: "💎", B: "⭐", C: "🔑" };
         const icon = rarityIcons[digResult.finding.rarity] || "🔑";
         this.screens.showFinding({
-          finding: digResult.finding,
+          text: digResult.finding.findingId,
           icon,
           score: digResult.score,
           perfect: digResult.perfect
         });
+        this.screens.animateFindingsCounter();
       }
 
       this.digSitesCompleted.add(siteIndex);

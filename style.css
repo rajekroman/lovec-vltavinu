@@ -80,7 +80,42 @@ button{-webkit-tap-highlight-color:transparent}
   .danger-meter{top:calc(51px + var(--safe-t));height:26px}.danger-banner{top:calc(116px + var(--safe-t))}
   .controls{padding-bottom:calc(7px + var(--safe-b));padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}.move-zone{width:108px;height:108px}.stick{width:50px;height:50px}.action-button{width:82px;height:82px}.action-button span{font-size:27px}
   .hint{bottom:calc(88px + var(--safe-b))}.combo{top:calc(84px + var(--safe-t))}}
-@media(prefers-reduced-motion:reduce){.action-button.ready,.danger-meter.detected,#app.danger-state:after{animation:none!important}}
+/* Score and finding animations */
+@keyframes scorePopFade{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-60%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-70%) scale(.95)}}
+.score-popup{position:absolute;left:50%;top:50%;pointer-events:none;font-weight:1000;font-size:24px;color:#7eae88;text-shadow:0 2px 8px rgba(0,0,0,.5);animation:scorePopFade .6s ease-out forwards}
+@keyframes findingPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.findings-counter.new-finding{animation:findingPulse .4s ease-in-out}
+@keyframes healthShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.health-hearts.damage{animation:healthShake .3s ease-in-out}
+@keyframes progressSlide{from{width:0}to{width:var(--progress,0)}}
+.objective-bar em{animation:progressSlide .3s ease-out}
+
+/* Menu and dialogue animations */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideInFromRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes typewriter{from{width:0}to{width:100%}}
+.screen{animation:fadeInUp .3s ease-out}
+.pause-screen{background:rgba(1,7,4,.62);backdrop-filter:blur(12px);animation:fadeInUp .4s cubic-bezier(.34,1.56,.64,1)}
+.dialog-text{animation:fadeInUp .35s ease-out .1s both}
+.dialog-text.typewriter{animation:typewriter .25s steps(1,end);white-space:nowrap;overflow:hidden}
+.npc-portrait{opacity:0;animation:fadeInUp .35s ease-out forwards}
+
+/* Button and control animations */
+.primary-button,.secondary-button{transition:all .2s cubic-bezier(.34,.69,.75,.66);transform:translateY(0)}
+.primary-button:hover:not(:disabled),.secondary-button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.primary-button:active:not(:disabled),.secondary-button:active:not(:disabled){transform:translateY(0);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.icon-button{transition:all .15s ease-out}
+.icon-button:hover:not(:disabled){transform:scale(1.08);filter:brightness(1.15)}
+.icon-button:active:not(:disabled){transform:scale(.96)}
+
+/* Loading and feedback */
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(127,174,136,.3);border-top-color:#7eae88;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes fadeInScale{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.toast{animation:fadeInScale .2s ease-out}
+
+/* Accessible animation preferences */
+@media(prefers-reduced-motion:reduce){.action-button.ready,.danger-meter.detected,#app.danger-state:after,.screen,.pause-screen,.dialog-text,.toast,.score-popup,.findings-counter.new-finding,.health-hearts.damage,.primary-button:hover:not(:disabled),.secondary-button:hover:not(:disabled){animation:none!important;transform:none!important}}
 
 .pause-objective{margin:8px 0 4px;color:#edf2ec;font-weight:760;line-height:1.32}.pause-progress{margin:0 0 14px;color:#a8c8ae;font-size:10px;font-weight:900;letter-spacing:.14em}
 @media(orientation:landscape) and (max-height:520px){.pause-objective{margin:5px 0 3px;font-size:12px}.pause-progress{margin-bottom:8px;font-size:8px}}
