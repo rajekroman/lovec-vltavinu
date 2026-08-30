@@ -1,0 +1,40 @@
+name: Generate v7.3 audio candidates
+
+on:
+  push:
+    branches:
+      - agent/v73-audio-completion
+
+permissions:
+  contents: write
+
+jobs:
+  generate-audio:
+    if: ${{ !contains(github.event.head_commit.message, '[audio-generated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/v73-audio-completion
+          fetch-depth: 0
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate and verify v7.3 MP3 assets
+        run: python3 tools/audio/build-v73-audio.py
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/audio/*.mp3 assets/audio/v73-audio-build-audit.json
+          if git diff --cached --quiet; then
+            echo "Generated assets already match branch."
+            exit 0
+          fi
+          git commit -m "build(audio): generate verified v7.3 MP3 assets [audio-generated]"
+          git push origin HEAD:agent/v73-audio-completion
