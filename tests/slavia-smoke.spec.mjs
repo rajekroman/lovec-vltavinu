@@ -517,9 +517,17 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
-  expect(arrived.session.findings).toHaveLength(3);
-  expect(arrived.session.score).toBeGreaterThanOrEqual(100);
-  expect(arrived.session.score).toBeLessThanOrEqual(800);
+  expect(arrived.session.findings.map(finding => finding.locality)).toEqual([
+    "chlum",
+    "nesmen",
+    "besednice",
+    "besednice",
+    "besednice",
+    "besednice"
+  ]);
+  expect(arrived.session.score).toBe(
+    arrived.session.findings.reduce((total, finding) => total + finding.score, 0)
+  );
   expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
@@ -554,7 +562,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(3);
+  expect(completed.slavia.evaluation.findingCount).toBe(6);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
