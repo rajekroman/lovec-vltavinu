@@ -91,6 +91,42 @@ export const NPC_SPRITES = Object.freeze({
     }
   },
 
+  guide_milan: {
+    name: "Milan (Quarry Guide)",
+    assetId: "npc-guide-milan-atlas",
+    width: 120,
+    height: 160,
+    frames: {
+      neutral: 0,
+      talking_a: 1,
+      talking_b: 2,
+      explaining: 3,
+      approving: 4
+    },
+    animations: {
+      idle: {
+        frames: [0],
+        fps: 1,
+        loop: true
+      },
+      talk: {
+        frames: [1, 0, 2, 0],
+        fps: 3,
+        loop: true
+      },
+      action_explain: {
+        frames: [3, 0, 3],
+        fps: 4,
+        loop: false
+      },
+      react_approve: {
+        frames: [4],
+        fps: 1,
+        loop: false
+      }
+    }
+  },
+
   expert_eva: {
     name: "Eva (Expert)",
     assetId: "npc-expert-eva-atlas",
