@@ -44,6 +44,26 @@ Tato iterace V7 doplňuje animované postavy, přidává sekundární UI obrazov
 - Besednice: jílový lom s geologickou vrstvou
 - KD Slavia: venkovní event plocha s architekturou
 
+### Animované NPC assety a akcí (Issue #318, #319 / PR #322)
+- **Milan vedoucí (Besednice)** — real artwork s 5 animovanými snímky
+  - Rámce: neutral, talking, concerned, welcoming, pointing
+  - Dynamické frame bounds pro asymetrické rámce
+  - Animace: idle, talk, react_concerned, react_welcoming, action_point
+- **Lovecké multi-frame akce (Chlum)** — upgrade z 6 statických poz na 16 snímků
+  - pickup: [2,3,4,3] — 3 framy dopředu + návrat
+  - caught: [5,6,7,6] — 3 framy dopředu + návrat
+  - dig: [8,9,10,11,10,9] — 4 framy dopředu + návrat
+  - celebration: [12,13,14,15,14,13] — 4 framy dopředu + návrat
+  - search, talk: statické pozy
+- **Tři odlišné radar nálezy (Chlum)** — místo jednoho pevně zakódovaného
+  - chlum-search-site, chlum-search-site-2, chlum-search-site-3
+  - Každé místo má jedinečný findingId a variantu
+  - Radar cílí na nejbližší neprohledavané místo
+- **Data-driven walkability** — polygon, circle a rect blocked zóny
+  - Všechny čtyři lokality s vlastním mapováním překážek
+  - Hráčský radius clearance zahrnut v testech
+  - Všechny mandatory targets dosažitelné ze spawnu
+
 ### Technické zlepšení
 - Manifest validátor odmítá nepoužívané assety (0 varování)
 - Úklid preloadu: odebrány 7 legacy assetů (-4,26 MB)
