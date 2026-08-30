@@ -23,9 +23,11 @@ function digHitCount(state) {
   return Number(runtime?.totalDigHits);
 }
 
-async function touchLocator(page, locator) {
+async function touchLocator(page, locator, scroll = false) {
   await expect(locator).toBeVisible();
-  await locator.scrollIntoViewIfNeeded();
+  if (scroll) {
+    await locator.evaluate(element => element.scrollIntoView({ block: "center", inline: "nearest" }));
+  }
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   if (!box) throw new Error("Touch target has no bounding box.");
@@ -47,13 +49,13 @@ async function touchLocator(page, locator) {
 function createInputDriver(page, testInfo) {
   const desktop = testInfo.project.metadata?.inputMode === "desktop";
 
-  async function activateUi(locator) {
+  async function activateUi(locator, scroll = false) {
     await expect(locator).toBeVisible();
     if (desktop) {
       await locator.focus();
       await page.keyboard.press("Enter");
     } else {
-      await touchLocator(page, locator);
+      await touchLocator(page, locator, scroll);
     }
   }
 
@@ -141,7 +143,7 @@ async function toggleJuryFinding(page, input, findingId) {
     await checkbox.focus();
     await page.keyboard.press("Space");
   } else {
-    await touchLocator(page, checkbox.locator("xpath=.."));
+    await touchLocator(page, checkbox.locator("xpath=.."), true);
   }
 }
 
@@ -641,7 +643,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
   await expect(page.locator("#jurySubmitButton")).toBeEnabled();
 
-  await input.activateUi(page.locator("#jurySubmitButton"));
+  await input.activateUi(page.locator("#jurySubmitButton"), true);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   await expect(page.locator("#resultKicker")).toHaveText("NA ZELENÉ VLNĚ — FINÁLE");
   await expect(page.locator("#againButton")).toHaveText("NOVÁ VÝPRAVA");
