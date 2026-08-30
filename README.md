@@ -63,13 +63,7 @@ Dostupné příkazy:
 - `npm run test:smoke` — Playwright matice desktop, iPhone portrait, iPhone landscape, audio lifecycle a offline režim;
 - `npm test` — validátor, syntaxe modulů a unit testy.
 
-Produkční grafika V7 Slavie se generuje deterministickým nástrojem bez závislostí:
-
-```bash
-node tools/art/build-slavia-v7-art.mjs
-```
-
-Pravidla a souřadnicový kontrakt popisuje `docs/ART_PIPELINE.md`.
+Produkční grafika V7 (Chlum, Nesměň, Besednice, Slavia) jsou authored bitmap assety uložené přímo v repozitáři, bez generátoru nebo build kroku. Původ a souřadnicový kontrakt popisuje `docs/ART_PIPELINE.md`.
 
 CI workflow `Validate game` ukládá artefakty `static-validation-report` a `playwright-report`.
 
