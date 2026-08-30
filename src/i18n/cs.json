@@ -1,0 +1,82 @@
+{
+  "title": "Lovec vltavínů",
+  "ui": {
+    "startGame": "ZAČÍT HRU",
+    "settings": "NASTAVENÍ",
+    "howToPlay": "JAK HRÁT",
+    "story": "PŘÍBĚH",
+    "journal": "DENÍK",
+    "continue": "POKRAČOVAT",
+    "restart": "RESTART",
+    "resume": "OBNOVIT HRU",
+    "ok": "DOBŘE",
+    "goForIt": "JDU NA TO",
+    "loading": "Načítám…",
+    "pleaseWait": "Prosím čekejte…"
+  },
+  "hud": {
+    "score": "Skóre",
+    "health": "Životy",
+    "time": "Čas",
+    "objectives": "Cíle",
+    "radar": "Radar",
+    "findings": "Nálezy"
+  },
+  "dig": {
+    "title": "Drž rytmus lopaty",
+    "info": "Klepni, když je ukazatel v zeleném poli.",
+    "dig": "KOPNOUT",
+    "done": "kopání dokončeno",
+    "keepRhythm": "drž rytmus pro další zásah"
+  },
+  "result": {
+    "levelDone": "ÚROVEŇ DOKONČENA",
+    "tripContinues": "Výprava pokračuje",
+    "points": "bodů",
+    "continue": "POKRAČOVAT"
+  },
+  "dialogue": {
+    "default": {
+      "chlumPermission": "MÁM POVOLENÍ",
+      "nesmenPermission": "ROZUMÍM",
+      "besedniceGuide": "JDU PO STOPÁCH",
+      "besedniceKarelDefeated": "MÁM JEŽKA ZPĚT",
+      "slaviaExpert": "ZASTAVIT FRANTU",
+      "slaviaFranta": "NÁLEZ ZAJIŠTĚN",
+      "slaviaCertification": "KE VSTUPU"
+    }
+  },
+  "level": {
+    "location": "LOKALITA",
+    "of": "/"
+  },
+  "rarity": {
+    "A": "A třída",
+    "B": "B třída",
+    "C": "C třída"
+  },
+  "danger": {
+    "tractor": "Traktor blízko!",
+    "forester": "Lesník si tě všiml!",
+    "drought": "Sucho — vrstva vyschla!",
+    "guard": "Strážce se blíží!"
+  },
+  "settings": {
+    "difficulty": "Obtížnost",
+    "audio": "Zvuk",
+    "language": "Jazyk",
+    "highContrast": "Vysoký kontrast",
+    "largeText": "Velký text",
+    "colorBlind": "Barvoslepost",
+    "musicVolume": "Hlasitost hudby",
+    "sfxVolume": "Hlasitost zvuků",
+    "mute": "Ztlumit vše"
+  },
+  "accessibility": {
+    "joystick": "Virtuální joystick pro pohyb",
+    "actionButton": "Kontextové akční tlačítko",
+    "gameCanvas": "Herní plocha",
+    "pauseGame": "Pauza / Obnovit hru",
+    "toggleSound": "Zapnout / Vypnout zvuk"
+  }
+}
