@@ -310,7 +310,13 @@ export class ScreenController {
     if (container) {
       container.appendChild(popup);
       popup.offsetHeight;
-      popup.addEventListener("animationend", () => popup.remove(), { once: true });
+      let cleanupTimer = null;
+      const cleanup = () => {
+        if (cleanupTimer !== null) clearTimeout(cleanupTimer);
+        popup.remove();
+      };
+      popup.addEventListener("animationend", cleanup, { once: true });
+      cleanupTimer = setTimeout(cleanup, 750);
     }
   }
 
