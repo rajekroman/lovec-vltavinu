@@ -54,8 +54,12 @@ export default defineConfig({
     },
     {
       name: "desktop-webkit",
-      testMatch: /v71-dig-smoke\.spec\.mjs$/,
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
       metadata: { inputMode: "desktop", orientation: "landscape", safariApproximation: true },
+      // Linux WebKit uses software rendering in CI. The Chlum full-flow includes
+      // a non-looping pick-up plus celebration sequence before the result screen,
+      // so keep the coverage and allow that rendering path additional time.
+      expect: { timeout: 20_000 },
       use: {
         ...devices["Desktop Safari"],
         browserName: "webkit",
