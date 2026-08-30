@@ -374,14 +374,23 @@ async function completeChlum(page, input, testInfo) {
   await waitForTractorLeftOf(page);
 
   for (const [index, site] of sites.entries()) {
-    await moveAxisTo(page, input, "x", site.x);
-    await moveAxisTo(page, input, "y", site.y);
+    if (index === 2) {
+      // The authored Chlum scene has a solid hay bale around (1270, 930).
+      // Approach the third radar pocket through the open lane above it instead
+      // of teaching the full-flow test to walk through visible geometry.
+      await moveAxisTo(page, input, "y", 780);
+      await moveAxisTo(page, input, "x", 1240);
+    } else {
+      await moveAxisTo(page, input, "x", site.x);
+      await moveAxisTo(page, input, "y", site.y);
+    }
     await expect(page.locator("#actionButton")).toHaveAttribute("aria-label", "RADAR");
     if (!input.desktop) await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "false");
     await input.contextualAction();
     await expectReleasedInput(page);
     await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.searchedCount).toBe(index + 1);
     if (index === 0) await captureEvidence(page, testInfo, "chlum-radar-finding");
+    if (index === 2) await moveTo(page, input, 1270, 820, "collect");
     await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
     await performAction(page, input);
     await expect.poll(async () => (
