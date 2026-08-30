@@ -11,7 +11,7 @@ import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
 import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
 import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
-import { createAnimatedNPC } from "../render/NPCAnimationSystem.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
@@ -119,6 +119,7 @@ export class BesedniceScene {
     this.traceVisuals = new Map();
     this.visualRoot = null;
     this.foregroundRoot = null;
+    this.milanAnimator = null;
     this.karelAnimator = null;
     this.pickupTween = null;
     this.dustEmitter = null;
@@ -210,11 +211,11 @@ export class BesedniceScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
-    const [environmentTexture, foregroundTexture, playerTexture, karelTexture, karelAtlasTexture] = await Promise.all([
+    const [environmentTexture, foregroundTexture, playerTexture, milanAtlasTexture, karelAtlasTexture] = await Promise.all([
       this.texture(V7_PLATE_ASSET),
       this.texture(V7_FOREGROUND_ASSET),
       this.texture("player-hunter-walk"),
-      this.texture("npc-rival-karel"),
+      this.texture("npc-guide-milan-atlas"),
       this.texture("npc-rival-karel-atlas")
     ]);
     const ground = this.renderer.createTerrainPlate(environmentTexture, {
@@ -238,10 +239,15 @@ export class BesedniceScene {
     const player = this.renderer.createSprite(playerTexture, {
       width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "player-hunter-walk"
     });
-    const guide = this.renderer.createSprite(karelTexture, {
-      width: 78, height: 104, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xb9d8a5, assetId: "npc-rival-karel"
-    });
-    guide.scale.x *= -1;
+    const milanAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "guide_milan",
+      { assetId: "npc-guide-milan-atlas", width: 600, height: 160, texture: milanAtlasTexture },
+      { width: 78, height: 104, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    milanAnimator.playAnimation("idle");
+    this.milanAnimator = milanAnimator;
     const karelAnimator = createAnimatedNPC(
       THREE,
       this.renderer,
@@ -252,7 +258,7 @@ export class BesedniceScene {
     karelAnimator.playAnimation("idle");
     this.karelAnimator = karelAnimator;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
-    this.renderer.bindEntity(this.guideEntity, guide, "actors");
+    this.renderer.bindEntity(this.guideEntity, milanAnimator.sprite, "actors");
     this.renderer.bindEntity(this.karelEntity, karelAnimator.sprite, "actors");
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
@@ -358,7 +364,9 @@ export class BesedniceScene {
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
     this.visualTime += Math.max(0, Number(dt) || 0);
-    if (this.karelAnimator) this.karelAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
+    const deltaMs = Math.max(0, Number(dt) || 0) * 1000;
+    if (this.milanAnimator) this.milanAnimator.update(deltaMs);
+    if (this.karelAnimator) this.karelAnimator.update(deltaMs);
     if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
       const entity = this.findingEntity;
       if (entity !== null) this.finishPickup(entity);
@@ -389,6 +397,7 @@ export class BesedniceScene {
     const dialogue = getDialogueDefinition("besednice-guide");
     if (!dialogue || this.briefingComplete) return false;
     this.modal = "dialog";
+    if (this.milanAnimator) playDialogueAnimation(this.milanAnimator, "start");
     this.app.input.reset("besednice-guide-open");
     this.screens.showDialog({
       name: dialogue.speaker.name,
@@ -765,6 +774,7 @@ export class BesedniceScene {
           label: this.availableInteraction.interaction.label
         } : null,
         loadedAssets: [...this.assetEntries.keys()].sort(),
+        milanAnimation: this.milanAnimator?.getState().animation ?? null,
         karelAnimation: this.karelAnimator?.getState().animation ?? null,
         pickupActive: Boolean(this.pickupTween)
       },
@@ -799,6 +809,7 @@ export class BesedniceScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.milanAnimator = null;
     this.karelAnimator = null;
     this.visualTime = 0;
   }
