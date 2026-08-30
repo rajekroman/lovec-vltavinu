@@ -60,7 +60,7 @@ Dostupné příkazy:
 - `npm run validate` — statický validátor produktu a architektonických invariantů;
 - `npm run validate:modules` — syntaxe všech modulů pod `src/`;
 - `npm run test:unit` — unit testy modulárního runtime;
-- `npm run test:smoke` — Playwright matice desktop, iPhone portrait, iPhone landscape a audio lifecycle;
+- `npm run test:smoke` — Playwright matice desktop, iPhone portrait, iPhone landscape, audio lifecycle a offline režim;
 - `npm test` — validátor, syntaxe modulů a unit testy.
 
 Produkční grafika V7 Slavie se generuje deterministickým nástrojem bez závislostí:

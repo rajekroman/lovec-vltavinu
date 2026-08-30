@@ -43,6 +43,7 @@ jobs:
           find tests/unit -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
           node --check tests/audio-lifecycle.spec.mjs
           node --check tests/mobile-smoke.spec.mjs
+          node --check tests/offline-smoke.spec.mjs
           node --check tests/radar-hud-smoke.spec.mjs
           node --check tests/slavia-smoke.spec.mjs
           node --check tests/v71-dig-smoke.spec.mjs
@@ -98,6 +99,7 @@ jobs:
       matrix:
         project:
           - desktop-chromium
+          - offline-chromium
           - audio-lifecycle-chromium
           - iphone-portrait
           - iphone-portrait-smoke
