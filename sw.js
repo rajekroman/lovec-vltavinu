@@ -1,4 +1,4 @@
-const CACHE = "lovec-vltavinu-slavia-v7-0-release";
+const CACHE = "lovec-vltavinu-v7-3";
 const CORE = [
   "./", "./index.html", "./style.css", "./v7.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/AudioRegistry.js",
@@ -19,11 +19,36 @@ const CORE = [
 ];
 self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE))); self.skipWaiting(); });
 self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });
+const STATIC_EXTS = /\.(png|webp|svg|glb|mp3|ogg|woff2?|css|js|json|md)$/i;
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  // Navigation: network-first, fall back to cached index.html
   if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).then(response => { const clone = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, clone)); return response; }).catch(() => caches.match("./index.html")));
+    event.respondWith(
+      fetch(event.request)
+        .then(response => { caches.open(CACHE).then(c => c.put(event.request, response.clone())); return response; })
+        .catch(() => caches.match("./index.html"))
+    );
     return;
   }
-  event.respondWith(fetch(event.request).then(response => { const clone = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, clone)); return response; }).catch(() => caches.match(event.request)));
+  // Static assets (same origin, known extension): cache-first
+  if (url.origin === self.location.origin && STATIC_EXTS.test(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          caches.open(CACHE).then(c => c.put(event.request, response.clone()));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+  // Everything else: network-first
+  event.respondWith(
+    fetch(event.request)
+      .then(response => { caches.open(CACHE).then(c => c.put(event.request, response.clone())); return response; })
+      .catch(() => caches.match(event.request))
+  );
 });
