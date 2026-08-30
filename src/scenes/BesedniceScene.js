@@ -320,10 +320,8 @@ export class BesedniceScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
-    this.setCameraToPlayer();
+    player.x += (move.x ?? 0) * speed * dt;
+    player.y += (move.y ?? 0) * speed * dt;
   }
 
   updateCollisions() {
@@ -416,8 +414,6 @@ export class BesedniceScene {
     if (!clue || clue.discovered === true) return false;
     clue.discovered = true;
     interaction.enabled = false;
-    // Each trace yields its own moldavite. The id comes from the entity so the
-    // three stay distinct: recordFinding rejects duplicates with an error.
     const findingId = this.externalIdByEntity.get(entity);
     if (typeof findingId !== "string" || !findingId) throw new Error("Besednice trace is missing its external id.");
     const traceQuality = this.rng();

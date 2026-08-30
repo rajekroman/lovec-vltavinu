@@ -6,6 +6,7 @@ import { AssetLoader } from "./AssetLoader.js";
 import { World } from "../ecs/World.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { AnimationSystem } from "../systems/AnimationSystem.js";
+import { resolveWalkablePosition } from "../gameplay/Walkability.js";
 import {
   endActiveDialogueAnimations,
   setNpcAnimationsPaused,
@@ -71,6 +72,24 @@ export class GameApp {
     return this.scenes.transitionTo(id, context);
   }
 
+  resolveSceneWalkability(scene) {
+    if (!scene?.level) return false;
+    if (!Number.isInteger(scene.playerEntity)) return false;
+    const transform = this.world.get(scene.playerEntity, "transform");
+    const previous = this.world.get(scene.playerEntity, "previousTransform");
+    if (!transform || !previous) return false;
+
+    const collider = this.world.get(scene.playerEntity, "collider");
+    const clearance = collider?.shape === "circle" ? Math.max(0, Number(collider.radius) || 0) : 0;
+    const desired = { x: transform.x, y: transform.y };
+    const resolved = resolveWalkablePosition(scene.level, previous, desired, clearance);
+    const changed = resolved.x !== transform.x || resolved.y !== transform.y;
+    transform.x = resolved.x;
+    transform.y = resolved.y;
+    scene.setCameraToPlayer?.();
+    return changed;
+  }
+
   updateFixed(dt, time) {
     if (this.scenes.transitioning) {
       setNpcAnimationsPaused(false);
@@ -104,6 +123,7 @@ export class GameApp {
           setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
         }
         scene[name]?.(dt, time, input);
+        if (name === "updateMovement") this.resolveSceneWalkability(scene);
       }
     } else {
       setNpcAnimationsPaused(scene.session?.state?.phase === "paused");

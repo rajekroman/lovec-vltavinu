@@ -364,10 +364,8 @@ export class NesmenScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
-    this.setCameraToPlayer();
+    player.x += (move.x ?? 0) * speed * dt;
+    player.y += (move.y ?? 0) * speed * dt;
   }
 
   updateCollisions() {

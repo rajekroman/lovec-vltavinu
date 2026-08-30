@@ -245,16 +245,14 @@ export class ChlumScene {
     const playerData = this.app.world.get(this.playerEntity, "player");
     const move = input.axes.move ?? { x: 0, y: 0 };
     const speed = playerData?.speed ?? 220;
-    const walkable = this.level.walkable ?? this.level.bounds;
-    player.x = clamp(player.x + (move.x ?? 0) * speed * dt, walkable.x + 28, walkable.x + walkable.width - 28);
-    player.y = clamp(player.y + (move.y ?? 0) * speed * dt, walkable.y + 28, walkable.y + walkable.height - 28);
+    player.x += (move.x ?? 0) * speed * dt;
+    player.y += (move.y ?? 0) * speed * dt;
     const tractor = this.app.world.get(this.tractorEntity, "transform");
     const patrol = this.app.world.get(this.tractorEntity, "patrol");
     tractor[patrol.axis] += patrol.direction * patrol.speed * dt;
     if (tractor[patrol.axis] >= patrol.max) { tractor[patrol.axis] = patrol.max; patrol.direction = -1; }
     else if (tractor[patrol.axis] <= patrol.min) { tractor[patrol.axis] = patrol.min; patrol.direction = 1; }
     tractor.rotation = patrol.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
-    this.setCameraToPlayer();
   }
 
   updateCollisions() {

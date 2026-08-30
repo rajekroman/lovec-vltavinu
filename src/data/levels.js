@@ -43,6 +43,24 @@ const definitions = [
     spawn: { x: 120, y: 380 },
     bounds: { x: 0, y: 0, width: 1600, height: 1200 },
     walkable: { x: 40, y: 40, width: 1520, height: 1120 },
+    blockedZones: [
+      {
+        id: "chlum-west-field-edge",
+        kind: "verge-fence",
+        shape: "polygon",
+        points: [
+          { x: 180, y: 210 },
+          { x: 500, y: 210 },
+          { x: 470, y: 285 },
+          { x: 330, y: 330 },
+          { x: 180, y: 300 }
+        ],
+        probe: { x: 330, y: 260 }
+      },
+      { id: "chlum-hay-bale-west", kind: "prop", shape: "circle", x: 1280, y: 925, radius: 42, probe: { x: 1280, y: 925 } },
+      { id: "chlum-hay-bale-east", kind: "prop", shape: "circle", x: 1360, y: 860, radius: 36, probe: { x: 1360, y: 860 } },
+      { id: "chlum-far-verge", kind: "vegetation", shape: "rect", x: 1210, y: 990, width: 300, height: 120, probe: { x: 1350, y: 1030 } }
+    ],
     objective: { id: "chlum-permission-and-find", type: "chlum-permission-and-find", required: 1 },
     objectives: [
       objective("permission", "dialog", "farmer-vaclav", 1),
@@ -54,7 +72,7 @@ const definitions = [
       target("chlum-search-site", "surface-search", [
         { x: 1020, y: 720 },
         { x: 760, y: 920 },
-        { x: 1320, y: 860 }
+        { x: 1240, y: 820 }
       ])
     ],
     hazards: ["tractor"],
@@ -78,6 +96,13 @@ const definitions = [
     spawn: { x: 180, y: 980 },
     bounds: { x: 0, y: 0, width: 1500, height: 1200 },
     walkable: { x: 120, y: 140, width: 1260, height: 940 },
+    blockedZones: [
+      { id: "nesmen-tree-west", kind: "tree", shape: "circle", x: 330, y: 520, radius: 52, probe: { x: 330, y: 520 } },
+      { id: "nesmen-tree-northwest", kind: "tree", shape: "circle", x: 520, y: 280, radius: 44, probe: { x: 520, y: 280 } },
+      { id: "nesmen-tree-north", kind: "tree", shape: "circle", x: 760, y: 330, radius: 50, probe: { x: 760, y: 330 } },
+      { id: "nesmen-tree-east", kind: "tree", shape: "circle", x: 1080, y: 520, radius: 56, probe: { x: 1080, y: 520 } },
+      { id: "nesmen-lower-forest-edge", kind: "roots-vegetation", shape: "rect", x: 1040, y: 1010, width: 320, height: 70, probe: { x: 1200, y: 1040 } }
+    ],
     objective: { id: "nesmen-dig-and-restore", type: "nesmen-dig-and-restore", required: 3 },
     objectives: [
       objective("permission", "dialog", "forester", 1),
@@ -113,6 +138,45 @@ const definitions = [
     spawn: { x: 140, y: 1040 },
     bounds: { x: 0, y: 0, width: 1680, height: 1280 },
     walkable: { x: 100, y: 180, width: 1480, height: 980 },
+    blockedZones: [
+      {
+        id: "besednice-west-slope",
+        kind: "cliff",
+        shape: "polygon",
+        points: [
+          { x: 120, y: 200 },
+          { x: 430, y: 200 },
+          { x: 380, y: 390 },
+          { x: 120, y: 500 }
+        ],
+        probe: { x: 260, y: 300 }
+      },
+      {
+        id: "besednice-north-cut",
+        kind: "cliff",
+        shape: "polygon",
+        points: [
+          { x: 540, y: 220 },
+          { x: 980, y: 220 },
+          { x: 880, y: 390 },
+          { x: 610, y: 450 }
+        ],
+        probe: { x: 760, y: 300 }
+      },
+      { id: "besednice-puddle", kind: "water", shape: "circle", x: 720, y: 840, radius: 58, probe: { x: 720, y: 840 } },
+      {
+        id: "besednice-south-cut",
+        kind: "quarry-edge",
+        shape: "polygon",
+        points: [
+          { x: 980, y: 930 },
+          { x: 1240, y: 960 },
+          { x: 1190, y: 1120 },
+          { x: 930, y: 1120 }
+        ],
+        probe: { x: 1080, y: 1020 }
+      }
+    ],
     objective: { id: "besednice-hedgehog-recovery", type: "besednice-hedgehog-recovery", required: 1 },
     objectives: [
       objective("local-briefing", "dialog", "besednice-guide", 1),
@@ -151,6 +215,13 @@ const definitions = [
     spawn: { x: 380, y: 860 },
     bounds: { x: 0, y: 0, width: 1800, height: 1100 },
     walkable: { x: 340, y: 120, width: 1360, height: 860 },
+    blockedZones: [
+      { id: "slavia-river-edge", kind: "water", shape: "rect", x: 360, y: 140, width: 120, height: 300, probe: { x: 410, y: 260 } },
+      { id: "slavia-building-wing", kind: "building", shape: "rect", x: 1500, y: 140, width: 180, height: 230, probe: { x: 1580, y: 240 } },
+      { id: "slavia-traffic-fringe", kind: "traffic", shape: "rect", x: 520, y: 910, width: 620, height: 50, probe: { x: 800, y: 930 } },
+      { id: "slavia-event-barrier", kind: "barrier", shape: "rect", x: 900, y: 560, width: 150, height: 46, probe: { x: 970, y: 580 } },
+      { id: "slavia-tree-bed", kind: "vegetation", shape: "circle", x: 1280, y: 670, radius: 55, probe: { x: 1280, y: 670 } }
+    ],
     objective: { id: "slavia-certification", type: "slavia-certification", required: 1 },
     objectives: [
       objective("collect-documents", "collect", "documentation-folder", 3),
