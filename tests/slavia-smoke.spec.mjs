@@ -410,7 +410,7 @@ async function completeNesmen(page, input, testInfo) {
     await expect(page.locator("#digScreen")).toHaveClass(/visible/);
     for (let hit = 0; hit < 3; hit++) await successfulDigHit(page, input, ++totalHits);
 
-    const pendingKinds = new Set(index === 0 ? ["collect", "fill"] : ["fill"]);
+    const pendingKinds = new Set(["collect", "fill"]);
     while (pendingKinds.size > 0) {
       let availableKind = activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null;
       if (!pendingKinds.has(availableKind)) {
@@ -426,10 +426,8 @@ async function completeNesmen(page, input, testInfo) {
       await performAction(page, input);
     }
 
-    if (index === 0) {
-      const state = await runtimeSnapshot(page);
-      expect(state.session.findings.some(entry => entry.locality === "nesmen")).toBe(true);
-    }
+    const state = await runtimeSnapshot(page);
+    expect(state.session.findings.filter(entry => entry.locality === "nesmen")).toHaveLength(index + 1);
   }
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
@@ -528,6 +526,12 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
     "chlum",
     "chlum",
     "nesmen",
+    "nesmen",
+    "nesmen",
+    "nesmen",
+    "besednice",
+    "besednice",
+    "besednice",
     "besednice"
   ]);
   expect(arrived.session.score).toBe(
@@ -567,7 +571,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(5);
+  expect(completed.slavia.evaluation.findingCount).toBe(10);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
