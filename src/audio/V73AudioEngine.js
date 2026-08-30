@@ -65,7 +65,6 @@ export class V73AudioEngine extends AudioEngine {
     this.handleDigMiss = this.handleDigMiss.bind(this);
     this.handleDigClean = this.handleDigClean.bind(this);
     this.handleCaught = this.handleCaught.bind(this);
-    this.handleLevelComplete = this.handleLevelComplete.bind(this);
     this.handleUiClick = this.handleUiClick.bind(this);
   }
 
@@ -77,7 +76,6 @@ export class V73AudioEngine extends AudioEngine {
     this.events.on("dig:miss", this.handleDigMiss, { signal });
     this.events.on("dig:clean", this.handleDigClean, { signal });
     this.events.on("danger:caught", this.handleCaught, { signal });
-    this.events.on("level:complete", this.handleLevelComplete, { signal });
     this.document?.addEventListener?.("click", this.handleUiClick, { capture: true, signal });
     return this;
   }
@@ -133,7 +131,6 @@ export class V73AudioEngine extends AudioEngine {
     if (id) void this.playEffect(id);
   }
   handleCaught() { void this.playEffect(CAUGHT_ID); }
-  handleLevelComplete() { void this.playEffect(UI_IDS.result); }
 
   handleUiClick(event) {
     if (this.isButtonGesture(event)) return;

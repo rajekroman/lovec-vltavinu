@@ -146,7 +146,9 @@ export class ScreenController {
     button.textContent = buttonLabel;
     bindOnce(button, onContinue);
     resultScreen.setAttribute("aria-busy", "false");
-    return this.show("resultScreen", { playing: false });
+    const screen = this.show("resultScreen", { playing: false });
+    void this.audio?.playLevelResult?.();
+    return screen;
   }
 
   showJurySelection({ findings = [], selectedFindingIds = [], required = 4, onSelectionChange, onSubmit }) {
@@ -169,8 +171,8 @@ export class ScreenController {
       input.checked = selected.has(finding.findingId);
       input.onchange = () => {
         if (input.checked && selected.size >= required) input.checked = false;
-        if (input.checked) selected.add(finding.findingId);
-        else selected.delete(finding.findingId);
+        if (input.checked) selected.add(input.value);
+        else selected.delete(input.value);
         update();
       };
       const text = this.document.createElement("span");
