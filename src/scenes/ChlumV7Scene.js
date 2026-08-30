@@ -158,14 +158,16 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.bindEntity(this.farmerEntity, farmerAnimator.sprite, "actors");
     this.syncPlayerActionVisual();
 
-    const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
-      assetId: "model-chlum-field-marker",
-      layer: "props",
-      rotationX: Math.PI / 2,
-      scale: 42,
-      z: 3
-    });
-    marker.visible = false;
+    for (const searchEntity of this.searchEntities) {
+      const marker = this.modelFactory.bind(searchEntity, this.model("model-chlum-field-marker"), {
+        assetId: "model-chlum-field-marker",
+        layer: "props",
+        rotationX: Math.PI / 2,
+        scale: 42,
+        z: 3
+      });
+      marker.visible = false;
+    }
 
     const tractor = this.renderer.createSprite(tractorTexture, {
       width: 210,
@@ -241,21 +243,26 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.add(this.sparkleEmitter.object, "effects");
   }
 
-  spawnFinding() {
+  spawnFinding(searchEntity) {
     if (this.findingEntity !== null) return;
-    const searchTransform = this.app.world.get(this.searchEntity, "transform");
-    this.findingEntity = this.app.world.createEntity({
+    const searchTransform = this.app.world.get(searchEntity, "transform");
+    const searchSpot = this.app.world.get(searchEntity, "searchSpot");
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    const findingEntity = this.app.world.createEntity({
       transform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
       previousTransform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
-      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
+      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 96, priority: 80, enabled: true }
     });
-    this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
+    this.findingEntity = findingEntity;
+    this.activeFinding = { findingId: searchSpot.findingId, surfaceQuality, variant };
+    this.externalIdByEntity.set(findingEntity, searchSpot.findingId);
     const moldavite = createProceduralMoldavite(this.THREE, {
       locality: "chlum",
-      rarity: "B",
-      seed: this.session.state.seed ^ 0x43484c55
+      rarity: variant.rarity,
+      seed: this.session.state.seed ^ 0x43484c55 ^ searchSpot.findingId.length
     });
-    this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
+    this.renderer.bindEntity(findingEntity, moldavite, "effects");
   }
 
   playHunterAction(clip, options = {}) {
@@ -292,20 +299,8 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   }
 
   activateRadar() {
-    const wasSearched = this.surfaceSearched;
-    if (this.radarEnabled && !wasSearched) this.playHunterAction("search", { interruptible: true });
+    if (this.radarEnabled && this.findingEntity === null) this.playHunterAction("search", { interruptible: true });
     super.activateRadar();
-    if (!wasSearched && this.surfaceSearched && this.dustEmitter) {
-      const transform = this.app.world.get(this.searchEntity, "transform");
-      if (transform) {
-        this.dustEmitter.emitBurst(transform.x, transform.y, 5, 18, {
-          speed: 2.6,
-          spread: 0.75,
-          lifetime: 0.5,
-          size: 2.4
-        });
-      }
-    }
   }
 
   collectFinding() {
@@ -317,9 +312,9 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
     this.findingActionStage = "pick-up";
     this.playHunterAction("pick-up");
-    const surfaceQuality = this.rng();
-    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
+    const finding = this.activeFinding;
+    if (!finding) return;
+    this.objectives.recordFinding(createFinding(finding.variant, finding.findingId, "chlum", finding.surfaceQuality));
     if (this.sparkleEmitter && transform) {
       this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 16, {
         speed: 4,
@@ -343,7 +338,16 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);
-    if (this.findingEntity === entity) this.findingEntity = null;
+    if (this.findingEntity === entity) {
+      this.findingEntity = null;
+      this.activeFinding = null;
+      const remaining = this.remainingSearchSites();
+      this.radarEnabled = remaining > 0;
+      this.radarMessage = remaining > 0
+        ? `Vltavín byl sebrán. Radar hlásí ještě ${remaining} ${remaining === 1 ? "místo" : "místa"}.`
+        : "Všechny tři vltavíny byly bezpečně sebrány.";
+      this.emitHud(true);
+    }
     this.pickupTween = null;
   }
 

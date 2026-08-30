@@ -12,11 +12,11 @@ function chlum(runtime) {
       ? "Promluv s Václavem"
       : !searched
         ? "Aktivuj radar a hledej signál"
-        : findings < 1 ? "Vyzvedni nalezený vltavín" : "Vltavín je v bezpečí",
-    complete: permit && searched && findings >= 1,
-    progress: clamp01((permit ? 0.2 : 0) + (searched ? 0.4 : 0) + clamp01(findings) * 0.4),
+        : findings < 3 ? `Nálezy ${findings}/3` : "Tři vltavíny jsou v bezpečí",
+    complete: permit && searched && findings >= 3,
+    progress: clamp01((permit ? 0.2 : 0) + (searched ? 0.4 : 0) + clamp01(findings / 3) * 0.4),
     current: { permit, searched, findings },
-    target: { permit: true, searched: true, findings: 1 }
+    target: { permit: true, searched: true, findings: 3 }
   };
 }
 

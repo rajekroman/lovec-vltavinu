@@ -8,8 +8,8 @@ export class ChlumNesmenBridgeScene extends ChlumScene {
     this.app.input.reset("chlum-complete");
     this.screens.showLevelResult({
       kicker: "CHLUM DOKONČEN",
-      title: "První vltavín je v bezpečí",
-      text: "Václavovo povolení platí a nález je připravený pro pokračování do lesní Nesměně.",
+      title: "Tři vltavíny jsou v bezpečí",
+      text: "Václavovo povolení platí a všechny tři nálezy jsou připravené pro pokračování do lesní Nesměně.",
       score: this.session.state.score,
       stats: [
         { label: "POVOLENÍ", value: "ANO" },
