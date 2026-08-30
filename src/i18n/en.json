@@ -1,0 +1,82 @@
+{
+  "title": "Moldavite Hunter",
+  "ui": {
+    "startGame": "START GAME",
+    "settings": "SETTINGS",
+    "howToPlay": "HOW TO PLAY",
+    "story": "STORY",
+    "journal": "JOURNAL",
+    "continue": "CONTINUE",
+    "restart": "RESTART",
+    "resume": "RESUME GAME",
+    "ok": "OK",
+    "goForIt": "LET'S GO",
+    "loading": "Loading…",
+    "pleaseWait": "Please wait…"
+  },
+  "hud": {
+    "score": "Score",
+    "health": "Health",
+    "time": "Time",
+    "objectives": "Objectives",
+    "radar": "Radar",
+    "findings": "Findings"
+  },
+  "dig": {
+    "title": "Keep the shovel rhythm",
+    "info": "Tap when the indicator is in the green zone.",
+    "dig": "DIG",
+    "done": "digging complete",
+    "keepRhythm": "keep rhythm for next hit"
+  },
+  "result": {
+    "levelDone": "LEVEL COMPLETE",
+    "tripContinues": "The expedition continues",
+    "points": "points",
+    "continue": "CONTINUE"
+  },
+  "dialogue": {
+    "default": {
+      "chlumPermission": "I HAVE PERMISSION",
+      "nesmenPermission": "UNDERSTOOD",
+      "besedniceGuide": "FOLLOWING THE TRAIL",
+      "besedniceKarelDefeated": "I GOT THE HEDGEHOG BACK",
+      "slaviaExpert": "STOP FRANTA",
+      "slaviaFranta": "FIND SECURED",
+      "slaviaCertification": "TO THE ENTRANCE"
+    }
+  },
+  "level": {
+    "location": "LOCATION",
+    "of": "/"
+  },
+  "rarity": {
+    "A": "Class A",
+    "B": "Class B",
+    "C": "Class C"
+  },
+  "danger": {
+    "tractor": "Tractor nearby!",
+    "forester": "Forester spotted you!",
+    "drought": "Drought — layer dried out!",
+    "guard": "Guard approaching!"
+  },
+  "settings": {
+    "difficulty": "Difficulty",
+    "audio": "Audio",
+    "language": "Language",
+    "highContrast": "High Contrast",
+    "largeText": "Large Text",
+    "colorBlind": "Color Blindness",
+    "musicVolume": "Music Volume",
+    "sfxVolume": "SFX Volume",
+    "mute": "Mute All"
+  },
+  "accessibility": {
+    "joystick": "Virtual joystick for movement",
+    "actionButton": "Contextual action button",
+    "gameCanvas": "Game area",
+    "pauseGame": "Pause / Resume game",
+    "toggleSound": "Toggle sound on / off"
+  }
+}
