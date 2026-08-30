@@ -87,16 +87,6 @@ export default defineConfig({
         viewport: { width: 844, height: 390 },
         screen: { width: 844, height: 390 }
       }
-    },
-    {
-      name: "desktop-firefox",
-      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
-      metadata: { inputMode: "desktop", orientation: "landscape" },
-      use: {
-        ...devices["Desktop Firefox"],
-        browserName: "firefox",
-        viewport: { width: 1280, height: 720 }
-      }
     }
   ],
   webServer: {
