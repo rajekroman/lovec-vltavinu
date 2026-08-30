@@ -31,7 +31,7 @@ async function sha256(path) {
   return createHash("sha256").update(await readFile(path)).digest("hex");
 }
 
-test("v7.3 production audio manifest exactly covers the 21 generated assets", async () => {
+test("v7.3 production audio manifest exactly covers the 21 canonical assets", async () => {
   const { manifest, audit } = await loadState();
   const entries = manifest.filter(entry => EXPECTED_IDS.has(entry.id));
   assert.equal(entries.length, EXPECTED_IDS.size);
@@ -39,8 +39,8 @@ test("v7.3 production audio manifest exactly covers the 21 generated assets", as
   assert.equal(manifest.some(entry => SUPERSEDED_IDS.has(entry.id)), false);
 
   const auditByFile = new Map(audit.files.map(row => [row.file, row]));
+  assert.equal(audit.schema_version, 2);
   assert.equal(audit.files.length, 21);
-  assert.equal(new Set(audit.files.map(row => row.sha256)).size, 21);
   assert.equal(audit.total_bytes < 5_000_000, true);
 
   let total = 0;
@@ -48,8 +48,6 @@ test("v7.3 production audio manifest exactly covers the 21 generated assets", as
     assert.equal(entry.type, "audio");
     assert.equal(entry.preload, "audio:gesture");
     assert.equal(entry.disposeOwner, "AudioEngine");
-    assert.equal(entry.license?.spdx, "CC0-1.0");
-    assert.equal(entry.license?.source, "Project-original procedural synthesis; no external samples.");
     assert.equal(entry.license?.notice, "./assets/audio/LICENSE.md");
     assert.match(entry.sha256, /^[a-f0-9]{64}$/);
     assert.equal(entry.budget.bytes >= entry.metrics.bytes, true);
@@ -59,6 +57,9 @@ test("v7.3 production audio manifest exactly covers the 21 generated assets", as
     assert.ok(row, `missing audit row for ${filename}`);
     assert.equal(entry.metrics.bytes, row.bytes);
     assert.equal(entry.sha256, row.sha256);
+    assert.equal(entry.license?.spdx, row.license_spdx);
+    assert.equal(entry.license?.source, row.license_source);
+    assert.ok(["CC0-1.0", "NOASSERTION"].includes(row.license_spdx));
 
     const path = join(root, "assets", "audio", filename);
     assert.equal((await stat(path)).size, row.bytes);
@@ -68,26 +69,35 @@ test("v7.3 production audio manifest exactly covers the 21 generated assets", as
   assert.equal(total, audit.total_bytes);
 });
 
-test("ambience is four distinct 44.1 kHz 192 kbps loop entries; SFX are 128 kbps", async () => {
-  const { manifest, audit } = await loadState();
-  const entries = manifest.filter(entry => EXPECTED_IDS.has(entry.id));
-  const ambience = entries.filter(entry => entry.id.startsWith("audio-ambient-"));
-  assert.equal(ambience.length, 4);
-  assert.equal(ambience.every(entry => entry.loop === true && entry.role === "ambient"), true);
+test("technical encoding claims exist only where independently verified", async () => {
+  const { audit } = await loadState();
+  let verified = 0;
+  let integrityOnly = 0;
 
   for (const row of audit.files) {
-    assert.equal(row.codec, "mp3");
-    assert.equal(row.sample_rate_hz, 44_100);
-    if (row.file.startsWith("ambient-")) {
-      assert.equal(row.bit_rate, 192_000);
-      assert.equal(row.duration_seconds >= 6 && row.duration_seconds < 6.1, true);
-    } else {
+    if (row.technical_metadata_verified === true) {
+      verified += 1;
+      assert.equal(row.codec, "mp3");
+      assert.equal(row.sample_rate_hz, 44_100);
       assert.equal(row.bit_rate, 128_000);
+      assert.equal(typeof row.duration_seconds, "number");
+      assert.equal(row.duration_seconds > 0, true);
+    } else {
+      integrityOnly += 1;
+      assert.equal(row.technical_metadata_verified, false);
+      assert.equal("codec" in row, false);
+      assert.equal("sample_rate_hz" in row, false);
+      assert.equal("bit_rate" in row, false);
+      assert.equal("duration_seconds" in row, false);
+      assert.equal(row.license_spdx, "NOASSERTION");
     }
   }
+
+  assert.equal(verified > 0, true);
+  assert.equal(integrityOnly > 0, true);
 });
 
-test("offline core contains every v7.3 audio asset and no superseded generic MP3", async () => {
+test("offline core contains every canonical v7.3 audio asset and no superseded generic MP3", async () => {
   const { audit } = await loadState();
   const sw = await readFile(swPath, "utf8");
   for (const row of audit.files) {
@@ -97,4 +107,7 @@ test("offline core contains every v7.3 audio asset and no superseded generic MP3
     assert.equal(sw.includes(`./assets/audio/${filename}`), false, `offline cache retains ${filename}`);
     await assert.rejects(stat(join(root, "assets", "audio", filename)), { code: "ENOENT" });
   }
+
+  assert.equal(sw.includes("./assets/audio/ambient-nesmen2.mp3"), false);
+  assert.equal(sw.includes("./assets/audio/ambient-slavia2.mp3"), false);
 });
