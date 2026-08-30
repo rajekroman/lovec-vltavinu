@@ -133,6 +133,17 @@ async function expectReleasedInput(page) {
   }, { timeout: 20_000 }).toEqual({ move: 0, action: false, pause: false });
 }
 
+async function toggleJuryFinding(page, input, findingId) {
+  const checkbox = page.locator(`.jury-finding-option input[value="${findingId}"]`);
+  await expect(checkbox).toBeVisible();
+  if (input.desktop) {
+    await checkbox.focus();
+    await page.keyboard.press("Space");
+  } else {
+    await touchLocator(page, checkbox.locator("xpath=.."));
+  }
+}
+
 async function captureEvidence(page, testInfo, name) {
   const directory = testInfo.outputPath("visual-evidence");
   fs.mkdirSync(directory, { recursive: true });
@@ -521,6 +532,18 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
+  const canonicalFindingIds = [
+    "chlum-finding-1",
+    "chlum-finding-2",
+    "chlum-finding-3",
+    "nesmen-finding-1",
+    "nesmen-finding-2",
+    "nesmen-finding-3",
+    "besednice-trace-1",
+    "besednice-trace-2",
+    "besednice-trace-3",
+    "besednice-hedgehog-1"
+  ];
   expect(arrived.session.findings.map(finding => finding.locality)).toEqual([
     "chlum",
     "chlum",
@@ -533,6 +556,9 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
     "besednice",
     "besednice"
   ]);
+  expect(arrived.session.findings).toHaveLength(10);
+  expect(new Set(arrived.session.findings.map(finding => finding.findingId)).size).toBe(10);
+  expect(arrived.session.findings.map(finding => finding.findingId).sort()).toEqual(canonicalFindingIds.sort());
   expect(arrived.session.score).toBe(
     arrived.session.findings.reduce((total, finding) => total + finding.score, 0)
   );
@@ -541,6 +567,9 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
   expect(arrived.slavia.runtime.cameraZoom).toBeGreaterThanOrEqual(0.9);
   await captureEvidence(page, testInfo, "slavia-arrival");
+
+  const originalFindings = structuredClone(arrived.session.findings);
+  const originalScore = arrived.session.score;
 
   for (const document of [{ x: 410, y: 760 }, { x: 790, y: 460 }, { x: 1130, y: 780 }]) {
     await moveTo(page, input, document.x, document.y, "collect-document");
@@ -561,6 +590,48 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1630, 520, "enter-event");
   await performAction(page, input);
+
+  await expect(page.locator("#juryScreen")).toHaveClass(/visible/);
+  await expect(page.locator(".jury-finding-option input")).toHaveCount(10);
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 0/4");
+  await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+  const beforeJury = await runtimeSnapshot(page);
+  expect(beforeJury.session.findings).toEqual(originalFindings);
+  expect(beforeJury.session.score).toBe(originalScore);
+  expect(beforeJury.slavia.flow.complete).toBe(true);
+  expect(beforeJury.slavia.evaluation).toBeNull();
+  await captureEvidence(page, testInfo, "slavia-jury-selection");
+
+  const initialSelection = [
+    "chlum-finding-1",
+    "nesmen-finding-1",
+    "besednice-trace-1",
+    "besednice-hedgehog-1"
+  ];
+  for (const [index, findingId] of initialSelection.entries()) {
+    await toggleJuryFinding(page, input, findingId);
+    await expect(page.locator(`.jury-finding-option input[value="${findingId}"]`)).toBeChecked();
+    await expect(page.locator("#jurySelectionStatus")).toHaveText(`VYBRÁNO ${index + 1}/4`);
+    if (index < 3) await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+  }
+  await expect(page.locator("#jurySubmitButton")).toBeEnabled();
+
+  const blockedFifth = page.locator('.jury-finding-option input[value="nesmen-finding-2"]');
+  await toggleJuryFinding(page, input, "nesmen-finding-2");
+  await expect(blockedFifth).not.toBeChecked();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+
+  await toggleJuryFinding(page, input, "chlum-finding-1");
+  await expect(page.locator('.jury-finding-option input[value="chlum-finding-1"]')).not.toBeChecked();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 3/4");
+  await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+
+  await toggleJuryFinding(page, input, "nesmen-finding-2");
+  await expect(blockedFifth).toBeChecked();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+  await expect(page.locator("#jurySubmitButton")).toBeEnabled();
+
+  await input.activateUi(page.locator("#jurySubmitButton"));
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   await expect(page.locator("#resultKicker")).toHaveText("NA ZELENÉ VLNĚ — FINÁLE");
   await expect(page.locator("#againButton")).toHaveText("NOVÁ VÝPRAVA");
@@ -570,7 +641,18 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(10);
+  expect(completed.session.findings).toEqual(originalFindings);
+  expect(completed.session.findings).toHaveLength(10);
+  expect(completed.session.score).toBe(originalScore);
+  expect(completed.slavia.evaluation.findingCount).toBe(4);
+  expect(completed.slavia.evaluation.submittedFindingIds).toHaveLength(4);
+  expect(new Set(completed.slavia.evaluation.submittedFindingIds).size).toBe(4);
+
+  const submittedIds = new Set(completed.slavia.evaluation.submittedFindingIds);
+  const expectedJuryScore = originalFindings
+    .filter(finding => submittedIds.has(finding.findingId))
+    .reduce((total, finding) => total + finding.score, 0);
+  expect(completed.slavia.evaluation.score).toBe(expectedJuryScore);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);

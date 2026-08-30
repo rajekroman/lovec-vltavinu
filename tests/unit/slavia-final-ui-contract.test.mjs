@@ -10,6 +10,7 @@ const screenController = read("src/ui/ScreenController.js");
 
 const resultSection = html.match(/<section id="resultScreen"[\s\S]*?<\/section>/)?.[0] ?? "";
 const resultStyle = html.match(/<style id="slavia-final-ui-contract">[\s\S]*?<\/style>/)?.[0] ?? "";
+const jurySection = html.match(/<section id="juryScreen"[\s\S]*?<\/section>/)?.[0] ?? "";
 
 test("final result is exposed as one accessible modal result surface", () => {
   assert.match(resultSection, /role="dialog"/);
@@ -19,6 +20,16 @@ test("final result is exposed as one accessible modal result surface", () => {
   assert.match(resultSection, /aria-live="polite"/);
   assert.match(resultSection, /id="resultStats"[^>]*role="list"/);
   assert.match(resultSection, /id="againButton"[^>]*type="button"/);
+});
+
+test("jury selection is an accessible bounded finale modal", () => {
+  assert.match(jurySection, /role="dialog"/);
+  assert.match(jurySection, /aria-modal="true"/);
+  assert.match(jurySection, /aria-labelledby="juryTitle"/);
+  assert.match(jurySection, /id="jurySelectionStatus"[^>]*role="status"/);
+  assert.match(jurySection, /id="jurySubmitButton"[^>]*disabled/);
+  assert.match(resultStyle, /\.jury-finding-option\{[^}]*min-height:44px/);
+  assert.match(resultStyle, /#juryScreen \.small-card\{[^}]*max-height/);
 });
 
 test("final result preserves mobile touch targets and compact landscape layout", () => {
@@ -36,5 +47,5 @@ test("ScreenController renders semantic result data without owning gameplay eval
   assert.match(screenController, /container\.setAttribute\("role", "list"\)/);
   assert.match(screenController, /item\.setAttribute\("role", "listitem"\)/);
   assert.match(screenController, /scoreElement\.setAttribute\("aria-label", `\$\{normalizedScore\} bodů`\)/);
-  assert.doesNotMatch(screenController, /findingId|rarity|locality|award/);
+  assert.doesNotMatch(screenController, /evaluateSlaviaCollection|RARITY_WEIGHT|award/);
 });

@@ -149,6 +149,43 @@ export class ScreenController {
     return this.show("resultScreen", { playing: false });
   }
 
+  showJurySelection({ findings = [], selectedFindingIds = [], required = 4, onSelectionChange, onSubmit }) {
+    const selected = new Set(selectedFindingIds);
+    const list = this.element("juryFindingList");
+    const status = this.element("jurySelectionStatus");
+    const submit = this.element("jurySubmitButton");
+    const update = () => {
+      status.textContent = `VYBRÁNO ${selected.size}/${required}`;
+      submit.disabled = selected.size !== required;
+      submit.setAttribute("aria-disabled", submit.disabled ? "true" : "false");
+      onSelectionChange?.([...selected]);
+    };
+    list.replaceChildren(...findings.map(finding => {
+      const label = this.document.createElement("label");
+      label.className = "jury-finding-option";
+      const input = this.document.createElement("input");
+      input.type = "checkbox";
+      input.value = finding.findingId;
+      input.checked = selected.has(finding.findingId);
+      input.onchange = () => {
+        if (input.checked && selected.size >= required) input.checked = false;
+        if (input.checked) selected.add(finding.findingId);
+        else selected.delete(finding.findingId);
+        update();
+      };
+      const text = this.document.createElement("span");
+      text.textContent = `${String(finding.locality).toUpperCase()} · ${finding.rarity} · ${finding.score} bodů`;
+      label.append(input, text);
+      return label;
+    }));
+    submit.onclick = event => {
+      event.preventDefault();
+      if (selected.size === required) onSubmit?.([...selected]);
+    };
+    update();
+    return this.show("juryScreen", { playing: false });
+  }
+
   showPause({ onResume, onMenu, placeLabel = "", objective = "", progress = 0 }) {
     const percentage = Math.round(clamp01(progress) * 100);
     this.element("pausePlace").textContent = placeLabel ? `${String(placeLabel).toUpperCase()} · PAUZA` : "PAUZA";
