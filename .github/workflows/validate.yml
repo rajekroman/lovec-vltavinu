@@ -29,6 +29,28 @@ jobs:
         with:
           node-version: 24
 
+      - name: Audit uploaded audio binaries
+        run: |
+          set -euo pipefail
+          for path in assets/audio/*.mp3; do
+            file="${path##*/}"
+            bytes="$(stat -c '%s' "$path")"
+            sha="$(sha256sum "$path" | cut -d' ' -f1)"
+            if command -v ffprobe >/dev/null 2>&1; then
+              codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$path" | head -n1)"
+              sample_rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=noprint_wrappers=1:nokey=1 "$path" | head -n1)"
+              bit_rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$path" | head -n1)"
+              duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$path" | head -n1)"
+            else
+              codec="unknown"
+              sample_rate="unknown"
+              bit_rate="unknown"
+              duration="unknown"
+            fi
+            printf 'AUDIO_META file=%s bytes=%s sha256=%s codec=%s sample_rate=%s bit_rate=%s duration=%s\n' \
+              "$file" "$bytes" "$sha" "$codec" "$sample_rate" "$bit_rate" "$duration"
+          done
+
       # Discover sources instead of listing them: a hardcoded list silently skips
       # new files and hard-fails the whole job on ones that get deleted.
       - name: Check JavaScript syntax
