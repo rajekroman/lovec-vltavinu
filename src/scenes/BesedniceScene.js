@@ -352,7 +352,7 @@ export class BesedniceScene {
 
   updateObjectives() {
     const objective = this.objectives.update(this.objectiveRuntime());
-    if (objective.complete && !this.resultShown) this.showResult();
+    if (objective.complete && !this.resultShown && !this.modal) this.showResult();
   }
 
   updateAnimations(dt) {
@@ -569,7 +569,21 @@ export class BesedniceScene {
     if (this.karelAnimator) this.karelAnimator.playAnimation("action_back_away");
     this.availableInteraction = null;
     this.interactions.clear();
+    this.modal = "dialog";
     this.app.input.reset("besednice-boss-defeated");
+    const dialogue = getDialogueDefinition("besednice-karel-defeated");
+    this.screens.showDialog({
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
+      avatar: "K",
+      buttonLabel: dialogue.actionLabel,
+      onConfirm: () => {
+        this.modal = null;
+        this.screens.play();
+        this.app.input.reset("besednice-boss-defeated-close");
+        this.emitHud(true);
+      }
+    });
     this.emitHud(true);
     return true;
   }

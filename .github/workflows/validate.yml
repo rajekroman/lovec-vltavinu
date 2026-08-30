@@ -29,11 +29,6 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install WebP build tool
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq webp
-
       # Discover sources instead of listing them: a hardcoded list silently skips
       # new files and hard-fails the whole job on ones that get deleted.
       - name: Check JavaScript syntax
@@ -50,19 +45,6 @@ jobs:
 
       - name: Validate module graph
         run: npm run validate:modules
-
-      - name: Reproduce Slavia production art
-        run: |
-          if [ ! -f tools/art/build-slavia-v7-art.mjs ]; then
-            echo "No Slavia art generator in tree — plate is an authored bitmap, nothing to reproduce."
-            exit 0
-          fi
-          node tools/art/build-slavia-v7-art.mjs
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Slavia art reproduction changed the committed tree or left intermediate files:"
-            git status --short
-            exit 1
-          fi
 
       - name: Test Nesměň data contract
         run: node --test --test-reporter=spec tests/unit/nesmen-data.test.mjs

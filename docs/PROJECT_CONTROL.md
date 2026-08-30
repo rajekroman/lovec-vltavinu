@@ -1,6 +1,6 @@
 # PROJECT_CONTROL.md — aktuální V7 řídicí registr
 
-Revize: **2.24.0 · 20. 8. 2026**  
+Revize: **2.25.0 · 21. 8. 2026**  
 Repozitář: **`rajekroman/lovec-vltavinu`**
 
 Tento dokument je autoritativní stručný stavový registr. Detailní historická evidence zůstává v Git historii, issues, PR, GitHub Actions a GitHub Releases. Technické invarianty jsou v `docs/ARCHITECTURE_CONTRACT.md`; pracovní pravidla v `AGENTS.md`.
@@ -83,6 +83,7 @@ Tag `v7.0.0` se nesmí retagovat ani přesouvat. Post-release změny patří na 
 - #230: low-cost visual polish — post-release scope.
 - #231: medium visual effects — post-release scope.
 - #202: orphan asset cleanup — post-release scope.
+- #286: NPC sprite atlas animace + sekundární UI obrazovky (deník, nastavení/přístupnost, příběh) — post-release scope. **MERGED** přes PR #266, #282, #283 (issue založen retroaktivně po zjištění chybějící vazby — viz issue pro detail).
 - Každá další změna musí být v topic branch + PR; žádné přímé produktové commity do `main`.
 
 ## 6. Release historie — neměnit
