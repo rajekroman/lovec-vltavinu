@@ -94,11 +94,16 @@ button{-webkit-tap-highlight-color:transparent}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideInFromRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
 @keyframes typewriter{from{width:0}to{width:100%}}
+@keyframes screenBackdropFade{from{opacity:0;backdrop-filter:blur(0px)}to{opacity:1;backdrop-filter:blur(12px)}}
 .screen{animation:fadeInUp .3s ease-out}
-.pause-screen{background:rgba(1,7,4,.62);backdrop-filter:blur(12px);animation:fadeInUp .4s cubic-bezier(.34,1.56,.64,1)}
-.dialog-text{animation:fadeInUp .35s ease-out .1s both}
+.screen.transparent{animation:screenBackdropFade .4s cubic-bezier(.34,.69,.75,.66)}
+.pause-screen{animation:fadeInUp .4s cubic-bezier(.34,1.56,.64,1)}
+.brief-card,.dig-card,.dialog-card,.result-card{animation:fadeInUp .35s ease-out}
+.dialog-text{animation:fadeInUp .35s ease-out .15s both}
 .dialog-text.typewriter{animation:typewriter .25s steps(1,end);white-space:nowrap;overflow:hidden}
 .npc-portrait{opacity:0;animation:fadeInUp .35s ease-out forwards}
+.dialog-card h2{animation:fadeInUp .35s ease-out .05s both}
+.dialog-card button{animation:fadeInUp .35s ease-out .25s both}
 
 /* Button and control animations */
 .primary-button,.secondary-button{transition:all .2s cubic-bezier(.34,.69,.75,.66);transform:translateY(0)}
@@ -107,6 +112,19 @@ button{-webkit-tap-highlight-color:transparent}
 .icon-button{transition:all .15s ease-out}
 .icon-button:hover:not(:disabled){transform:scale(1.08);filter:brightness(1.15)}
 .icon-button:active:not(:disabled){transform:scale(.96)}
+
+/* Menu stagger animations */
+.pause-menu-grid button{animation:fadeInUp .35s ease-out both}
+.pause-menu-grid button:nth-child(1){animation-delay:.1s}
+.pause-menu-grid button:nth-child(2){animation-delay:.15s}
+.pause-menu-grid button:nth-child(3){animation-delay:.2s}
+.pause-menu-grid button:nth-child(n+4){animation-delay:calc(.1s + .05s * (var(--index,0)))}
+
+/* Result stats stagger */
+.result-stats>div{animation:fadeInUp .3s ease-out both}
+.result-stats>div:nth-child(1){animation-delay:.15s}
+.result-stats>div:nth-child(2){animation-delay:.2s}
+.result-stats>div:nth-child(3){animation-delay:.25s}
 
 /* Loading and feedback */
 @keyframes spin{to{transform:rotate(360deg)}}
