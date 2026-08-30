@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import * as THREE from "../../vendor/three.module.min.js";
 import { prepareTerrainPlateTexture } from "../../src/render/HybridRenderer.js";
-import { createChlumV7Moldavite } from "../../src/scenes/ChlumV7Scene.js";
+import { createProceduralMoldavite } from "../../src/render/ProceduralMoldavite.js";
 
 const makeTexture = () => ({
   channel: -1,
@@ -31,7 +31,7 @@ test("Chlum V7 production terrain plate is a bounded authored bitmap asset", () 
   const entry = manifest.find(candidate => candidate.id === "terrain-chlum-plate-v7");
 
   assert.ok(entry);
-  assert.equal(entry.url, "./assets/textures/terrain/chlum-plate-v7.png");
+  assert.equal(entry.url, "./assets/textures/terrain/chlum-plate-v7.webp");
   assert.deepEqual(entry.dimensions, { width: 1600, height: 1200 });
   assert.equal(entry.transparent, false);
   assert.equal(entry.wrap, undefined);
@@ -58,13 +58,19 @@ test("terrain plates clamp edges and never repeat the authored image", () => {
   assert.deepEqual([source.repeat.x, source.repeat.y], [4, 3]);
 });
 
-test("Chlum V7 moldavite uses a deterministic Three.js mesh instead of the legacy finding sprite", () => {
-  const moldavite = createChlumV7Moldavite(THREE);
+test("Chlum V7 uses the shared deterministic procedural moldavite mesh", () => {
+  const moldavite = createProceduralMoldavite(THREE, { locality: "chlum", rarity: "B", seed: 42 });
 
   assert.equal(moldavite.isMesh, true);
   assert.equal(moldavite.name, "chlum-v7-moldavite-finding");
   assert.equal(moldavite.userData.assetId, "procedural-chlum-moldavite-v7");
   assert.equal(moldavite.userData.findingVisual, "moldavite");
+  assert.deepEqual(moldavite.userData.proceduralMoldavite, {
+    locality: "chlum",
+    rarity: "B",
+    seed: 42,
+    deformation: 0.24
+  });
   assert.equal(moldavite.material.isMeshStandardMaterial, true);
   assert.ok(moldavite.geometry.attributes.position.count > 0);
   assert.deepEqual([moldavite.scale.x, moldavite.scale.y, moldavite.scale.z], [5, 4, 3]);

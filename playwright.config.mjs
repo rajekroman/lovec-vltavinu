@@ -5,8 +5,8 @@ const iphone13 = devices["iPhone 13"];
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
-  // WebGL full-flow projects saturate a shared GitHub runner when launched together.
-  // Keep the release matrix deterministic; all projects still run in the same job.
+  // Each CI project runs on its own GitHub runner. Keep one worker inside each
+  // WebGL project for deterministic input and rendering behavior.
   workers: 1,
   retries: 0,
   timeout: 30_000,
@@ -24,12 +24,25 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
-      testMatch: /slavia-smoke\.spec\.mjs$/,
+      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
       metadata: { inputMode: "desktop", orientation: "landscape" },
       use: {
         ...devices["Desktop Chrome"],
         browserName: "chromium",
         viewport: { width: 1280, height: 720 }
+      }
+    },
+    {
+      // The only project that lets the service worker run: it proves the CORE
+      // list in sw.js still covers everything the first level loads.
+      name: "offline-chromium",
+      testMatch: /offline-smoke\.spec\.mjs$/,
+      metadata: { inputMode: "desktop", orientation: "landscape" },
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 1280, height: 720 },
+        serviceWorkers: "allow"
       }
     },
     {
@@ -44,7 +57,18 @@ export default defineConfig({
     },
     {
       name: "iphone-portrait",
-      testMatch: [/slavia-smoke\.spec\.mjs$/, /mobile-smoke\.spec\.mjs$/],
+      testMatch: /slavia-smoke\.spec\.mjs$/,
+      metadata: { inputMode: "touch", orientation: "portrait" },
+      use: {
+        ...iphone13,
+        browserName: "chromium",
+        viewport: { width: 390, height: 844 },
+        screen: { width: 390, height: 844 }
+      }
+    },
+    {
+      name: "iphone-portrait-smoke",
+      testMatch: [/mobile-smoke\.spec\.mjs$/, /radar-hud-smoke\.spec\.mjs$/],
       metadata: { inputMode: "touch", orientation: "portrait" },
       use: {
         ...iphone13,

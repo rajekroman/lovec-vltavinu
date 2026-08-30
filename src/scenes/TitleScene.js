@@ -11,8 +11,9 @@ export class TitleScene {
     this.controller = new AbortController();
     const { signal } = this.controller;
     this.helpOpen = false;
+    this.overlayOpen = false;
     this.screens.showTitle();
-    this.document.querySelector(".version").textContent = "v6.3 · Čtyři lokality";
+    this.document.querySelector(".version").textContent = "v7.0 · Čtyři lokality";
 
     this.document.getElementById("playButton").addEventListener("click", event => {
       event.preventDefault();
@@ -28,10 +29,21 @@ export class TitleScene {
       this.helpOpen = false;
       this.screens.showTitle();
     }, { signal });
+    this.document.getElementById("storyButton").addEventListener("click", event => {
+      event.preventDefault();
+      this.overlayOpen = true;
+      this.screens.showStory({ onClose: () => { this.overlayOpen = false; this.screens.showTitle(); } });
+    }, { signal });
+    this.document.getElementById("settingsButton").addEventListener("click", event => {
+      event.preventDefault();
+      this.overlayOpen = true;
+      this.screens.showSettings({ onClose: () => { this.overlayOpen = false; this.screens.showTitle(); } });
+    }, { signal });
     this.document.addEventListener("keydown", event => {
-      if (event.key !== "Escape" || !this.helpOpen) return;
+      if (event.key !== "Escape" || (!this.helpOpen && !this.overlayOpen)) return;
       event.preventDefault();
       this.helpOpen = false;
+      this.overlayOpen = false;
       this.screens.showTitle();
     }, { signal });
   }
@@ -40,6 +52,7 @@ export class TitleScene {
     this.controller?.abort();
     this.controller = null;
     this.helpOpen = false;
+    this.overlayOpen = false;
   }
 
   async dispose() {

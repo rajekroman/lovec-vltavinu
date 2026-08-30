@@ -9,6 +9,8 @@ const levels = read("src/data/levels.js");
 const input = read("src/input/DomInputAdapter.js");
 const html = read("index.html");
 const smoke = read("tests/slavia-smoke.spec.mjs");
+const hud = read("src/ui/HudController.js");
+const v7 = read("v7.css");
 
 test("Chlum uses action-driven radar and never opens the digging minigame", () => {
   assert.doesNotMatch(scene, /DigSystem|showDig|strikeDig|startDig|digHits/);
@@ -38,4 +40,18 @@ test("mobile keeps the touch joystick and action button while desktop keeps keyb
   assert.match(input, /this\.listen\(moveZone, "pointerdown"/);
   assert.match(input, /this\.listen\(action, "pointerdown"/);
   assert.match(smoke, /type: "touchMove", touchPoints: \[touchPoint\]/);
+});
+
+test("V7 HUD stays globally styled and exposes a visible radar instrument", () => {
+  assert.match(hud, /ensureRadarPanel\(\)/);
+  assert.match(hud, /panel\.id = "radarPanel"/);
+  assert.match(hud, /radarPresentation\(model\)/);
+  assert.match(hud, /normalized\.includes\("silný"\)/);
+  assert.match(hud, /normalized\.includes\("slabý"\)/);
+  assert.match(hud, /normalized\.includes\("bez signálu"\)/);
+  assert.match(hud, /normalized\.includes\("odhalil"\)/);
+  assert.match(v7, /\.radar-panel\{/);
+  assert.match(v7, /\.system-panel \.bag-pill\{\s*display:flex/);
+  assert.doesNotMatch(v7, /\.v7-visual-rebuild \.hud/);
+  assert.doesNotMatch(v7, /\.system-panel \.bag-pill\{\s*display:none/);
 });

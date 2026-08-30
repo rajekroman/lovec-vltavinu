@@ -13,6 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-180.png">
   <link rel="stylesheet" href="./style.css">
+  <link id="lovec-v7-visual-theme" rel="stylesheet" href="./v7.css">
   <style id="slavia-final-ui-contract">
     .primary-button,.secondary-button,.text-button{min-height:44px}
     #resultScreen{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
@@ -57,10 +58,10 @@
       <div class="danger-copy"><span>POZORNOST</span><strong id="dangerMeterText">KLID</strong></div>
       <i><em id="heatFill"></em></i>
     </div>
-    <div id="bossHud" class="boss-hud hidden">
-      <div><small>HROZBA</small><strong id="bossName">KRYSTALOVÝ KAREL</strong></div>
-      <i><em id="bossFill"></em></i>
-      <span id="bossPhase">STOPUJ HO</span>
+    <div id="radarPanel" class="radar-panel hidden" aria-label="Radar vltavínů">
+      <span class="radar-label">RADAR</span>
+      <i class="radar-track"><em id="radarFill"></em></i>
+      <strong id="radarState" class="radar-state">VYPNUTO</strong>
     </div>
     <div id="dangerBanner" class="danger-banner hidden"><span>⚠</span><strong id="dangerText">VE SVĚTLE</strong></div>
     <div id="combo" class="combo hidden">KOMBO ×2</div>
@@ -68,12 +69,6 @@
     <div id="toast" class="toast"></div>
   </section>
 
-  <div id="bossIntro" class="boss-intro hidden" aria-live="assertive">
-    <div class="boss-intro-line"></div>
-    <small id="bossIntroKicker">HROZBA V LOKALITĚ</small>
-    <strong id="bossIntroName">KRYSTALOVÝ KAREL</strong>
-    <span id="bossIntroText">Nenech ho zmizet se vzácným nálezem.</span>
-  </div>
 
   <section id="controls" class="controls hidden" aria-label="Dotykové ovládání">
     <div id="moveZone" class="move-zone"><div id="stick" class="stick"></div></div>
@@ -94,8 +89,10 @@
       <button id="playButton" class="play-button" type="button"><span>VYRAZIT</span><small>jedním klepnutím</small></button>
       <div class="title-tools">
         <button id="howButton" class="text-button" type="button">Jak se hraje</button>
+        <button id="storyButton" class="text-button" type="button">Příběh a lokality</button>
+        <button id="settingsButton" class="text-button" type="button">Nastavení</button>
       </div>
-      <p class="version">v6.3 · Čtyři lokality</p>
+      <p class="version">v7.0 · Čtyři lokality</p>
     </div>
   </section>
 
@@ -120,18 +117,6 @@
     </div>
   </section>
 
-  <section id="identifyScreen" class="screen transparent">
-    <div class="identify-card">
-      <p class="eyebrow">RYCHLÉ URČENÍ</p>
-      <div id="sampleGem" class="sample-gem">◆</div>
-      <h2 id="sampleTitle">Zelený vzorek</h2>
-      <p id="sampleDescription"></p>
-      <div class="identify-buttons">
-        <button id="realButton" class="primary-button" type="button">VLTAVÍN</button>
-        <button id="glassButton" class="secondary-button" type="button">SKLO</button>
-      </div>
-    </div>
-  </section>
 
   <section id="dialogScreen" class="screen transparent">
     <div class="dialog-card">
@@ -141,23 +126,7 @@
     </div>
   </section>
 
-  <section id="perkScreen" class="screen">
-    <div class="perk-card">
-      <p class="eyebrow">VÝPRAVA SÍLÍ</p>
-      <h2>Vyber jednu výhodu</h2>
-      <div id="perkList" class="perk-list"></div>
-    </div>
-  </section>
 
-  <section id="juryScreen" class="screen">
-    <div class="jury-card">
-      <p class="eyebrow">KD SLÁVIE · NA ZELENÉ VLNĚ</p>
-      <h2>Vyber tři kameny do vitríny</h2>
-      <p>Vzácnost, stav a doložený původ rozhodnou o výsledku.</p>
-      <div id="juryList" class="jury-list"></div>
-      <div class="jury-footer"><span id="juryCount">0 / 3</span><button id="juryButton" class="primary-button" type="button" disabled>POSTAVIT VITRÍNU</button></div>
-    </div>
-  </section>
 
   <section id="resultScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText" aria-live="polite">
     <div class="result-card">
@@ -171,7 +140,19 @@
   </section>
 
   <section id="pauseScreen" class="screen transparent">
-    <div class="small-card"><p id="pausePlace" class="eyebrow">PAUZA</p><h2>Výprava čeká</h2><p id="pauseObjective" class="pause-objective">Načítání úkolu</p><p id="pauseProgress" class="pause-progress">POSTUP 0 %</p><button id="resumeButton" class="primary-button" type="button">POKRAČOVAT</button><button id="menuButton" class="secondary-button" type="button">ODEJÍT DO MENU</button></div>
+    <div class="small-card">
+      <p id="pausePlace" class="eyebrow">PAUZA</p>
+      <h2>Výprava čeká</h2>
+      <p id="pauseObjective" class="pause-objective">Načítání úkolu</p>
+      <p id="pauseProgress" class="pause-progress">POSTUP 0 %</p>
+      <button id="resumeButton" class="primary-button" type="button">POKRAČOVAT</button>
+      <div class="pause-menu-grid">
+        <button id="journalButton" class="secondary-button" type="button">☰ DENÍK</button>
+        <button id="pauseStoryButton" class="secondary-button" type="button">✦ PŘÍBĚH</button>
+        <button id="pauseSettingsButton" class="secondary-button" type="button">⚙ NASTAVENÍ</button>
+      </div>
+      <button id="menuButton" class="text-button" type="button">ODEJÍT DO MENU</button>
+    </div>
   </section>
 
   <section id="howScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="howTitle" aria-describedby="howIntro">
@@ -184,6 +165,64 @@
         <div><b>4</b><strong>Pozornost</strong><p>Sleduj červené varování a drž se mimo hrozbu. Bezpečný postup je důležitější než spěch.</p></div>
       </div>
       <button id="closeHowButton" class="primary-button" type="button">ROZUMÍM</button>
+    </div>
+  </section>
+
+  <section id="journalScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="journalTitle">
+    <div class="journal-card">
+      <p class="eyebrow">DENÍK VÝPRAVY</p>
+      <h2 id="journalTitle">Navštívené lokality</h2>
+      <div id="journalList" class="how-grid"></div>
+      <button id="journalCloseButton" class="primary-button" type="button">ZPĚT</button>
+    </div>
+  </section>
+
+  <section id="settingsScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-card">
+      <p class="eyebrow">ZVUK A PŘÍSTUPNOST</p>
+      <h2 id="settingsTitle">Nastavení</h2>
+      <div class="settings-list">
+        <div class="settings-row">
+          <label for="masterVolumeRange">Hlavní hlasitost</label>
+          <input id="masterVolumeRange" type="range" min="0" max="100" step="1">
+        </div>
+        <div class="settings-row">
+          <label for="musicVolumeRange">Hudba</label>
+          <input id="musicVolumeRange" type="range" min="0" max="100" step="1">
+        </div>
+        <div class="settings-row">
+          <label for="effectsVolumeRange">Zvukové efekty</label>
+          <input id="effectsVolumeRange" type="range" min="0" max="100" step="1">
+        </div>
+        <label class="settings-toggle"><input id="mutedCheckbox" type="checkbox"><span>Ztlumit zvuk</span></label>
+        <label class="settings-toggle"><input id="highContrastCheckbox" type="checkbox"><span>Vysoký kontrast</span></label>
+        <label class="settings-toggle"><input id="largeTextCheckbox" type="checkbox"><span>Větší text</span></label>
+        <div class="settings-row">
+          <label for="colorBlindSelect">Režim pro barvoslepost</label>
+          <select id="colorBlindSelect">
+            <option value="none">Vypnuto</option>
+            <option value="deuteranopia">Deuteranopie</option>
+            <option value="protanopia">Protanopie</option>
+            <option value="tritanopia">Tritanopie</option>
+          </select>
+        </div>
+      </div>
+      <button id="settingsCloseButton" class="primary-button" type="button">ZPĚT</button>
+    </div>
+  </section>
+
+  <section id="storyScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+    <div class="story-card">
+      <p class="eyebrow">PŘÍBĚH VLTAVÍNŮ</p>
+      <h2 id="storyTitle">Příběh a lokality</h2>
+      <div class="story-list">
+        <p>Vltavíny jsou zelené sklo z nebe — před patnácti miliony let dopadl u bavorského Nördlingenu obří meteorit. Roztavená hornina vylétla vysoko do atmosféry a spadla jako drobné skleněné kapky napříč jižními Čechami a jižní Moravou. Pojmenovaly se podle řeky Vltavy, kde je sběratelé poprvé popsali.</p>
+        <details><summary>Chlum · Pole po dešti</summary><p>Pole u Chlumu patří k tradičním nalezištím. Deště odplavují ornici a odkrývají vltavíny těsně pod povrchem — proto sem hospodář Václav pouští hledače jen po dešti a mimo dráhu traktoru.</p></details>
+        <details><summary>Nesměň · Lesní profily</summary><p>Lesní půda kolem Nesměně skrývá vltavíny hlouběji, v profilech vyznačených lesníkem Janem. Každá jáma se musí po průzkumu bezpečně zasypat, aby les zůstal beze změny.</p></details>
+        <details><summary>Besednice · Ježková vrstva</summary><p>Besednice proslavila jeden z nejkrásnějších dokumentovaných vltavínů na světě. Ježkovitá vrstva jílu tu ukrývá vzácné kusy — a tam, kde je vzácnost, se objevují i konkurenti jako Karel.</p></details>
+        <details><summary>KD Slavia · Na Zelené Vlně</summary><p>Sbírka končí svou cestu na výstavě Na Zelené Vlně v KD Slávii, kde znalkyně Eva ověřuje původ každého nálezu, než ho porota zařadí do soutěže.</p></details>
+      </div>
+      <button id="storyCloseButton" class="primary-button" type="button">ZPĚT</button>
     </div>
   </section>
 

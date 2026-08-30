@@ -8,6 +8,7 @@ import { ThreeRenderer } from "./render/ThreeRenderer.js";
 import { GltfAssetLoader, GLTF_LOADER_REVISION } from "./render/GltfAssetLoader.js";
 import { disposeObject3D, disposeTexture } from "./render/AssetDisposal.js";
 import { ScreenController } from "./ui/ScreenController.js";
+import { SceneTransition } from "./ui/SceneTransition.js";
 import { HudController } from "./ui/HudController.js";
 import { DomInputAdapter } from "./input/DomInputAdapter.js";
 import { TitleScene } from "./scenes/TitleScene.js";
@@ -15,6 +16,10 @@ import { ChlumV7Scene } from "./scenes/ChlumV7Scene.js";
 import { NesmenBesedniceBridgeScene } from "./scenes/NesmenBesedniceBridgeScene.js";
 import { BesedniceScene } from "./scenes/BesedniceScene.js";
 import { SlaviaScene } from "./scenes/SlaviaScene.js";
+import { ChlumGridScene } from "./grid/ChlumGridScene.js";
+import { NesmenGridScene } from "./grid/NesmenGridScene.js";
+import { BesedniceGridScene } from "./grid/BesedniceGridScene.js";
+import { SlaviaGridScene } from "./grid/SlaviaGridScene.js";
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -38,9 +43,10 @@ const renderer = new ThreeRenderer({
   clearColor: 0x17150f,
   antialias: true
 });
-const app = new GameApp({ events, renderer });
+const transition = new SceneTransition(documentRef);
+const app = new GameApp({ events, renderer, transition });
 const session = createGameSession();
-const screens = new ScreenController(documentRef);
+const screens = new ScreenController(documentRef, { session });
 const hud = new HudController({ document: documentRef, events });
 const audio = new AudioEngine({
   events,
@@ -49,6 +55,7 @@ const audio = new AudioEngine({
   window: windowRef,
   button: documentRef.getElementById("soundButton")
 });
+screens.audio = audio;
 const lifecycle = new AbortController();
 
 function resize() {
@@ -118,11 +125,48 @@ const title = new TitleScene({
   onStart: () => startNewRun().catch(showFatalError)
 });
 
+const chlumGrid = new ChlumGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const nesmenGrid = new NesmenGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const besedniceGrid = new BesedniceGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+const slaviaGrid = new SlaviaGridScene({
+  app,
+  events,
+  renderer,
+  three: THREE,
+  screens,
+  session
+});
+
 app.scenes.register("title", title);
 app.scenes.register("chlum", chlum);
 app.scenes.register("nesmen", nesmen);
 app.scenes.register("besednice", besednice);
 app.scenes.register("slavia", slavia);
+app.scenes.register("chlum-grid", chlumGrid);
+app.scenes.register("nesmen-grid", nesmenGrid);
+app.scenes.register("besednice-grid", besedniceGrid);
+app.scenes.register("slavia-grid", slaviaGrid);
 
 async function startNewRun() {
   session.reset();
@@ -174,10 +218,18 @@ function installDebugApi() {
       chlum: app.scenes.activeId === "chlum" ? chlum.snapshot() : null,
       nesmen: app.scenes.activeId === "nesmen" ? nesmen.snapshot() : null,
       besednice: app.scenes.activeId === "besednice" ? besednice.snapshot() : null,
-      slavia: app.scenes.activeId === "slavia" ? slavia.snapshot() : null
+      slavia: app.scenes.activeId === "slavia" ? slavia.snapshot() : null,
+      chlumGrid: app.scenes.activeId === "chlum-grid" ? chlumGrid.snapshot() : null,
+      nesmenGrid: app.scenes.activeId === "nesmen-grid" ? nesmenGrid.snapshot() : null,
+      besedniceGrid: app.scenes.activeId === "besednice-grid" ? besedniceGrid.snapshot() : null,
+      slaviaGrid: app.scenes.activeId === "slavia-grid" ? slaviaGrid.snapshot() : null
     }),
     resetInput: reason => inputAdapter.reset(reason),
-    resize
+    resize,
+    playGridScene: async (levelId) => {
+      const sceneId = `${levelId}-grid`;
+      if (app.scenes.has(sceneId)) await app.changeScene(sceneId);
+    }
   });
 }
 

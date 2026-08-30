@@ -1,17 +1,25 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { NESMEN_ENTITY_DEFINITIONS, NESMEN_PROFILE_IDS, createNesmenFinding } from "../data/nesmen.js";
+import { NESMEN_ENTITY_DEFINITIONS, NESMEN_PROFILE_IDS, NESMEN_FINDING_VARIANTS } from "../data/nesmen.js";
 import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "nesmen-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-nesmen-forest-plate-v7";
 const V7_FOREGROUND_ASSET = "foreground-nesmen-forest-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export const NESMEN_DIG_CONFIG = Object.freeze({ sweetMin: 0.35, sweetMax: 0.65, speed: 1.05 });
 
 export function resolveNesmenV7CameraZoom(viewportWidth, viewportHeight) {
   const width = Math.max(1, Number(viewportWidth) || 1);
@@ -21,6 +29,50 @@ export function resolveNesmenV7CameraZoom(viewportWidth, viewportHeight) {
   if (aspect >= 1.5) return 1.04;
   if (aspect <= 0.75) return 0.94;
   return 1;
+}
+
+function moldaviteNoise(x, y, z) {
+  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+export function createNesmenMoldavite(THREE) {
+  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
+    throw new TypeError("Nesmen moldavite requires Three.js mesh primitives.");
+  }
+
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.attributes?.position;
+  if (!position?.getX || !position?.setXYZ) throw new TypeError("Nesmen moldavite geometry must expose positions.");
+
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const radial = 0.8 + moldaviteNoise(x, y, z) * 0.26;
+    position.setXYZ(index, x * radial * 1.1, y * radial * 0.88, z * radial * 0.7);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals?.();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x2d5a32,
+    emissive: 0x0a1f0d,
+    emissiveIntensity: 0.2,
+    roughness: 0.55,
+    metalness: 0.01,
+    transparent: true,
+    opacity: 0.94
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "nesmen-moldavite-finding";
+  mesh.position.z = 14;
+  mesh.rotation.x = 0.32;
+  mesh.rotation.y = -0.28;
+  mesh.scale.set(4.5, 3.8, 2.8);
+  mesh.userData.assetId = "procedural-nesmen-moldavite";
+  mesh.userData.findingVisual = "moldavite";
+  return mesh;
 }
 
 export class NesmenScene {
@@ -35,6 +87,12 @@ export class NesmenScene {
     this.modelFactory = new ModelFactory({ renderer: this.renderer });
     this.visualRoot = null;
     this.foregroundRoot = null;
+    this.foresterAnimator = null;
+    this.pickupTween = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
+    this.effectListeners = null;
+    this.visualTime = 0;
     this.visualMode = "uninitialized";
     this.assetEntries = new Map();
     this.loadedModels = new Map();
@@ -45,16 +103,19 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
+    this.rng = null;
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
     this.interactions = new InteractionSystem({ events: this.events });
-    this.dig = new DigSystem({ events: this.events });
+    this.dig = new DigSystem({ events: this.events, ...NESMEN_DIG_CONFIG });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "nesmen" });
   }
 
@@ -85,12 +146,17 @@ export class NesmenScene {
     this.foresterEntity = null;
     this.profileEntities = [];
     this.findingEntity = null;
+    this.collectingEntity = null;
+    this.collectingElapsed = 0;
     this.activeProfileEntity = null;
     this.availableInteraction = null;
     this.modal = null;
     this.totalDigHits = 0;
+    this.rng = createRng(this.session.state.seed ^ 0x4E45534D);
     this.resultShown = false;
     this.levelComplete = null;
+    this.pickupTween = null;
+    this.visualTime = 0;
     this.hudSignature = "";
   }
 
@@ -127,10 +193,10 @@ export class NesmenScene {
     return texture;
   }
 
-  texture(id) {
+  async texture(id) {
     const entry = this.requireAsset(id);
     if (entry.type !== "texture" && entry.type !== "spritesheet") throw new Error(`Asset ${id} is not a texture.`);
-    const texture = this.app.assets.get(id, entry.type);
+    const texture = await this.app.assets.get(id, entry.type);
     if (!texture) throw new Error(`Texture is not loaded: ${id}`);
     return texture;
   }
@@ -159,12 +225,12 @@ export class NesmenScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "nesmen-vertical-slice";
-    const [environmentTexture, foregroundTexture, sandTexture, playerTexture, foresterTexture] = await Promise.all([
+    const [environmentTexture, foregroundTexture, sandTexture, playerTexture, foresterAtlasTexture] = await Promise.all([
       this.texture(V7_PLATE_ASSET),
       this.texture(V7_FOREGROUND_ASSET),
       this.texture("terrain-nesmen-sand-profile"),
       this.texture("player-hunter-walk"),
-      this.texture("npc-forester-jan")
+      this.texture("npc-forester-jan-atlas")
     ]);
     sandTexture.repeat.set(2.2, 1.2);
 
@@ -198,16 +264,17 @@ export class NesmenScene {
       anchorY: 0.08,
       assetId: "player-hunter-walk"
     });
-    const forester = this.renderer.createSprite(foresterTexture, {
-      width: 82,
-      height: 108,
-      z: 12,
-      anchorX: 0.5,
-      anchorY: 0.08,
-      assetId: "npc-forester-jan"
-    });
+    const foresterAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "forester_jan",
+      { assetId: "npc-forester-jan-atlas", width: 600, height: 160, texture: foresterAtlasTexture },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    foresterAnimator.playAnimation("idle");
+    this.foresterAnimator = foresterAnimator;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
-    this.renderer.bindEntity(this.foresterEntity, forester, "actors");
+    this.renderer.bindEntity(this.foresterEntity, foresterAnimator.sprite, "actors");
 
     for (const entity of this.profileEntities) {
       const group = new THREE.Group();
@@ -261,6 +328,17 @@ export class NesmenScene {
     foreground.add(upperEdge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x8B7355 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0x2f6038 });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
+
+    this.effectListeners?.abort();
+    this.effectListeners = new AbortController();
+    const { signal } = this.effectListeners;
+    this.events.on("dig:hit", ({ spot }) => this.onDigHit(spot), { signal });
+    this.events.on("dig:clean", () => this.onDigClean(), { signal });
   }
 
   beginPlaying() {
@@ -321,6 +399,46 @@ export class NesmenScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateCollectionAnimation(dt);
+    this.updateNpcIdleAnimation(dt);
+    this.updateParticles(dt);
+  }
+
+  updateParticles(dt) {
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
+  }
+
+  updateCollectionAnimation(dt) {
+    if (this.collectingEntity === null) return;
+    this.collectingElapsed += dt;
+    const duration = 0.3;
+    if (this.collectingElapsed >= duration) {
+      this.renderer.unbindEntity(this.collectingEntity);
+      this.app.world.destroyEntity(this.collectingEntity);
+      this.externalIdByEntity.delete(this.collectingEntity);
+      this.collectingEntity = null;
+      this.collectingElapsed = 0;
+      return;
+    }
+    const t = this.collectingElapsed / duration;
+    const scale = 1 + t * 0.5;
+    const visual = this.renderer.getVisual(this.collectingEntity);
+    if (visual && visual.material) {
+      visual.scale.set(scale, scale, 1);
+      visual.material.opacity = Math.max(0, 1 - t);
+    }
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.foresterEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.visualTime += Math.max(0, Number(dt) || 0);
+    if (this.foresterAnimator) this.foresterAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
+    if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
+      const entity = this.findingEntity;
+      if (entity !== null) this.finishPickup(entity);
+      else this.pickupTween = null;
+    }
   }
 
   updateHud() {
@@ -338,6 +456,7 @@ export class NesmenScene {
   showPermissionDialog() {
     const dialogue = getDialogueDefinition("nesmen-permission");
     this.modal = "dialog";
+    if (this.foresterAnimator) playDialogueAnimation(this.foresterAnimator, "start");
     this.app.input.reset("dialog-open");
     this.screens.showDialog({
       name: dialogue.speaker.name,
@@ -379,7 +498,7 @@ export class NesmenScene {
     });
   }
 
-  strikeDig() {
+  async strikeDig() {
     const result = this.dig.strike();
     if (!result) return;
     if (result.hit) this.totalDigHits += 1;
@@ -395,6 +514,9 @@ export class NesmenScene {
 
     const entity = this.activeProfileEntity;
     const spot = this.app.world.get(entity, "digSpot");
+    spot.digQuality = this.dig.averageQuality();
+    spot.perfectDig = this.dig.perfectDig();
+    spot.cleanDig = result.hits === DIG_REQUIRED_HITS && result.misses === 0;
     const interaction = this.app.world.get(entity, "interaction");
     this.dig.finish();
     spot.dug = true;
@@ -406,7 +528,10 @@ export class NesmenScene {
       visual.marker.visible = false;
       visual.hole.visible = true;
     }
-    if (spot.findingId) this.spawnFinding(entity, spot.findingId);
+    if (spot.findingId) {
+      await this.spawnFinding(entity, spot.findingId, spot.digQuality, spot.perfectDig);
+      if (spot.perfectDig) this.events.emit("dig:clean", { spot: spot.findingId });
+    }
 
     this.activeProfileEntity = null;
     this.modal = null;
@@ -432,16 +557,22 @@ export class NesmenScene {
     this.emitHud(true);
   }
 
-  spawnFinding(profileEntity, findingId) {
+  async spawnFinding(profileEntity, findingId, digQuality, perfect) {
     if (this.findingEntity !== null) return;
     const profile = this.app.world.get(profileEntity, "transform");
     this.findingEntity = this.app.world.createEntity({
       transform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
       previousTransform: { x: profile.x + 30, y: profile.y + 18, rotation: 0, scale: 1 },
-      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 72, priority: 90, enabled: true }
+      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 72, priority: 90, enabled: true },
+      findingQuality: { value: digQuality, perfect: perfect === true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
-    this.texture("finding-vltavin-nesmen").then(texture => {
+    try {
+      const mesh = createNesmenMoldavite(this.THREE);
+      this.renderer.bindEntity(this.findingEntity, mesh, "effects");
+    } catch (error) {
+      console.warn("Procedural moldavite failed, falling back to sprite", error);
+      const texture = await this.texture("finding-vltavin-nesmen");
       if (this.findingEntity === null) return;
       const sprite = this.renderer.createSprite(texture, {
         width: 50,
@@ -452,21 +583,54 @@ export class NesmenScene {
         assetId: "finding-vltavin-nesmen"
       });
       this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    }
+    const moldavite = createProceduralMoldavite(this.THREE, {
+      locality: "nesmen",
+      rarity: "B",
+      seed: this.session.state.seed ^ 0x4e534649,
+      rotationX: 0.22,
+      rotationY: -0.24
     });
+    this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
   collectFinding() {
-    if (this.findingEntity === null) return;
+    if (this.findingEntity === null || this.pickupTween) return;
     const entity = this.findingEntity;
-    this.objectives.recordFinding(createNesmenFinding("nesmen-standard", "nesmen-finding-1"));
-    this.renderer.unbindEntity(entity);
-    this.app.world.destroyEntity(entity);
-    this.externalIdByEntity.delete(entity);
+    const transform = this.app.world.get(entity, "transform");
+    const fq = this.app.world.get(entity, "findingQuality") ?? {};
+    const quality = fq.value ?? 0;
+    const perfect = fq.perfect === true;
+    const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 15, {
+        speed: 4,
+        spread: 0.8,
+        lifetime: 0.6,
+        size: 1.6
+      });
+    }
+    this.collectingEntity = entity;
+    this.collectingElapsed = 0;
     this.findingEntity = null;
+    const interaction = this.app.world.get(entity, "interaction");
+    if (interaction) interaction.enabled = false;
+    const visual = this.renderer.objectByEntity.get(entity);
+    this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("finding-collected");
     this.emitHud(true);
+    if (!this.pickupTween) this.finishPickup(entity);
+  }
+
+  finishPickup(entity) {
+    this.renderer.unbindEntity(entity);
+    this.app.world.destroyEntity(entity);
+    this.externalIdByEntity.delete(entity);
+    if (this.findingEntity === entity) this.findingEntity = null;
+    this.pickupTween = null;
   }
 
   dugCount() {
@@ -597,7 +761,8 @@ export class NesmenScene {
             x: transform.x,
             y: transform.y,
             dug: spot.dug === true,
-            filled: spot.filled === true
+            filled: spot.filled === true,
+            cleanDig: spot.cleanDig === true
           };
         }),
         available: this.availableInteraction ? {
@@ -607,13 +772,29 @@ export class NesmenScene {
         } : null,
         loadedAssets: [...this.assetEntries.keys()].sort(),
         visualMode: this.visualMode,
-        cameraZoom: this.renderer.camera?.zoom ?? null
+        cameraZoom: this.renderer.camera?.zoom ?? null,
+        foresterAnimation: this.foresterAnimator?.getState().animation ?? null,
+        pickupActive: Boolean(this.pickupTween)
       },
       levelComplete: this.levelComplete
     };
   }
 
   destroyVisualWorld() {
+    this.effectListeners?.abort();
+    this.effectListeners = null;
+    if (this.pickupTween) cancelPickupTween(this.pickupTween);
+    this.pickupTween = null;
+    if (this.dustEmitter) {
+      this.renderer.remove(this.dustEmitter.object);
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
@@ -625,6 +806,8 @@ export class NesmenScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.foresterAnimator = null;
+    this.visualTime = 0;
     this.visualMode = "uninitialized";
   }
 
@@ -632,6 +815,34 @@ export class NesmenScene {
     for (const entry of this.assetEntries.values()) this.app.assets.unload(entry.id, entry.type);
     this.loadedModels.clear();
     this.app.assets.unload(MANIFEST_ENTRY.id, MANIFEST_ENTRY.type);
+  }
+
+  onDigHit(spotId) {
+    if (!this.dustEmitter) return;
+    const entity = this.entityByExternalId.get(spotId) ?? this.activeProfileEntity;
+    if (!Number.isInteger(entity)) return;
+    const transform = this.app.world.get(entity, "transform");
+    if (!transform) return;
+    this.dustEmitter.emitBurst(transform.x, transform.y, 4, 12, {
+      speed: 2.5,
+      spread: 0.7,
+      lifetime: 0.35,
+      size: 2
+    });
+  }
+
+  onDigClean() {
+    if (!this.sparkleEmitter) return;
+    const activeEntity = this.activeProfileEntity;
+    if (!Number.isInteger(activeEntity)) return;
+    const transform = this.app.world.get(activeEntity, "transform");
+    if (!transform) return;
+    this.sparkleEmitter.emitBurst(transform.x, transform.y, 6, 15, {
+      speed: 3,
+      spread: 0.8,
+      lifetime: 0.45,
+      size: 1.5
+    });
   }
 
   async exit() {

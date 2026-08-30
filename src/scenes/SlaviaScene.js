@@ -1,14 +1,36 @@
 import { LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
 import { SLAVIA_DOCUMENT_IDS, SLAVIA_ENTITY_DEFINITIONS } from "../data/slavia.js";
+import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { SlaviaObjectiveFlow } from "../gameplay/SlaviaObjectiveFlow.js";
 import { evaluateSlaviaCollection } from "../gameplay/SlaviaEvaluation.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createWaterOverlay } from "../render/WaterOverlay.js";
+import { createSparkleEmitter } from "../render/ParticleSystem.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "slavia-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
+const V7_PLATE_ASSET = "terrain-slavia-event-plate-v7";
+const V7_FOREGROUND_ASSET = "foreground-slavia-event-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export function czechCount(count, one, few, many) {
+  const value = Number.isFinite(Number(count)) ? Math.trunc(Number(count)) : 0;
+  const form = Math.abs(value) === 1 ? one : Math.abs(value) >= 2 && Math.abs(value) <= 4 ? few : many;
+  return `${value} ${form}`;
+}
+
+export function resolveSlaviaV7CameraZoom(viewportWidth, viewportHeight, viewHeight = 720, boundsWidth = 1800) {
+  const width = Math.max(1, Number(viewportWidth) || 1);
+  const height = Math.max(1, Number(viewportHeight) || 1);
+  const safeViewHeight = Math.max(1, Number(viewHeight) || 720);
+  const safeBoundsWidth = Math.max(1, Number(boundsWidth) || 1800);
+  const fitZoom = (safeViewHeight * (width / height)) / safeBoundsWidth;
+  const boundsSafeZoom = Math.ceil(fitZoom * 100) / 100 + 0.01;
+  return Math.max(0.9, boundsSafeZoom);
+}
 
 export class SlaviaScene {
   constructor(options) {
@@ -49,6 +71,13 @@ export class SlaviaScene {
     this.entityByExternalId = new Map();
     this.externalIdByEntity = new Map();
     this.visualRoot = null;
+    this.foregroundRoot = null;
+    this.waterOverlay = null;
+    this.sparkleEmitter = null;
+    this.evaAnimator = null;
+    this.frantaAnimator = null;
+    this.visualMode = "uninitialized";
+    this.cameraZoom = 0.9;
     this.playerEntity = null;
     this.availableInteraction = null;
     this.modal = null;
@@ -117,15 +146,21 @@ export class SlaviaScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "slavia-vertical-slice";
-    const environmentTexture = this.texture("terrain-slavia-malse-exterior-v1");
-    environmentTexture.repeat.set(1, 0.917);
-    environmentTexture.offset.set(0, 0.0415);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(this.level.bounds.width, this.level.bounds.height),
-      new THREE.MeshBasicMaterial({ map: environmentTexture })
-    );
-    ground.position.set(this.level.bounds.x + this.level.bounds.width / 2, this.level.bounds.y + this.level.bounds.height / 2, -5);
-    root.add(ground, new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55));
+    const environmentTexture = this.texture(V7_PLATE_ASSET);
+    const ground = this.renderer.createTerrainPlate(environmentTexture, {
+      x: this.level.bounds.x,
+      y: this.level.bounds.y,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      z: -12,
+      assetId: V7_PLATE_ASSET
+    });
+    ground.name = "slavia-v7-main-plate";
+    this.visualMode = "event-plaza-v7";
+    const ambient = new THREE.HemisphereLight(0xffedd0, 0x27302a, 1.55);
+    const sun = new THREE.DirectionalLight(0xffe6bd, 1.75);
+    sun.position.set(-220, 400, 560);
+    root.add(ground, ambient, sun);
 
     const buildingEntity = this.entityByExternalId.get("kd-slavia");
     const building = this.modelFactory.clone(this.model("model-slavia-kd-building"), {
@@ -134,8 +169,6 @@ export class SlaviaScene {
       scale: 104,
       z: 2
     });
-    // The environment plate already contains the detailed, correctly scaled facade.
-    // Keep the canonical model bound to the destination entity without covering it.
     building.visible = false;
     this.renderer.bindEntity(buildingEntity, building, "props");
 
@@ -151,18 +184,27 @@ export class SlaviaScene {
       assetId: "player-hunter-walk"
     }), "actors");
 
-    for (const [entityId, assetId] of [["expert-eva", "npc-expert-eva"], ["thief-franta", "npc-thief-franta"]]) {
-      const entity = this.entityByExternalId.get(entityId);
-      const sprite = this.renderer.createSprite(this.texture(assetId), {
-        width: 82,
-        height: 108,
-        z: 12,
-        anchorX: 0.5,
-        anchorY: 0.08,
-        assetId
-      });
-      this.renderer.bindEntity(entity, sprite, "actors");
-    }
+    const evaEntity = this.entityByExternalId.get("expert-eva");
+    this.evaAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "expert_eva",
+      { assetId: "npc-expert-eva-atlas", width: 600, height: 160, texture: this.texture("npc-expert-eva-atlas") },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    this.evaAnimator.playAnimation("idle");
+    this.renderer.bindEntity(evaEntity, this.evaAnimator.sprite, "actors");
+
+    const frantaEntity = this.entityByExternalId.get("thief-franta");
+    this.frantaAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "thief_franta",
+      { assetId: "npc-thief-franta-atlas", width: 600, height: 160, texture: this.texture("npc-thief-franta-atlas") },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08 }
+    );
+    this.frantaAnimator.playAnimation("idle");
+    this.renderer.bindEntity(frantaEntity, this.frantaAnimator.sprite, "actors");
 
     for (const documentId of SLAVIA_DOCUMENT_IDS) {
       const entity = this.entityByExternalId.get(documentId);
@@ -177,6 +219,29 @@ export class SlaviaScene {
 
     this.visualRoot = root;
     this.renderer.add(root, "ground");
+
+    const foreground = new THREE.Group();
+    foreground.name = "slavia-v7-foreground-occlusion";
+    const eventEdge = this.renderer.createSprite(this.texture(V7_FOREGROUND_ASSET), {
+      x: this.level.bounds.x + this.level.bounds.width / 2,
+      y: this.level.bounds.y + this.level.bounds.height / 2,
+      z: 30,
+      width: this.level.bounds.width,
+      height: this.level.bounds.height,
+      anchorX: 0.5,
+      anchorY: 0.5,
+      assetId: V7_FOREGROUND_ASSET
+    });
+    eventEdge.name = "slavia-v7-event-edge";
+    foreground.add(eventEdge);
+    this.foregroundRoot = foreground;
+    this.renderer.add(foreground, "foreground");
+
+    this.waterOverlay = createWaterOverlay(THREE, this.level.bounds, { opacity: 0.25 });
+    this.renderer.add(this.waterOverlay.object, "ground");
+
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xFFD700, maxParticles: 40 });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
   }
 
   beginPlaying() {
@@ -228,6 +293,11 @@ export class SlaviaScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    if (this.waterOverlay) this.waterOverlay.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
+    const deltaMs = Math.max(0, Number(dt) || 0) * 1000;
+    if (this.evaAnimator) this.evaAnimator.update(deltaMs);
+    if (this.frantaAnimator) this.frantaAnimator.update(deltaMs);
   }
 
   updateHud() {
@@ -259,12 +329,14 @@ export class SlaviaScene {
   consultExpert() {
     this.flow.consultExpert();
     this.modal = "expert";
+    if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-expert");
+    const dialogue = getDialogueDefinition("slavia-expert-consultation");
     this.screens.showDialog({
-      name: "Eva — znalkyně",
-      text: "Dokumentace sedí. Franta se ale pokusil odnést nejlepší kus; zastav ho a vrať se pro certifikát.",
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
       avatar: "EV",
-      buttonLabel: "ZASTAVIT FRANTU",
+      buttonLabel: dialogue.actionLabel,
       onConfirm: () => {
         this.modal = null;
         this.screens.play();
@@ -283,21 +355,58 @@ export class SlaviaScene {
       boss.defeated = true;
       boss.state = "defeated";
     }
+    const transform = this.app.world.get(franta, "transform");
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 10, 18, {
+        speed: 4,
+        spread: 0.85,
+        lifetime: 0.65,
+        size: 1.8
+      });
+    }
+    if (this.frantaAnimator) this.frantaAnimator.playAnimation("react_warning");
     this.availableInteraction = null;
+    this.modal = "dialog";
     this.app.input.reset("slavia-franta-defeated");
+    const dialogue = getDialogueDefinition("slavia-franta-defeated");
+    this.screens.showDialog({
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
+      avatar: "F",
+      buttonLabel: dialogue.actionLabel,
+      onConfirm: () => {
+        this.modal = null;
+        this.screens.play();
+        this.syncInteractions();
+        this.app.input.reset("slavia-franta-defeated-close");
+        this.emitHud(true);
+      }
+    });
     this.emitHud(true);
   }
 
   receiveCertificate() {
     this.flow.receiveCertificate();
     this.session.setFlag("slaviaCertificate", true);
+    const eva = this.entityByExternalId.get("expert-eva");
+    const transform = this.app.world.get(eva, "transform");
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 10, 20, {
+        speed: 3.6,
+        spread: 0.8,
+        lifetime: 0.7,
+        size: 1.7
+      });
+    }
     this.modal = "certificate";
+    if (this.evaAnimator) playDialogueAnimation(this.evaAnimator, "start");
     this.app.input.reset("slavia-certificate");
+    const dialogue = getDialogueDefinition("slavia-certification");
     this.screens.showDialog({
-      name: "Eva — porota",
-      text: "Sbírka je ověřena a může do finálního hodnocení akce Na Zelené Vlně.",
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
       avatar: "EV",
-      buttonLabel: "KE VSTUPU",
+      buttonLabel: dialogue.actionLabel,
       onConfirm: () => {
         this.modal = null;
         this.screens.play();
@@ -358,7 +467,8 @@ export class SlaviaScene {
     this.screens.showLevelResult({
       kicker: "NA ZELENÉ VLNĚ — FINÁLE",
       title: awardTitle,
-      text: `Porota vyhodnotila ${result.findingCount} nálezů ze ${result.localityCount} lokalit.`,
+      text: `Porota vyhodnotila ${czechCount(result.findingCount, "nález", "nálezy", "nálezů")} `
+        + `ze ${czechCount(result.localityCount, "lokality", "lokalit", "lokalit")}.`,
       score: result.score,
       stats: [
         { label: "NÁLEZY", value: result.findingCount },
@@ -399,7 +509,13 @@ export class SlaviaScene {
   setCameraToPlayer() {
     if (this.playerEntity === null) return;
     const transform = this.app.world.get(this.playerEntity, "transform");
-    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, 0.9);
+    this.cameraZoom = resolveSlaviaV7CameraZoom(
+      this.renderer.width,
+      this.renderer.height,
+      this.renderer.viewHeight,
+      this.level.bounds.width
+    );
+    setBoundedCameraCenter(this.renderer, this.level.bounds, transform.x, transform.y, this.cameraZoom);
   }
 
   hudModel() {
@@ -448,6 +564,8 @@ export class SlaviaScene {
       evaluation: this.evaluation,
       runtime: {
         modal: this.modal,
+        visualMode: this.visualMode,
+        cameraZoom: this.cameraZoom,
         resultShown: this.resultShown,
         player: player ? { x: player.x, y: player.y } : null,
         available: this.availableInteraction ? {
@@ -461,12 +579,29 @@ export class SlaviaScene {
 
   destroyVisualWorld() {
     if (!this.renderer?.objectByEntity) return;
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
+    if (this.waterOverlay) {
+      this.renderer.remove(this.waterOverlay.object);
+      this.waterOverlay.dispose();
+      this.waterOverlay = null;
+    }
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
       this.renderer.disposeObject(this.visualRoot);
       this.visualRoot = null;
     }
+    if (this.foregroundRoot) {
+      this.renderer.remove(this.foregroundRoot);
+      this.renderer.disposeObject(this.foregroundRoot);
+      this.foregroundRoot = null;
+    }
+    this.evaAnimator = null;
+    this.frantaAnimator = null;
   }
 
   unloadAssets() {

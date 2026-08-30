@@ -1,17 +1,25 @@
 import { DIG_REQUIRED_HITS, LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, createBesedniceFinding } from "../data/besednice.js";
+import { BESEDNICE_ENTITY_DEFINITIONS, BESEDNICE_TRACE_IDS, BESEDNICE_FINDING_VARIANTS } from "../data/besednice.js";
+import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DigSystem } from "../gameplay/DigSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
 import { BossSystem } from "../gameplay/BossSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { CLEAN_DIG_SCORE_MULTIPLIER, resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
+import { createAnimatedNPC } from "../render/NPCAnimationSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "besednice-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const V7_PLATE_ASSET = "terrain-besednice-clay-quarry-v7";
 const V7_FOREGROUND_ASSET = "foreground-besednice-quarry-edge-v7";
 const cloneData = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export const BESEDNICE_DIG_CONFIG = Object.freeze({ sweetMin: 0.43, sweetMax: 0.57, speed: 1.45 });
 
 export function resolveBesedniceV7CameraZoom(viewportWidth, viewportHeight, viewHeight = 720, boundsWidth = 1680) {
   const width = Math.max(1, Number(viewportWidth) || 1);
@@ -21,6 +29,50 @@ export function resolveBesedniceV7CameraZoom(viewportWidth, viewportHeight, view
   const fitZoom = (safeViewHeight * (width / height)) / safeBoundsWidth;
   const boundsSafeZoom = Math.ceil(fitZoom * 100) / 100 + 0.01;
   return Math.max(0.9, boundsSafeZoom);
+}
+
+function moldaviteNoise(x, y, z) {
+  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+export function createBesedniceMoldavite(THREE) {
+  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
+    throw new TypeError("Besednice moldavite requires Three.js mesh primitives.");
+  }
+
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.attributes?.position;
+  if (!position?.getX || !position?.setXYZ) throw new TypeError("Besednice moldavite geometry must expose positions.");
+
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const radial = 0.79 + moldaviteNoise(x, y, z) * 0.25;
+    position.setXYZ(index, x * radial * 1.12, y * radial * 0.92, z * radial * 0.68);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals?.();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x2f6038,
+    emissive: 0x0c2010,
+    emissiveIntensity: 0.22,
+    roughness: 0.52,
+    metalness: 0.015,
+    transparent: true,
+    opacity: 0.95
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = "besednice-moldavite-finding";
+  mesh.position.z = 14;
+  mesh.rotation.x = 0.25;
+  mesh.rotation.y = -0.42;
+  mesh.scale.set(5.2, 4.1, 3.2);
+  mesh.userData.assetId = "procedural-besednice-moldavite";
+  mesh.userData.findingVisual = "moldavite";
+  return mesh;
 }
 
 export class BesedniceScene {
@@ -34,9 +86,10 @@ export class BesedniceScene {
     this.level = getLevelDefinition("besednice");
     this.modelFactory = new ModelFactory({ renderer: this.renderer });
     this.interactions = new InteractionSystem({ events: this.events });
-    this.dig = new DigSystem({ events: this.events });
+    this.dig = new DigSystem({ events: this.events, ...BESEDNICE_DIG_CONFIG });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "besednice" });
     this.boss = new BossSystem();
+    this.effectListeners = null;
     this.resetRuntime();
   }
 
@@ -66,14 +119,22 @@ export class BesedniceScene {
     this.traceVisuals = new Map();
     this.visualRoot = null;
     this.foregroundRoot = null;
+    this.karelAnimator = null;
+    this.pickupTween = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
+    this.visualTime = 0;
     this.playerEntity = null;
+    this.guideEntity = null;
     this.traceEntities = [];
     this.hedgehogEntity = null;
     this.karelEntity = null;
     this.findingEntity = null;
     this.availableInteraction = null;
     this.modal = null;
+    this.briefingComplete = false;
     this.totalDigHits = 0;
+    this.rng = createRng(this.session.state.seed ^ 0x42455345);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = this.hudRevision ?? 0;
@@ -136,10 +197,11 @@ export class BesedniceScene {
       this.externalIdByEntity.set(entity, definition.id);
     }
     this.playerEntity = this.entityByExternalId.get("player");
+    this.guideEntity = this.entityByExternalId.get("besednice-guide");
     this.traceEntities = BESEDNICE_TRACE_IDS.map(id => this.entityByExternalId.get(id));
     this.hedgehogEntity = this.entityByExternalId.get("besednice-hedgehog");
     this.karelEntity = this.entityByExternalId.get("crystal-karel");
-    if (![this.playerEntity, this.hedgehogEntity, this.karelEntity, ...this.traceEntities].every(Number.isInteger)) {
+    if (![this.playerEntity, this.guideEntity, this.hedgehogEntity, this.karelEntity, ...this.traceEntities].every(Number.isInteger)) {
       throw new Error("Besednice entities are incomplete.");
     }
   }
@@ -148,11 +210,12 @@ export class BesedniceScene {
     const THREE = this.THREE;
     const root = new THREE.Group();
     root.name = "besednice-vertical-slice";
-    const [environmentTexture, foregroundTexture, playerTexture, karelTexture] = await Promise.all([
+    const [environmentTexture, foregroundTexture, playerTexture, karelTexture, karelAtlasTexture] = await Promise.all([
       this.texture(V7_PLATE_ASSET),
       this.texture(V7_FOREGROUND_ASSET),
       this.texture("player-hunter-walk"),
-      this.texture("npc-rival-karel")
+      this.texture("npc-rival-karel"),
+      this.texture("npc-rival-karel-atlas")
     ]);
     const ground = this.renderer.createTerrainPlate(environmentTexture, {
       x: this.level.bounds.x,
@@ -175,15 +238,27 @@ export class BesedniceScene {
     const player = this.renderer.createSprite(playerTexture, {
       width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "player-hunter-walk"
     });
-    const karel = this.renderer.createSprite(karelTexture, {
-      width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72, assetId: "npc-rival-karel"
+    const guide = this.renderer.createSprite(karelTexture, {
+      width: 78, height: 104, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xb9d8a5, assetId: "npc-rival-karel"
     });
+    guide.scale.x *= -1;
+    const karelAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "rival_karel",
+      { assetId: "npc-rival-karel-atlas", width: 600, height: 160, texture: karelAtlasTexture },
+      { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, color: 0xff8f72 }
+    );
+    karelAnimator.playAnimation("idle");
+    this.karelAnimator = karelAnimator;
     this.renderer.bindEntity(this.playerEntity, player, "actors");
-    this.renderer.bindEntity(this.karelEntity, karel, "actors");
+    this.renderer.bindEntity(this.guideEntity, guide, "actors");
+    this.renderer.bindEntity(this.karelEntity, karelAnimator.sprite, "actors");
     for (const entity of this.traceEntities) {
       const marker = this.modelFactory.clone(this.model("model-besednice-trace-marker"), {
-        assetId: "model-besednice-trace-marker", rotationX: Math.PI / 2, scale: 38, z: 4
+        assetId: "model-besednice-trace-marker", layer: "props", rotationX: Math.PI / 2, scale: 38, z: 4
       });
+      marker.visible = false;
       this.renderer.bindEntity(entity, marker, "props");
       this.traceVisuals.set(entity, marker);
     }
@@ -209,6 +284,17 @@ export class BesedniceScene {
     foreground.add(quarryEdge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x6B5A47 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0x8FBC8F });
+    this.renderer.add(this.sparkleEmitter.object, "effects");
+
+    this.effectListeners?.abort();
+    this.effectListeners = new AbortController();
+    const { signal } = this.effectListeners;
+    this.events.on("dig:hit", ({ spot }) => this.onDigHit(spot), { signal });
+    this.events.on("dig:clean", () => this.onDigClean(), { signal });
   }
 
   beginPlaying() {
@@ -266,11 +352,24 @@ export class BesedniceScene {
 
   updateObjectives() {
     const objective = this.objectives.update(this.objectiveRuntime());
-    if (objective.complete && !this.resultShown) this.showResult();
+    if (objective.complete && !this.resultShown && !this.modal) this.showResult();
   }
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.visualTime += Math.max(0, Number(dt) || 0);
+    if (this.karelAnimator) this.karelAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
+    if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
+      const entity = this.findingEntity;
+      if (entity !== null) this.finishPickup(entity);
+      else this.pickupTween = null;
+    }
+    this.updateParticles(dt);
+  }
+
+  updateParticles(dt) {
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
   }
 
   updateHud() {
@@ -279,13 +378,39 @@ export class BesedniceScene {
 
   performInteraction(available) {
     const kind = available.interaction.kind;
-    if (kind === "discover") this.discoverTrace(available.entity);
+    if (kind === "talk") this.showGuideDialog();
+    else if (kind === "discover") this.discoverTrace(available.entity);
     else if (kind === "dig") this.startDig(available.entity);
     else if (kind === "collect") this.collectHedgehog();
     else if (kind === "recover") this.recoverHedgehog();
   }
 
+  showGuideDialog() {
+    const dialogue = getDialogueDefinition("besednice-guide");
+    if (!dialogue || this.briefingComplete) return false;
+    this.modal = "dialog";
+    this.app.input.reset("besednice-guide-open");
+    this.screens.showDialog({
+      name: dialogue.speaker.name,
+      avatar: "M",
+      text: dialogue.lines.join(" "),
+      buttonLabel: dialogue.actionLabel,
+      onConfirm: () => {
+        this.briefingComplete = true;
+        const interaction = this.app.world.get(this.guideEntity, "interaction");
+        if (interaction) interaction.enabled = false;
+        this.modal = null;
+        this.syncLocks();
+        this.screens.play();
+        this.app.input.reset("besednice-guide-confirm");
+        this.emitHud(true);
+      }
+    });
+    return true;
+  }
+
   discoverTrace(entity) {
+    if (!this.briefingComplete) return false;
     const clue = this.app.world.get(entity, "clue");
     const interaction = this.app.world.get(entity, "interaction");
     if (!clue || clue.discovered === true) return false;
@@ -302,16 +427,25 @@ export class BesedniceScene {
   }
 
   syncLocks() {
+    for (const entity of this.traceEntities) {
+      const clue = this.app.world.get(entity, "clue");
+      const interaction = this.app.world.get(entity, "interaction");
+      const enabled = this.briefingComplete && clue?.discovered !== true;
+      if (interaction) interaction.enabled = enabled;
+      const visual = this.traceVisuals.get(entity);
+      if (visual) visual.visible = enabled;
+    }
     if (this.hedgehogEntity === null) return;
     const interaction = this.app.world.get(this.hedgehogEntity, "interaction");
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot");
-    if (interaction) interaction.enabled = this.clueCount() >= 3 && spot?.dug !== true;
+    const unlocked = this.briefingComplete && this.clueCount() >= 3 && spot?.dug !== true;
+    if (interaction) interaction.enabled = unlocked;
     const visual = this.renderer.objectByEntity.get(this.hedgehogEntity);
-    if (visual) visual.visible = this.clueCount() >= 3 && spot?.dug !== true;
+    if (visual) visual.visible = unlocked;
   }
 
   startDig(entity) {
-    if (entity !== this.hedgehogEntity || this.clueCount() < 3) return false;
+    if (!this.briefingComplete || entity !== this.hedgehogEntity || this.clueCount() < 3) return false;
     const spot = this.app.world.get(entity, "digSpot");
     if (!spot || spot.dug || this.dig.start(this.externalIdByEntity.get(entity)) !== true) return false;
     this.modal = "dig";
@@ -330,7 +464,7 @@ export class BesedniceScene {
     return true;
   }
 
-  strikeDig() {
+  async strikeDig() {
     const result = this.dig.strike();
     if (!result) return;
     if (result.hit) this.totalDigHits += 1;
@@ -344,13 +478,17 @@ export class BesedniceScene {
     });
     if (!result.complete) return;
     const spot = this.app.world.get(this.hedgehogEntity, "digSpot");
+    spot.digQuality = this.dig.averageQuality();
+    spot.perfectDig = this.dig.perfectDig();
+    spot.cleanDig = result.hits === DIG_REQUIRED_HITS && result.misses === 0;
     const interaction = this.app.world.get(this.hedgehogEntity, "interaction");
     this.dig.finish();
     spot.dug = true;
     interaction.enabled = false;
     const marker = this.renderer.objectByEntity.get(this.hedgehogEntity);
     if (marker) marker.visible = false;
-    void this.spawnFinding(spot.findingId);
+    await this.spawnFinding(spot.findingId);
+    if (spot.cleanDig) this.events.emit("dig:clean", { spot: spot.findingId });
     this.modal = null;
     this.session.setPhase("playing");
     this.availableInteraction = null;
@@ -369,36 +507,83 @@ export class BesedniceScene {
       interaction: { kind: "collect", label: "SEBRAT JEŽEK", action: "action", range: 76, priority: 95, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, findingId);
-    const sprite = this.renderer.createSprite(await this.texture("finding-vltavin-besednice-hedgehog"), {
-      width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
-      assetId: "finding-vltavin-besednice-hedgehog"
-    });
-    this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    try {
+      const mesh = createBesedniceMoldavite(this.THREE);
+      this.renderer.bindEntity(this.findingEntity, mesh, "effects");
+    } catch (error) {
+      console.warn("Procedural moldavite failed, falling back to sprite", error);
+      const texture = await this.texture("finding-vltavin-besednice-hedgehog");
+      const sprite = this.renderer.createSprite(texture, {
+        width: 58, height: 58, z: 15, anchorX: 0.5, anchorY: 0.2, color: 0xb6ff8b,
+        assetId: "finding-vltavin-besednice-hedgehog"
+      });
+      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    }
   }
 
   collectHedgehog() {
-    if (this.findingEntity === null) return false;
-    this.objectives.recordFinding(createBesedniceFinding("besednice-hedgehog", "besednice-hedgehog-1"));
+    if (this.findingEntity === null || this.pickupTween) return false;
     const entity = this.findingEntity;
-    this.renderer.unbindEntity(entity);
-    this.app.world.destroyEntity(entity);
-    this.externalIdByEntity.delete(entity);
-    this.findingEntity = null;
+    const interaction = this.app.world.get(entity, "interaction");
+    if (interaction) interaction.enabled = false;
+    const transform = this.app.world.get(entity, "transform");
+    const spot = this.app.world.get(this.hedgehogEntity, "digSpot") ?? {};
+    const quality = spot.digQuality ?? 0;
+    const cleanDig = spot.cleanDig === true;
+    const variant = resolveVariant(BESEDNICE_FINDING_VARIANTS, quality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "besednice-hedgehog-1", "besednice", quality, {
+      scoreMultiplier: cleanDig ? CLEAN_DIG_SCORE_MULTIPLIER : 1
+    }));
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 15, {
+        speed: 4,
+        spread: 0.8,
+        lifetime: 0.6,
+        size: 1.8
+      });
+    }
     this.boss.start(this.app.world, this.karelEntity);
+    if (this.karelAnimator) this.karelAnimator.playAnimation("react_aggressive");
+    const visual = this.renderer.objectByEntity.get(entity);
+    this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("besednice-boss-start");
     this.emitHud(true);
+    if (!this.pickupTween) this.finishPickup(entity);
     return true;
+  }
+
+  finishPickup(entity) {
+    this.renderer.unbindEntity(entity);
+    this.app.world.destroyEntity(entity);
+    this.externalIdByEntity.delete(entity);
+    if (this.findingEntity === entity) this.findingEntity = null;
+    this.pickupTween = null;
   }
 
   recoverHedgehog() {
     const interaction = this.app.world.get(this.karelEntity, "interaction");
     if (interaction?.enabled !== true) return false;
     if (!this.boss.defeat(this.app.world, this.karelEntity)) return false;
+    if (this.karelAnimator) this.karelAnimator.playAnimation("action_back_away");
     this.availableInteraction = null;
     this.interactions.clear();
+    this.modal = "dialog";
     this.app.input.reset("besednice-boss-defeated");
+    const dialogue = getDialogueDefinition("besednice-karel-defeated");
+    this.screens.showDialog({
+      name: dialogue.speaker.name,
+      text: dialogue.lines.join(" "),
+      avatar: "K",
+      buttonLabel: dialogue.actionLabel,
+      onConfirm: () => {
+        this.modal = null;
+        this.screens.play();
+        this.app.input.reset("besednice-boss-defeated-close");
+        this.emitHud(true);
+      }
+    });
     this.emitHud(true);
     return true;
   }
@@ -414,6 +599,7 @@ export class BesedniceScene {
   objectiveRuntime() {
     const boss = this.app.world.get(this.karelEntity, "boss") ?? {};
     return {
+      briefingComplete: this.briefingComplete,
       clues: this.clueCount(),
       hedgehog: this.hasHedgehog(),
       bossStarted: boss.started === true,
@@ -433,7 +619,7 @@ export class BesedniceScene {
     this.screens.showLevelResult({
       kicker: "BESEDNICE DOKONČENA",
       title: "Ježek je zpět ve sbírce",
-      text: "Tři stopy odkryly ježkovou vrstvu a Karel odchází bez cizího nálezu.",
+      text: "Milanovy tři stopy odkryly ježkovou vrstvu a Karel odchází bez cizího nálezu.",
       score: this.session.state.score,
       stats: [
         { label: "STOPY", value: `${this.clueCount()}/3` },
@@ -484,7 +670,8 @@ export class BesedniceScene {
     let hint = objective.text;
     if (this.session.state.phase === "paused") hint = "Výprava čeká.";
     else if (available) {
-      if (available.interaction.kind === "discover") hint = "Prozkoumej stopu v odkryté vrstvě.";
+      if (available.interaction.kind === "talk") hint = "Místní znalec Milan ti ukáže, jak číst ježkovou vrstvu.";
+      else if (available.interaction.kind === "discover") hint = "Prozkoumej stopu v odkryté vrstvě.";
       else if (available.interaction.kind === "dig") hint = "Ježkový profil vyžaduje přesně tři zásahy.";
       else if (available.interaction.kind === "collect") hint = "Vyzvedni kvalitní ježkový vltavín.";
       else if (available.interaction.kind === "recover") hint = "Karel je na dosah — vezmi ježek zpět.";
@@ -502,10 +689,11 @@ export class BesedniceScene {
       hint,
       actionReady: Boolean(available && !this.modal && this.session.state.phase === "playing"),
       actionLabel: available?.interaction.label ?? "AKCE",
-      actionIcon: available?.interaction.kind === "discover" ? "⌕"
-        : available?.interaction.kind === "dig" ? "⛏"
-          : available?.interaction.kind === "collect" ? "◆"
-            : available?.interaction.kind === "recover" ? "✦" : "◉"
+      actionIcon: available?.interaction.kind === "talk" ? "…"
+        : available?.interaction.kind === "discover" ? "⌕"
+          : available?.interaction.kind === "dig" ? "⛏"
+            : available?.interaction.kind === "collect" ? "◆"
+              : available?.interaction.kind === "recover" ? "✦" : "◉"
     };
   }
 
@@ -524,12 +712,14 @@ export class BesedniceScene {
   snapshot() {
     const player = this.playerEntity === null ? null : this.app.world.get(this.playerEntity, "transform");
     const boss = this.karelEntity === null ? null : this.boss.snapshot(this.app.world, this.karelEntity);
+    const hedgehogSpot = this.hedgehogEntity === null ? null : this.app.world.get(this.hedgehogEntity, "digSpot");
     return {
       level: this.level.id,
       session: this.session.state,
       objective: this.objectiveSnapshot(),
       runtime: {
         modal: this.modal,
+        briefingComplete: this.briefingComplete,
         totalDigHits: this.totalDigHits,
         dig: this.dig.snapshot(),
         resultShown: this.resultShown,
@@ -537,11 +727,19 @@ export class BesedniceScene {
         clues: this.clueCount(),
         traces: this.traceEntities.map(entity => {
           const clue = this.app.world.get(entity, "clue");
+          const interaction = this.app.world.get(entity, "interaction");
           const transform = this.app.world.get(entity, "transform");
-          return { id: this.externalIdByEntity.get(entity), x: transform.x, y: transform.y, discovered: clue?.discovered === true };
+          return {
+            id: this.externalIdByEntity.get(entity),
+            x: transform.x,
+            y: transform.y,
+            discovered: clue?.discovered === true,
+            enabled: interaction?.enabled === true
+          };
         }),
         hedgehog: {
-          dug: this.app.world.get(this.hedgehogEntity, "digSpot")?.dug === true,
+          dug: hedgehogSpot?.dug === true,
+          cleanDig: hedgehogSpot?.cleanDig === true,
           collected: this.hasHedgehog()
         },
         boss,
@@ -550,14 +748,30 @@ export class BesedniceScene {
           kind: this.availableInteraction.interaction.kind,
           label: this.availableInteraction.interaction.label
         } : null,
-        loadedAssets: [...this.assetEntries.keys()].sort()
+        loadedAssets: [...this.assetEntries.keys()].sort(),
+        karelAnimation: this.karelAnimator?.getState().animation ?? null,
+        pickupActive: Boolean(this.pickupTween)
       },
       levelComplete: this.levelComplete
     };
   }
 
   destroyVisualWorld() {
+    this.effectListeners?.abort();
+    this.effectListeners = null;
     if (!this.renderer?.objectByEntity) return;
+    if (this.pickupTween) cancelPickupTween(this.pickupTween);
+    this.pickupTween = null;
+    if (this.dustEmitter) {
+      this.renderer.remove(this.dustEmitter.object);
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
@@ -569,6 +783,32 @@ export class BesedniceScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.karelAnimator = null;
+    this.visualTime = 0;
+  }
+
+  onDigHit() {
+    if (!this.dustEmitter || !Number.isInteger(this.hedgehogEntity)) return;
+    const transform = this.app.world.get(this.hedgehogEntity, "transform");
+    if (!transform) return;
+    this.dustEmitter.emitBurst(transform.x, transform.y, 4, 10, {
+      speed: 2.2,
+      spread: 0.6,
+      lifetime: 0.4,
+      size: 2.2
+    });
+  }
+
+  onDigClean() {
+    if (!this.sparkleEmitter || !Number.isInteger(this.hedgehogEntity)) return;
+    const transform = this.app.world.get(this.hedgehogEntity, "transform");
+    if (!transform) return;
+    this.sparkleEmitter.emitBurst(transform.x, transform.y, 6, 18, {
+      speed: 3.2,
+      spread: 0.8,
+      lifetime: 0.5,
+      size: 1.8
+    });
   }
 
   unloadAssets() {

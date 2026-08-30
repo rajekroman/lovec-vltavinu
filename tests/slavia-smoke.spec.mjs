@@ -455,6 +455,12 @@ async function pauseForBesedniceEvidence(page, timeout = 20_000) {
 }
 
 async function completeBesednice(page, input, testInfo) {
+  await moveTo(page, input, 260, 980, "talk", 15_000);
+  await performAction(page, input);
+  await expect(page.locator("#dialogName")).toHaveText("MILAN");
+  await input.activateUi(page.locator("#dialogButton"));
+  await expect.poll(async () => (await runtimeSnapshot(page)).besednice?.runtime?.briefingComplete ?? false).toBe(true);
+
   for (const trace of [{ x: 470, y: 890 }, { x: 880, y: 620 }, { x: 1240, y: 420 }]) {
     await moveTo(page, input, trace.x, trace.y, "discover", 15_000);
     await performAction(page, input);
@@ -487,6 +493,8 @@ async function completeBesednice(page, input, testInfo) {
   await expect.poll(() => page.evaluate(() => window.__lovecRuntime.snapshot().running)).toBe(true);
   await moveTo(page, input, 1510, 900, "recover", 15_000);
   await performAction(page, input);
+  await expect(page.locator("#dialogName")).toHaveText("KAREL");
+  await input.activateUi(page.locator("#dialogButton"));
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
@@ -510,7 +518,12 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
 
   const arrived = await runtimeSnapshot(page);
   expect(arrived.session.findings).toHaveLength(3);
-  expect(arrived.session.score).toBe(450);
+  expect(arrived.session.score).toBeGreaterThanOrEqual(100);
+  expect(arrived.session.score).toBeLessThanOrEqual(800);
+  expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
+  expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
+  expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
+  expect(arrived.slavia.runtime.cameraZoom).toBeGreaterThanOrEqual(0.9);
   await captureEvidence(page, testInfo, "slavia-arrival");
 
   for (const document of [{ x: 410, y: 760 }, { x: 790, y: 460 }, { x: 1130, y: 780 }]) {
@@ -523,6 +536,8 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1020, 260, "recover-best-finding");
   await performAction(page, input);
+  await expect(page.locator("#dialogName")).toHaveText("FRANTIŠEK");
+  await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1450, 430, "receive-certificate");
   await performAction(page, input);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);

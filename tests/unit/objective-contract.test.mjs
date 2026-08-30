@@ -13,8 +13,8 @@ const scenarios = {
     premature: { permit: true, dug: 3, filled: 3, findings: 0 }
   },
   besednice: {
-    complete: { clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true },
-    premature: { clues: 0, hedgehog: false, bossStarted: true, bossDefeated: true }
+    complete: { briefingComplete: true, clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true },
+    premature: { briefingComplete: false, clues: 3, hedgehog: true, bossStarted: true, bossDefeated: true }
   },
   slavia: {
     complete: { papers: 3, expertConsulted: true, bossStarted: true, bossDefeated: true, certified: true, entered: true },

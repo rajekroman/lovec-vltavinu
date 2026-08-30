@@ -1,4 +1,5 @@
 import { DIG_REQUIRED_HITS } from "../data/levels.js";
+import { buildJournalView } from "./GameStatusPresenters.js";
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 
@@ -12,12 +13,14 @@ const bindOnce = (element, handler) => {
 };
 
 export class ScreenController {
-  constructor(document) {
+  constructor(document, { session = null, audio = null } = {}) {
     this.document = document;
     this.app = this.element("app");
     this.hud = this.element("hud");
     this.controls = this.element("controls");
     this.activeId = null;
+    this.session = session;
+    this.audio = audio;
   }
 
   element(id) {
@@ -153,6 +156,7 @@ export class ScreenController {
     const progressElement = this.element("pauseProgress");
     progressElement.textContent = `POSTUP ${percentage} %`;
     progressElement.setAttribute("role", "progressbar");
+    progressElement.setAttribute("aria-label", "Postup úkolu");
     progressElement.setAttribute("aria-valuemin", "0");
     progressElement.setAttribute("aria-valuemax", "100");
     progressElement.setAttribute("aria-valuenow", String(percentage));
@@ -161,7 +165,76 @@ export class ScreenController {
     const menu = this.element("menuButton");
     menu.textContent = "ODEJÍT DO MENU";
     bindOnce(menu, onMenu);
+    bindOnce(this.element("journalButton"), () => this.showJournal({ onClose: onResume }));
+    bindOnce(this.element("pauseStoryButton"), () => this.showStory({ onClose: onResume }));
+    bindOnce(this.element("pauseSettingsButton"), () => this.showSettings({ onClose: onResume }));
     return this.show("pauseScreen", { playing: false });
+  }
+
+  showJournal({ onClose } = {}) {
+    const { entries } = buildJournalView(this.session);
+
+    const list = this.element("journalList");
+    list.replaceChildren(...entries.map(entry => {
+      const row = this.document.createElement("div");
+      const badge = this.document.createElement("b");
+      badge.textContent = entry.badge;
+      const title = this.document.createElement("strong");
+      title.textContent = entry.title;
+      const status = this.document.createElement("p");
+      status.textContent = entry.status;
+      row.append(badge, title, status);
+      return row;
+    }));
+
+    const button = this.element("journalCloseButton");
+    button.textContent = "ZPĚT";
+    bindOnce(button, onClose);
+    return this.show("journalScreen", { playing: false });
+  }
+
+  showSettings({ onClose } = {}) {
+    const audio = this.audio;
+    const snapshot = audio?.snapshot?.() ?? { volume: 1, musicVolume: 0.34, effectsVolume: 0.72, muted: false };
+
+    const masterRange = this.element("masterVolumeRange");
+    const musicRange = this.element("musicVolumeRange");
+    const effectsRange = this.element("effectsVolumeRange");
+    const mutedCheckbox = this.element("mutedCheckbox");
+    masterRange.value = String(Math.round(snapshot.volume * 100));
+    musicRange.value = String(Math.round(snapshot.musicVolume * 100));
+    effectsRange.value = String(Math.round(snapshot.effectsVolume * 100));
+    mutedCheckbox.checked = snapshot.muted === true;
+    masterRange.oninput = () => audio?.setVolume?.(Number(masterRange.value) / 100);
+    musicRange.oninput = () => audio?.setMusicVolume?.(Number(musicRange.value) / 100);
+    effectsRange.oninput = () => audio?.setEffectsVolume?.(Number(effectsRange.value) / 100);
+    mutedCheckbox.onchange = () => audio?.setMuted?.(mutedCheckbox.checked);
+
+    const root = this.document.documentElement;
+    const highContrastCheckbox = this.element("highContrastCheckbox");
+    const largeTextCheckbox = this.element("largeTextCheckbox");
+    const colorBlindSelect = this.element("colorBlindSelect");
+    highContrastCheckbox.checked = root?.classList?.contains("high-contrast") === true;
+    largeTextCheckbox.checked = root?.classList?.contains("large-text") === true;
+    colorBlindSelect.value = root?.getAttribute?.("data-colorblind") ?? "none";
+    highContrastCheckbox.onchange = () => root?.classList?.toggle("high-contrast", highContrastCheckbox.checked);
+    largeTextCheckbox.onchange = () => root?.classList?.toggle("large-text", largeTextCheckbox.checked);
+    colorBlindSelect.onchange = () => {
+      if (colorBlindSelect.value === "none") root?.removeAttribute?.("data-colorblind");
+      else root?.setAttribute?.("data-colorblind", colorBlindSelect.value);
+    };
+
+    const button = this.element("settingsCloseButton");
+    button.textContent = "ZPĚT";
+    bindOnce(button, onClose);
+    return this.show("settingsScreen", { playing: false });
+  }
+
+  showStory({ onClose } = {}) {
+    const button = this.element("storyCloseButton");
+    button.textContent = "ZPĚT";
+    bindOnce(button, onClose);
+    return this.show("storyScreen", { playing: false });
   }
 
   showFatal({ title, text, onRetry }) {
@@ -173,6 +246,28 @@ export class ScreenController {
     button.textContent = "OBNOVIT";
     bindOnce(button, onRetry);
     return this.show("briefScreen", { playing: false });
+  }
+
+  showFinding({ text = "Nález", icon = "🔑", score = 0 }) {
+    const perfectionText = score > 0 ? "" : "";
+
+    this.element("dialogName").textContent = `${icon} NÁLEZ`;
+    this.element("dialogText").textContent = `${text}\n+${score} bodů${perfectionText}`;
+    this.element("dialogAvatar").textContent = icon;
+    const button = this.element("dialogButton");
+    button.textContent = "POKRAČOVAT";
+    bindOnce(button, () => {});
+    return this.show("dialogScreen", { playing: false });
+  }
+
+  showDanger(message = "⚠️ Nebezpečí!", onDismiss) {
+    this.element("dialogName").textContent = "⚠️ NEBEZPEČÍ";
+    this.element("dialogText").textContent = message;
+    this.element("dialogAvatar").textContent = "⚠";
+    const button = this.element("dialogButton");
+    button.textContent = "POCHOPENO";
+    bindOnce(button, onDismiss);
+    return this.show("dialogScreen", { playing: false });
   }
 
   play() {

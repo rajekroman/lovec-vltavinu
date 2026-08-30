@@ -1,6 +1,12 @@
 import { ChlumNesmenBridgeScene } from "./ChlumNesmenBridgeScene.js";
+import { CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createProceduralMoldavite } from "../render/ProceduralMoldavite.js";
+import { createPickupTween, updatePickupTween, cancelPickupTween } from "../render/VisualEffects.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 import { syncSpriteVisual } from "../render/ThreeRenderer.js";
+import { createAnimatedNPC, playDialogueAnimation } from "../render/NPCAnimationSystem.js";
 
 const V7_PLATE_ASSET = "terrain-chlum-plate-v7";
 const FALLBACK_PLATE_ASSET = "terrain-chlum-field";
@@ -25,50 +31,9 @@ export function resolveChlumV7CameraZoom(viewportWidth, viewportHeight) {
   return 1.08;
 }
 
-function moldaviteNoise(x, y, z) {
-  const value = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
-  return value - Math.floor(value);
-}
-
-export function createChlumV7Moldavite(THREE) {
-  if (!THREE?.IcosahedronGeometry || !THREE?.MeshStandardMaterial || !THREE?.Mesh) {
-    throw new TypeError("Chlum V7 moldavite requires Three.js mesh primitives.");
-  }
-
-  const geometry = new THREE.IcosahedronGeometry(1, 2);
-  const position = geometry.attributes?.position;
-  if (!position?.getX || !position?.setXYZ) throw new TypeError("Chlum V7 moldavite geometry must expose positions.");
-
-  for (let index = 0; index < position.count; index++) {
-    const x = position.getX(index);
-    const y = position.getY(index);
-    const z = position.getZ(index);
-    const radial = 0.82 + moldaviteNoise(x, y, z) * 0.24;
-    position.setXYZ(index, x * radial * 1.08, y * radial * 0.9, z * radial * 0.72);
-  }
-  position.needsUpdate = true;
-  geometry.computeVertexNormals?.();
-
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x315f38,
-    emissive: 0x0b2011,
-    emissiveIntensity: 0.24,
-    roughness: 0.5,
-    metalness: 0.02,
-    transparent: true,
-    opacity: 0.96
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = "chlum-v7-moldavite-finding";
-  mesh.position.z = 14;
-  mesh.rotation.x = 0.28;
-  mesh.rotation.y = -0.36;
-  mesh.scale.set(5, 4, 3);
-  mesh.userData.assetId = "procedural-chlum-moldavite-v7";
-  mesh.userData.findingVisual = "moldavite";
-  return mesh;
-}
-
+// v7.css je staticky linkovaný v index.html, takže HUD má styly i při vstupu
+// rovnou do pozdější lokality (changeScene("nesmen") mimo kanonický průchod).
+// Tahle funkce je jen idempotentní pojistka pro dokumenty bez toho linku.
 function ensureV7Theme(documentRef = globalThis.document) {
   if (!documentRef?.head) return false;
   if (documentRef.getElementById(V7_STYLESHEET_ID)) return true;
@@ -86,10 +51,15 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     ensureV7Theme();
     this.foregroundRoot = null;
     this.farmerInteractionRing = null;
+    this.farmerAnimator = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
     this.findingActionStage = null;
+    this.pickupTween = null;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
+    this.visualTime = 0;
     this.visualMode = "uninitialized";
   }
 
@@ -118,11 +88,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     const plateAssetId = this.assetEntries.has(V7_PLATE_ASSET) ? V7_PLATE_ASSET : FALLBACK_PLATE_ASSET;
     this.visualMode = plateAssetId === V7_PLATE_ASSET ? "terrain-plate-v7" : "terrain-plate-fallback";
 
-    const [plateTexture, playerTexture, playerActionTexture, farmerTexture, tractorTexture, foregroundTexture] = await Promise.all([
+    const [plateTexture, playerTexture, playerActionTexture, farmerAtlasTexture, tractorTexture, foregroundTexture] = await Promise.all([
       this.texture(plateAssetId),
       this.texture("player-hunter-walk"),
       this.texture("player-hunter-actions-v7"),
-      this.texture("npc-farmer-vaclav"),
+      this.texture("npc-farmer-vaclav-atlas"),
       this.texture("hazard-chlum-tractor-v7"),
       this.texture("foreground-chlum-wet-verge-v7")
     ]);
@@ -138,14 +108,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     plate.name = "chlum-v7-main-plate";
     root.add(plate);
 
-    // Lighting is intentionally reserved for 3D props/vehicles. The authored plate
-    // already contains its final environmental light and must not be re-lit.
     const hemisphere = new THREE.HemisphereLight(0xfff2cf, 0x263b2b, 1.7);
     const sun = new THREE.DirectionalLight(0xffe3ad, 2.1);
     sun.position.set(-260, 420, 520);
     root.add(hemisphere, sun);
 
-    // Secondary props remain sparse: the authored terrain plate owns the scene identity.
     this.addDecorModel(root, "model-chlum-hay-bale", { x: 1280, y: 925, scale: 42, rotationZ: 0.35, z: 2 });
 
     this.visualRoot = root;
@@ -178,12 +145,17 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     playerGroup.add(player, playerAction);
     this.playerWalkSprite = player;
     this.playerActionSprite = playerAction;
-    const farmer = this.renderer.createSprite(farmerTexture, {
-      ...actorSpriteOptions,
-      assetId: "npc-farmer-vaclav"
-    });
+    const farmerAnimator = createAnimatedNPC(
+      THREE,
+      this.renderer,
+      "farmer_vaclav",
+      { assetId: "npc-farmer-vaclav-atlas", width: 600, height: 160, texture: farmerAtlasTexture },
+      { width: actorSpriteOptions.width, height: actorSpriteOptions.height, z: actorSpriteOptions.z, anchorX: actorSpriteOptions.anchorX, anchorY: actorSpriteOptions.anchorY }
+    );
+    farmerAnimator.playAnimation("idle");
+    this.farmerAnimator = farmerAnimator;
     this.renderer.bindEntity(this.playerEntity, playerGroup, "actors");
-    this.renderer.bindEntity(this.farmerEntity, farmer, "actors");
+    this.renderer.bindEntity(this.farmerEntity, farmerAnimator.sprite, "actors");
     this.syncPlayerActionVisual();
 
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), {
@@ -232,8 +204,6 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     this.farmerInteractionRing = interactionRing;
     this.renderer.add(interactionRing, "props");
 
-    // Foreground occlusion is a dedicated render layer. Authored wet vegetation
-    // can cover the lower part of actors and create depth without affecting collisions.
     const foreground = new THREE.Group();
     foreground.name = "chlum-v7-foreground-occlusion";
     const nearVerge = this.renderer.createSprite(foregroundTexture, {
@@ -264,6 +234,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
     foreground.add(farVerge);
     this.foregroundRoot = foreground;
     this.renderer.add(foreground, "foreground");
+
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x8B7355, maxParticles: 40 });
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xD4AF37, maxParticles: 40 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.renderer.add(this.sparkleEmitter.object, "effects");
   }
 
   spawnFinding() {
@@ -275,7 +250,11 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
     });
     this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
-    const moldavite = createChlumV7Moldavite(this.THREE);
+    const moldavite = createProceduralMoldavite(this.THREE, {
+      locality: "chlum",
+      rarity: "B",
+      seed: this.session.state.seed ^ 0x43484c55
+    });
     this.renderer.bindEntity(this.findingEntity, moldavite, "effects");
   }
 
@@ -308,19 +287,64 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
   showPermissionDialog() {
     this.playHunterAction("talk", { interruptible: true });
+    if (this.farmerAnimator) playDialogueAnimation(this.farmerAnimator, "start");
     super.showPermissionDialog();
   }
 
   activateRadar() {
-    if (this.radarEnabled && !this.surfaceSearched) this.playHunterAction("search", { interruptible: true });
+    const wasSearched = this.surfaceSearched;
+    if (this.radarEnabled && !wasSearched) this.playHunterAction("search", { interruptible: true });
     super.activateRadar();
+    if (!wasSearched && this.surfaceSearched && this.dustEmitter) {
+      const transform = this.app.world.get(this.searchEntity, "transform");
+      if (transform) {
+        this.dustEmitter.emitBurst(transform.x, transform.y, 5, 18, {
+          speed: 2.6,
+          spread: 0.75,
+          lifetime: 0.5,
+          size: 2.4
+        });
+      }
+    }
   }
 
   collectFinding() {
-    if (this.findingEntity === null) return;
+    if (this.findingEntity === null || this.pickupTween) return;
+    const entity = this.findingEntity;
+    const interaction = this.app.world.get(entity, "interaction");
+    if (interaction) interaction.enabled = false;
+    const transform = this.app.world.get(entity, "transform");
+
     this.findingActionStage = "pick-up";
     this.playHunterAction("pick-up");
-    super.collectFinding();
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 16, {
+        speed: 4,
+        spread: 0.8,
+        lifetime: 0.6,
+        size: 1.8
+      });
+    }
+
+    const visual = this.renderer.objectByEntity.get(entity);
+    this.pickupTween = createPickupTween(visual, { duration: 0.15, targetScale: 1.25 });
+    this.radarMessage = "Vltavín byl bezpečně sebrán.";
+    this.availableInteraction = null;
+    this.interactions.clear();
+    this.app.input.reset("finding-collected");
+    this.emitHud(true);
+    if (!this.pickupTween) this.finishPickup(entity);
+  }
+
+  finishPickup(entity) {
+    this.renderer.unbindEntity(entity);
+    this.app.world.destroyEntity(entity);
+    this.externalIdByEntity.delete(entity);
+    if (this.findingEntity === entity) this.findingEntity = null;
+    this.pickupTween = null;
   }
 
   showResult() {
@@ -365,6 +389,15 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
 
   updateAnimations(dt) {
     super.updateAnimations(dt);
+    this.visualTime += Math.max(0, Number(dt) || 0);
+    if (this.farmerAnimator) this.farmerAnimator.update(Math.max(0, Number(dt) || 0) * 1000);
+    if (this.pickupTween && updatePickupTween(this.pickupTween, dt)) {
+      const entity = this.findingEntity;
+      if (entity !== null) this.finishPickup(entity);
+      else this.pickupTween = null;
+    }
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
     this.syncPlayerActionVisual();
   }
 
@@ -388,6 +421,18 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
   }
 
   destroyVisualWorld() {
+    if (this.pickupTween) cancelPickupTween(this.pickupTween);
+    this.pickupTween = null;
+    if (this.dustEmitter) {
+      this.renderer.remove(this.dustEmitter.object);
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.renderer.remove(this.sparkleEmitter.object);
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     if (this.farmerInteractionRing) {
       this.renderer.remove(this.farmerInteractionRing);
       this.renderer.disposeObject(this.farmerInteractionRing);
@@ -398,10 +443,12 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
       this.renderer.disposeObject(this.foregroundRoot);
       this.foregroundRoot = null;
     }
+    this.farmerAnimator = null;
     this.tractorSprite = null;
     this.playerWalkSprite = null;
     this.playerActionSprite = null;
     this.findingActionStage = null;
+    this.visualTime = 0;
     super.destroyVisualWorld();
   }
 
@@ -418,7 +465,9 @@ export class ChlumV7Scene extends ChlumNesmenBridgeScene {
         ...snapshot.runtime,
         visualMode: this.visualMode,
         cameraZoom: this.renderer.camera?.zoom ?? null,
-        farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true
+        farmerInteractionRingVisible: this.farmerInteractionRing?.visible === true,
+        farmerAnimation: this.farmerAnimator?.getState().animation ?? null,
+        pickupActive: Boolean(this.pickupTween)
       }
     };
   }

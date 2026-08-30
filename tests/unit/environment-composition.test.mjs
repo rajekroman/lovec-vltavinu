@@ -23,7 +23,7 @@ test("production environment plates are not obscured by legacy decorative overla
 
   const forestPlate = manifest.find(entry => entry.id === "terrain-nesmen-forest-plate-v7");
   assert.deepEqual(forestPlate?.dimensions, { width: 1500, height: 1200 });
-  assert.equal(forestPlate?.url, "./assets/textures/terrain/nesmen-forest-plate-v7.png");
+  assert.equal(forestPlate?.url, "./assets/textures/terrain/nesmen-forest-plate-v7.webp");
   assert.ok(forestPlate?.budget.bytes >= forestPlate?.metrics.bytes);
 
   assert.match(besednice, /terrain-besednice-clay-quarry-v7/);
@@ -34,9 +34,18 @@ test("production environment plates are not obscured by legacy decorative overla
 
   const quarryPlate = manifest.find(entry => entry.id === "terrain-besednice-clay-quarry-v7");
   assert.deepEqual(quarryPlate?.dimensions, { width: 1436, height: 1095 });
-  assert.equal(quarryPlate?.url, "./assets/textures/terrain/besednice-clay-quarry-v7.png");
+  assert.equal(quarryPlate?.url, "./assets/textures/terrain/besednice-clay-quarry-v7.webp");
   assert.ok(quarryPlate?.budget.bytes >= quarryPlate?.metrics.bytes);
 
-  assert.match(slavia, /terrain-slavia-malse-exterior-v1/);
+  assert.match(slavia, /terrain-slavia-event-plate-v7/);
+  assert.match(slavia, /foreground-slavia-event-edge-v7/);
+  assert.match(slavia, /createTerrainPlate\(environmentTexture/);
+  assert.match(slavia, /resolveSlaviaV7CameraZoom/);
+  assert.doesNotMatch(slavia, /environmentTexture\.repeat\.set/);
   assert.match(slavia, /building\.visible = false/);
+
+  const eventPlate = manifest.find(entry => entry.id === "terrain-slavia-event-plate-v7");
+  assert.deepEqual(eventPlate?.dimensions, { width: 1440, height: 880 });
+  assert.equal(eventPlate?.url, "./assets/textures/terrain/slavia-event-plate-v7.webp");
+  assert.ok(eventPlate?.budget.bytes >= eventPlate?.metrics.bytes);
 });

@@ -1,11 +1,14 @@
 import { LEVEL_ORDER, getLevelDefinition } from "../data/levels.js";
-import { CHLUM_ENTITY_DEFINITIONS, createChlumFinding } from "../data/chlum.js";
+import { CHLUM_ENTITY_DEFINITIONS, CHLUM_FINDING_VARIANTS } from "../data/chlum.js";
 import { getDialogueDefinition } from "../data/dialogues.js";
 import { InteractionSystem } from "../gameplay/InteractionSystem.js";
 import { DangerSystem } from "../gameplay/DangerSystem.js";
 import { ObjectiveSystem } from "../gameplay/ObjectiveSystem.js";
+import { createRng } from "../gameplay/SessionRng.js";
+import { resolveVariant, createFinding } from "../gameplay/FindingResolver.js";
 import { ModelFactory } from "../render/ModelFactory.js";
 import { setBoundedCameraCenter } from "../render/CameraBounds.js";
+import { createDustEmitter, createSparkleEmitter } from "../render/ParticleSystem.js";
 
 const MANIFEST_ENTRY = Object.freeze({ id: "chlum-runtime-assets", type: "json", url: "./assets/manifests/assets.json" });
 const cloneData = value => JSON.parse(JSON.stringify(value));
@@ -40,10 +43,14 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
+    this.rng = null;
     this.resultShown = false;
     this.levelComplete = null;
     this.hudRevision = 0;
     this.hudSignature = "";
+    this.npcIdleTime = 0;
+    this.dustEmitter = null;
+    this.sparkleEmitter = null;
     this.interactions = new InteractionSystem({ events: this.events });
     this.danger = new DangerSystem({ events: this.events, session: this.session });
     this.objectives = new ObjectiveSystem({ events: this.events, session: this.session, levelId: "chlum" });
@@ -85,6 +92,7 @@ export class ChlumScene {
     this.radarEnabled = false;
     this.radarPulseCount = 0;
     this.radarMessage = "";
+    this.rng = createRng(this.session.state.seed ^ 0x43484C4D);
     this.resultShown = false;
     this.levelComplete = null;
     this.hudSignature = "";
@@ -187,6 +195,10 @@ export class ChlumScene {
     const farmer = this.renderer.createSprite(farmerTexture, { width: 82, height: 108, z: 12, anchorX: 0.5, anchorY: 0.08, assetId: "npc-farmer-vaclav" });
     this.renderer.bindEntity(this.playerEntity, player, "actors");
     this.renderer.bindEntity(this.farmerEntity, farmer, "actors");
+    this.dustEmitter = createDustEmitter(THREE, { color: 0x8B7355, maxParticles: 50 });
+    this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xD4AF37, maxParticles: 40 });
+    this.renderer.add(this.dustEmitter.object, "effects");
+    this.renderer.add(this.sparkleEmitter.object, "effects");
     const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), { assetId: "model-chlum-field-marker", layer: "props", rotationX: Math.PI / 2, scale: 48, z: 3 });
     marker.visible = false;
     this.modelFactory.bind(this.tractorEntity, this.model("model-chlum-tractor-no-driver"), { assetId: "model-chlum-tractor-no-driver", layer: "actors", rotationX: Math.PI / 2, scale: 44, z: 8 });
@@ -271,6 +283,21 @@ export class ChlumScene {
 
   updateAnimations(dt) {
     if (this.session.state.phase === "playing" && !this.modal) this.app.animations.update(this.app.world, dt);
+    this.updateNpcIdleAnimation(dt);
+    this.updateParticleEffects(dt);
+  }
+
+  updateParticleEffects(dt) {
+    if (this.dustEmitter) this.dustEmitter.update(dt);
+    if (this.sparkleEmitter) this.sparkleEmitter.update(dt);
+  }
+
+  updateNpcIdleAnimation(dt) {
+    if (!this.farmerEntity || this.session.state.phase !== "playing" || this.modal) return;
+    this.npcIdleTime += dt;
+    const idleScale = 0.98 + 0.02 * Math.sin(this.npcIdleTime * 2 * Math.PI);
+    const visual = this.renderer.getVisual(this.farmerEntity);
+    if (visual) visual.scale.set(idleScale, idleScale, 1);
   }
 
   updateHud() { this.emitHud(false); }
@@ -323,6 +350,14 @@ export class ChlumScene {
     this.radarEnabled = false;
     searchSpot.searched = true;
     this.radarMessage = "Radar odhalil vltavín. Přibliž se a stiskni SEBRAT.";
+    if (this.dustEmitter) {
+      this.dustEmitter.emitBurst(searchTransform.x, searchTransform.y, 6, 12, {
+        speed: 2.5,
+        spread: 0.7,
+        lifetime: 0.45,
+        size: 2
+      });
+    }
     this.spawnFinding();
     this.availableInteraction = null;
     this.interactions.clear();
@@ -349,7 +384,13 @@ export class ChlumScene {
   collectFinding() {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
-    this.objectives.recordFinding(createChlumFinding("chlum-standard", "chlum-finding-1"));
+    const transform = this.app.world.get(entity, "transform");
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
+    if (this.sparkleEmitter && transform) {
+      this.sparkleEmitter.emitBurst(transform.x, transform.y, 14, 15, { speed: 4, spread: 0.8, lifetime: 0.6 });
+    }
     this.renderer.unbindEntity(entity);
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);
@@ -458,6 +499,14 @@ export class ChlumScene {
   }
 
   destroyVisualWorld() {
+    if (this.dustEmitter) {
+      this.dustEmitter.dispose();
+      this.dustEmitter = null;
+    }
+    if (this.sparkleEmitter) {
+      this.sparkleEmitter.dispose();
+      this.sparkleEmitter = null;
+    }
     for (const entity of [...this.renderer.objectByEntity.keys()]) this.renderer.unbindEntity(entity);
     if (this.visualRoot) {
       this.renderer.remove(this.visualRoot);
