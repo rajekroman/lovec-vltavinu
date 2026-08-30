@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Apply generated v7.3 audio audit data to runtime metadata/offline cache."""
+"""Synchronize canonical v7.3 audio integrity/provenance metadata."""
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,13 +51,18 @@ SPEC = {
 
 
 def budget_for(size: int, role: str) -> int:
+    """Use explicit payload ceilings while keeping the global 5 MB gate authoritative."""
     if role == "ambient":
-        return 160_000
-    if size <= 4_096:
-        return 4_096
-    if size <= 8_192:
-        return 8_192
-    return 16_384
+        if size > 750_000:
+            raise SystemExit(f"ambient asset exceeds 750 KB ceiling: {size}")
+        return 750_000
+    if size <= 16_384:
+        return 16_384
+    if size <= 32_768:
+        return 32_768
+    if size <= 131_072:
+        return 131_072
+    raise SystemExit(f"effect asset exceeds 128 KiB ceiling: {size}")
 
 
 def manifest_entry(row: dict[str, object]) -> dict[str, object]:
@@ -78,23 +82,32 @@ def manifest_entry(row: dict[str, object]) -> dict[str, object]:
         "sha256": str(row["sha256"]),
         "disposeOwner": "AudioEngine",
         "license": {
-            "spdx": "CC0-1.0",
-            "source": "Project-original procedural synthesis; no external samples.",
+            "spdx": str(row["license_spdx"]),
+            "source": str(row["license_source"]),
             "notice": "./assets/audio/LICENSE.md",
         },
     }
 
 
-def update_manifest(audit: dict[str, object]) -> None:
+def load_audit() -> dict[str, object]:
+    audit = json.loads(AUDIT.read_text(encoding="utf-8"))
     rows = list(audit["files"])
     by_file = {str(row["file"]): row for row in rows}
     if set(by_file) != set(SPEC):
         missing = sorted(set(SPEC) - set(by_file))
         extra = sorted(set(by_file) - set(SPEC))
         raise SystemExit(f"audit/spec mismatch: missing={missing}, extra={extra}")
-    if int(audit["total_bytes"]) >= 5_000_000:
-        raise SystemExit("total audio budget exceeds 5 MB")
+    measured_total = sum(int(row["bytes"]) for row in rows)
+    if measured_total != int(audit["total_bytes"]):
+        raise SystemExit(f"audit total mismatch: {audit['total_bytes']}/{measured_total}")
+    if measured_total >= 5_000_000:
+        raise SystemExit("total canonical audio payload exceeds 5 MB")
+    return audit
 
+
+def update_manifest(audit: dict[str, object]) -> None:
+    rows = list(audit["files"])
+    by_file = {str(row["file"]): row for row in rows}
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     new_ids = {spec[0] for spec in SPEC.values()}
     manifest = [
@@ -106,51 +119,68 @@ def update_manifest(audit: dict[str, object]) -> None:
 
 
 def update_license(audit: dict[str, object]) -> None:
+    rows = list(audit["files"])
+    cc0 = sorted(str(row["file"]) for row in rows if row["license_spdx"] == "CC0-1.0")
+    unasserted = sorted(str(row["file"]) for row in rows if row["license_spdx"] == "NOASSERTION")
     total = int(audit["total_bytes"])
-    text = f"""# Audio asset provenance and license
+    text = """# Audio asset provenance and license
 
-The production audio files in this directory were created specifically for the Lovec vltavínů v7.3 project using deterministic procedural synthesis only. They contain mathematical waveforms and deterministic noise components; no external recordings, samples, melodies, or third-party sound libraries were used.
+The canonical v7.3 production audio set is the 21 files listed in
+`assets/audio/v73-audio-build-audit.json` and registered in
+`assets/manifests/assets.json`.
 
-The repository-owned source pipeline is `tools/audio/build-v73-audio.py`. Its encoded-output evidence is `assets/audio/v73-audio-build-audit.json`.
+This directory now contains **mixed provenance**. A blanket CC0 statement no
+longer applies to every MP3 after the direct production-audio replacements.
 
-Production set:
-- 3 deterministic dig impact characters: hard / wet / stone;
-- dig miss and perfect-dig cues;
-- finding reward cues for rarity C / B / A;
-- location-specific danger cues for Chlum, Nesměň, Besednice and Malše/KD Slavia;
-- caught/impact cue;
-- UI click / open / close / result cues;
-- separate loopable ambience for Chlum, Nesměň, Besednice and Malše/KD Slavia.
+## Project-original procedural / CC0-1.0
 
-Encoding: MPEG-1 Layer III, mono, 44.1 kHz. SFX use 128 kbit/s target encoding; ambience uses 192 kbit/s target encoding. Current generated production payload: {total} bytes, below the 5 MB project audio budget.
+The following unchanged binaries retain the repository's original procedural
+synthesis provenance and CC0-1.0 declaration:
 
-The four ambience candidates are approximately 6 seconds each. This is an explicit v7.3 re-scope of the contradictory legacy #276 pair of requirements (four 60-second 192 kbit/s loops while keeping the entire audio payload below 5 MB). Loop quality still requires manual listen-through before the issue can be called COMPLETE.
+""" + "\n".join(f"- `{name}`" for name in cc0) + """
 
-License: CC0-1.0. These project-original files may be used, modified, redistributed, and included in released builds of this repository without attribution.
+## User-supplied production replacements / NOASSERTION
 
-The authoritative byte sizes and SHA-256 checksums are stored in `assets/manifests/assets.json` and independently recorded in `assets/audio/v73-audio-build-audit.json`.
+The following canonical binaries were supplied as production replacements. The
+repository records their exact bytes and SHA-256 for integrity, but does **not**
+assert an upstream license or origin for them. The release owner must confirm
+that the project has the right to redistribute/use them before publishing the
+release:
+
+""" + "\n".join(f"- `{name}`" for name in unasserted) + f"""
+
+Canonical production payload: **{total} bytes**, below the project-wide 5 MB
+audio ceiling.
+
+Technical codec/bitrate/duration fields are asserted only for binaries whose
+`technical_metadata_verified` field is `true` in the audit. Replaced binaries
+remain integrity-verified by byte size and SHA-256 until their technical audio
+metadata is independently measured.
+
+## Unregistered alternates
+
+`ambient-nesmen2.mp3` and `ambient-slavia2.mp3` are currently unregistered
+alternates. They are not part of the canonical 21-file manifest/offline set and
+no license assertion is made for them here.
+
+Manual speaker/headphones listen-through remains mandatory before release.
 """
     LICENSE.write_text(text, encoding="utf-8")
 
 
 def update_service_worker() -> None:
     text = SERVICE_WORKER.read_text(encoding="utf-8")
-    # Drop all old and current v7.3 audio file tokens before adding the canonical set once.
     filenames = OLD_FILES | set(SPEC)
     for filename in filenames:
-        token = f'"./assets/audio/{filename}", '
-        text = text.replace(token, "")
-        token = f', "./assets/audio/{filename}"'
-        text = text.replace(token, "")
-        token = f'"./assets/audio/{filename}"'
-        text = text.replace(token, "")
+        text = text.replace(f'"./assets/audio/{filename}", ', "")
+        text = text.replace(f', "./assets/audio/{filename}"', "")
+        text = text.replace(f'"./assets/audio/{filename}"', "")
 
     anchor = '"./assets/audio/LICENSE.md"'
     if anchor not in text:
         raise SystemExit("service worker audio LICENSE anchor not found")
     paths = [f'"./assets/audio/{filename}"' for filename in SPEC]
-    replacement = ", ".join(paths + [anchor])
-    text = text.replace(anchor, replacement, 1)
+    text = text.replace(anchor, ", ".join(paths + [anchor]), 1)
     SERVICE_WORKER.write_text(text, encoding="utf-8")
 
 
@@ -162,12 +192,12 @@ def remove_superseded_files() -> None:
 
 
 def main() -> None:
-    audit = json.loads(AUDIT.read_text(encoding="utf-8"))
+    audit = load_audit()
     update_manifest(audit)
     update_license(audit)
     update_service_worker()
     remove_superseded_files()
-    print(f"Registered {len(SPEC)} v7.3 audio assets; total={audit['total_bytes']} bytes")
+    print(f"Registered {len(SPEC)} canonical v7.3 audio assets; total={audit['total_bytes']} bytes")
 
 
 if __name__ == "__main__":
