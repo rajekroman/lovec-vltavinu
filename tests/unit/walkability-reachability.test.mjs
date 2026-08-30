@@ -4,8 +4,8 @@ import { LEVEL_DEFINITIONS } from "../../src/data/levels.js";
 import { isWalkablePoint } from "../../src/gameplay/Walkability.js";
 
 const CLEARANCE = 18;
-const STEP = 40;
-const MAX_VISITED = 6000;
+const STEP = 28;
+const MAX_VISITED = 10000;
 const keyOf = point => `${Math.round(point.x)},${Math.round(point.y)}`;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -47,11 +47,37 @@ function canReach(level, target) {
   return false;
 }
 
+test("every canonical level defines real blocked geometry with negative probes", () => {
+  for (const level of LEVEL_DEFINITIONS) {
+    assert.ok(Array.isArray(level.blockedZones), `${level.id} must define blockedZones`);
+    assert.ok(level.blockedZones.length > 0, `${level.id} must contain blocked geometry`);
+
+    const ids = new Set();
+    for (const zone of level.blockedZones) {
+      assert.equal(typeof zone.id, "string", `${level.id} blocked zone must have an id`);
+      assert.ok(zone.id.length > 0, `${level.id} blocked zone id must not be empty`);
+      assert.equal(ids.has(zone.id), false, `${level.id}:${zone.id} must be unique`);
+      ids.add(zone.id);
+      assert.ok(zone.probe && Number.isFinite(zone.probe.x) && Number.isFinite(zone.probe.y), `${level.id}:${zone.id} must define a probe`);
+      assert.equal(
+        isWalkablePoint(level, zone.probe, CLEARANCE),
+        false,
+        `${level.id}:${zone.id} probe must be blocked`
+      );
+    }
+  }
+});
+
 test("every mandatory level target has a real walkable path from spawn", () => {
   for (const level of LEVEL_DEFINITIONS) {
     assert.equal(isWalkablePoint(level, level.spawn, CLEARANCE), true, `${level.id} spawn must be walkable`);
     for (const target of level.targets) {
       for (const [index, position] of target.positions.entries()) {
+        assert.equal(
+          isWalkablePoint(level, position, CLEARANCE),
+          true,
+          `${level.id}:${target.id}[${index}] must itself be walkable`
+        );
         assert.equal(
           canReach(level, position),
           true,
