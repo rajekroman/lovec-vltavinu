@@ -25,7 +25,7 @@ function digHitCount(state) {
 
 async function touchLocator(page, locator) {
   await expect(locator).toBeVisible();
-  await locator.scrollIntoViewIfNeeded();
+  await locator.evaluate(element => element.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" }));
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   if (!box) throw new Error("Touch target has no bounding box.");
