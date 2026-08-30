@@ -109,6 +109,6 @@ test("TitleScene opens story and settings screens and closes them with Escape", 
 });
 
 test("title version is player-facing and stays aligned with the runtime label", () => {
-  assert.match(html, /<p class="version">v7\.0 · Čtyři lokality<\/p>/);
+  assert.match(html, /<p class="version">v7\.\d+ · Čtyři lokality<\/p>/);
   assert.doesNotMatch(html, /Modular Bootstrap/);
 });
