@@ -9,6 +9,12 @@
   --v7-muted:#aeb5a8;
 }
 
+/* HUD animations */
+@keyframes hudSlideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.mission-panel{animation:hudSlideIn .35s cubic-bezier(.34,.69,.75,.66)}
+.radar-panel{animation:hudSlideIn .35s cubic-bezier(.34,.69,.75,.66) .1s both}
+.danger-meter{animation:hudSlideIn .35s cubic-bezier(.34,.69,.75,.66) .05s both}
+
 /* HUD belongs to the whole V7 journey, not only the Chlum scene root class. */
 .hud{
   padding:calc(12px + var(--safe-t)) calc(12px + var(--safe-r)) calc(12px + var(--safe-b)) calc(12px + var(--safe-l));
