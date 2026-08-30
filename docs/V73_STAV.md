@@ -1,6 +1,6 @@
 # V7.3 — stav rozpracované práce
 
-Revize: **1.0.0 · 22. 8. 2026**
+Revize: **1.1.0 · 22. 8. 2026**
 Větev: `claude/v73-accessibility-pwa-dokončit`
 
 Tento dokument nahrazuje šestnáct rozporuplných status/plán souborů, které se
@@ -38,10 +38,41 @@ kód mimo runtime graf a je odstraněný.
 
 ## 3. Co zbývá
 
-### 3.1 Přístupnost — ověření na zařízeních
-Kód je hotový, chybí ověření na reálných zařízeních: screen reader (NVDA na
-Windows, VoiceOver na iOS), průchod pouze klávesnicí a kontrola kontrastních
-poměrů podle WCAG 2.1 AA. Bez toho nelze soulad tvrdit, jen předpokládat.
+### 3.1 Přístupnost — co je ověřené a co ne
+
+**Ověřeno automatizovaně (22. 8. 2026, axe-core 4.13, Chromium 141):**
+
+| Rozsah | Výsledek |
+|---|---|
+| 4 obrazovky (titulek, nápověda, příběh, nastavení) × 6 režimů | 0 porušení WCAG 2.1 A/AA |
+| HUD během hry na Chlumu × 6 režimů | 0 porušení WCAG 2.1 A/AA |
+| Kontrast: 300 textových prvků | 0 pod limitem AA |
+
+Režimy: výchozí, deuteranopia, protanopia, tritanopia, vysoký kontrast, velký text.
+Obrazovky se otevíraly **skutečným klikem v UI**, ne nastavením tříd — vynucený
+stav dává falešný výsledek, protože plátno pak leží nad obrazovkou a axe většinu
+pravidel přeskočí jako nepoužitelná.
+
+Kontrast počítán vlastním výpočtem, ne axe: pozadí jsou gradienty s
+`backdrop-filter`, u kterých axe vrací `incomplete`. Výpočet skládá všechny
+vrstvy pozadí přes celý řetěz předků a bere **nejhorší bod gradientu**. Ověřen
+proti záměrně špatnému vzorku (`#2a2f2c` na tmavém pozadí → 1,41:1, odhaleno)
+i dobrému (bílá → 19,22:1, prošel).
+
+**Nalezeno a opraveno:** `#objectiveProgress` (HUD) a `#pauseProgress` (pauza)
+měly `role="progressbar"` bez přístupného jména — porušení WCAG 4.1.2 se
+závažností *serious* ve všech šesti režimech. Progressbar nedědí jméno z obsahu,
+takže screen reader hlásil jen číslo bez kontextu. Doplněn `aria-label` podle
+vzoru, který už používal `heatPill` („Pozornost hlídky“).
+
+**Stále neověřeno — vyžaduje zařízení:**
+- skutečný screen reader (NVDA na Windows, VoiceOver na iOS) — automat neověří
+  srozumitelnost oznámení, jen přítomnost atributů;
+- průchod pouze klávesnicí od titulku po výsledek;
+- dotykové cíle a gesta na reálném iPhonu.
+
+Automatizovaná část tedy pokrývá strukturu, ARIA kontrakty a kontrast; zbytek je
+o použitelnosti, kterou nelze změřit bez člověka a zařízení.
 
 ### 3.2 Nepřehrávané animace NPC
 Atlasy definují 16 animací, ale scény pouštějí jen 7. Nikdy se nepřehrají:

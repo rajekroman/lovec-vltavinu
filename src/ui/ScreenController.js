@@ -156,6 +156,7 @@ export class ScreenController {
     const progressElement = this.element("pauseProgress");
     progressElement.textContent = `POSTUP ${percentage} %`;
     progressElement.setAttribute("role", "progressbar");
+    progressElement.setAttribute("aria-label", "Postup úkolu");
     progressElement.setAttribute("aria-valuemin", "0");
     progressElement.setAttribute("aria-valuemax", "100");
     progressElement.setAttribute("aria-valuenow", String(percentage));

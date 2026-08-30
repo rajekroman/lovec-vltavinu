@@ -182,6 +182,7 @@ test("HudController de-duplicates exact models, accepts a new revision stream an
   assert.equal(document.getElementById("objectiveProgress").textContent, "POSTUP 20 %");
   assert.equal(document.getElementById("objectiveProgress").getAttribute("role"), "progressbar");
   assert.equal(document.getElementById("objectiveProgress").getAttribute("aria-valuenow"), "20");
+  assert.equal(document.getElementById("objectiveProgress").getAttribute("aria-label"), "Postup úkolu");
   assert.equal(document.getElementById("heatFill").style.width, "92%");
   assert.equal(document.getElementById("dangerMeterText").textContent, "KRITICKÉ");
   assert.equal(document.getElementById("heatPill").classList.contains("detected"), true);
@@ -293,6 +294,7 @@ test("ScreenController pause recap preserves one resume action and exposes objec
   assert.equal(document.getElementById("pauseProgress").textContent, "POSTUP 60 %");
   assert.equal(document.getElementById("pauseProgress").getAttribute("role"), "progressbar");
   assert.equal(document.getElementById("pauseProgress").getAttribute("aria-valuenow"), "60");
+  assert.equal(document.getElementById("pauseProgress").getAttribute("aria-label"), "Postup úkolu");
   document.getElementById("resumeButton").onclick({ preventDefault() {} });
   assert.equal(resumed, 1);
 });
