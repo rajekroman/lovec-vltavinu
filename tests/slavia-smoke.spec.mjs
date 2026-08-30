@@ -518,6 +518,8 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(arrived.session.findings.map(finding => finding.locality)).toEqual([
     "chlum",
     "nesmen",
+    "nesmen",
+    "nesmen",
     "besednice",
     "besednice",
     "besednice",
@@ -560,7 +562,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(6);
+  expect(completed.slavia.evaluation.findingCount).toBe(8);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
