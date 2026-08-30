@@ -8,7 +8,7 @@ import { createNesmenFinding } from "../../src/data/nesmen.js";
 
 const strictEvents = () => new EventBus({ contracts: EVENT_CONTRACTS, validatePayload: validateEventPayload });
 
-test("Nesměň ObjectiveSystem requires permission, three dug and filled profiles, and one finding", () => {
+test("Nesměň ObjectiveSystem requires permission, three dug and filled profiles, and three findings", () => {
   const events = strictEvents();
   const progress = [];
   const completed = [];
@@ -30,16 +30,27 @@ test("Nesměň ObjectiveSystem requires permission, three dug and filled profile
 
   const withoutFinding = objective.update({ dug: 3, filled: 3 });
   assert.equal(withoutFinding.complete, false);
-  assert.equal(withoutFinding.text, "Vyzvedni nalezený vltavín");
+  assert.equal(withoutFinding.text, "Nálezy 0/3");
 
-  const finding = createNesmenFinding("nesmen-standard", "nesmen-finding-1");
-  objective.recordFinding(finding);
+  const first = createNesmenFinding("nesmen-standard", "nesmen-finding-1");
+  const second = createNesmenFinding("nesmen-standard", "nesmen-finding-2");
+  const third = createNesmenFinding("nesmen-standard", "nesmen-finding-3");
+
+  objective.recordFinding(first);
+  assert.equal(objective.update({ dug: 3, filled: 3 }).complete, false);
+  assert.equal(objective.update({ dug: 3, filled: 3 }).text, "Nálezy 1/3");
+
+  objective.recordFinding(second);
+  assert.equal(objective.update({ dug: 3, filled: 3 }).complete, false);
+  assert.equal(objective.update({ dug: 3, filled: 3 }).text, "Nálezy 2/3");
+
+  objective.recordFinding(third);
   const result = objective.update({ dug: 3, filled: 3 });
   objective.update({ dug: 3, filled: 3 });
 
   assert.equal(result.complete, true);
-  assert.equal(session.state.findings.length, 1);
-  assert.equal(session.state.score, 120);
+  assert.equal(session.state.findings.length, 3);
+  assert.equal(session.state.score, 360);
   assert.deepEqual(session.state.objective, {
     id: "nesmen-dig-and-restore",
     current: 3,
@@ -51,14 +62,12 @@ test("Nesměň ObjectiveSystem requires permission, three dug and filled profile
     current: 3,
     required: 3
   });
-  assert.deepEqual(findings, [{
-    findingId: "nesmen-finding-1",
-    locality: "nesmen",
-    rarity: "B",
-    weight: 1.5,
-    score: 120
-  }]);
+  assert.deepEqual(findings.map(finding => finding.findingId), [
+    "nesmen-finding-1",
+    "nesmen-finding-2",
+    "nesmen-finding-3"
+  ]);
   assert.deepEqual(completed, [{ id: "nesmen-dig-and-restore", levelId: "nesmen" }]);
-  assert.deepEqual(levels, [{ levelId: "nesmen", nextLevelId: "besednice", score: 120 }]);
-  assert.throws(() => objective.recordFinding(finding), /already recorded/);
+  assert.deepEqual(levels, [{ levelId: "nesmen", nextLevelId: "besednice", score: 360 }]);
+  assert.throws(() => objective.recordFinding(first), /already recorded/);
 });
