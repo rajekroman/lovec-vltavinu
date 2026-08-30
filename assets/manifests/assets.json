@@ -239,7 +239,7 @@
   {
     "id": "terrain-chlum-field",
     "type": "texture",
-    "url": "./assets/textures/terrain/chlum-plate-v7.svg",
+    "url": "./assets/textures/terrain/chlum-plate-v7.webp",
     "preload": "level:chlum",
     "dimensions": {
       "width": 1600,
@@ -247,15 +247,15 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 5630
+      "bytes": 542840
     },
     "budget": {
-      "bytes": 8192,
+      "bytes": 4000000,
       "triangles": 0,
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:chlum",
-    "sha256": "58da0c106d7b84387712bd37ce709df78857d7d5db72c8b7c5b45756b0d3c9f7"
+    "sha256": "183dda175c5e0cd04b2ef999c43552f15764515a97c491ccb94a614737890d1f"
   },
   {
     "id": "terrain-chlum-furrows",
