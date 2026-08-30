@@ -27,14 +27,17 @@ jobs:
       - name: Generate and verify v7.3 MP3 assets
         run: python3 tools/audio/build-v73-audio.py
 
-      - name: Commit generated assets
+      - name: Apply manifest, provenance and offline metadata
+        run: python3 tools/audio/update-v73-audio-metadata.py
+
+      - name: Commit generated audio state
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/audio/*.mp3 assets/audio/v73-audio-build-audit.json
+          git add -A assets/audio assets/manifests/assets.json sw.js
           if git diff --cached --quiet; then
-            echo "Generated assets already match branch."
+            echo "Generated audio state already matches branch."
             exit 0
           fi
-          git commit -m "build(audio): generate verified v7.3 MP3 assets [audio-generated]"
+          git commit -m "build(audio): generate verified v7.3 audio state [audio-generated]"
           git push origin HEAD:agent/v73-audio-completion
