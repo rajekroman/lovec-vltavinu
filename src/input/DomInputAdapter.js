@@ -33,6 +33,8 @@ export class DomInputAdapter {
     this.keys = new Set();
     this.movePointer = null;
     this.actionPointer = null;
+    this.suppressPointerClick = false;
+    this.suppressPointerClickTimer = null;
     this.resizeTimer = null;
     this.controller = new AbortController();
     this.root = this.document.documentElement ?? null;
@@ -116,6 +118,13 @@ export class DomInputAdapter {
       this.pulse("action");
     });
 
+    this.listen(this.document, "click", event => {
+      if (!this.suppressPointerClick || event.detail === 0) return;
+      this.clearPointerClickSuppression();
+      event.preventDefault?.();
+      event.stopImmediatePropagation?.();
+    }, { capture: true });
+
     this.listen(this.window, "pointerup", event => {
       this.releaseMove(event);
       this.releaseAction(event, true);
@@ -152,6 +161,21 @@ export class DomInputAdapter {
     this.input.release(name);
   }
 
+  armPointerClickSuppression() {
+    this.clearPointerClickSuppression();
+    this.suppressPointerClick = true;
+    this.suppressPointerClickTimer = this.window.setTimeout?.(() => {
+      this.suppressPointerClick = false;
+      this.suppressPointerClickTimer = null;
+    }, 500) ?? null;
+  }
+
+  clearPointerClickSuppression() {
+    this.suppressPointerClick = false;
+    if (this.suppressPointerClickTimer !== null) this.window.clearTimeout?.(this.suppressPointerClickTimer);
+    this.suppressPointerClickTimer = null;
+  }
+
   releaseMove(event) {
     if (this.movePointer === null || event?.pointerId !== this.movePointer) return false;
     event.preventDefault?.();
@@ -170,7 +194,10 @@ export class DomInputAdapter {
     this.actionPointer = null;
     try { this.elements.action.releasePointerCapture?.(pointerId); } catch {}
     this.elements.action.classList.remove("active");
-    if (commit) this.pulse("action");
+    if (commit) {
+      this.armPointerClickSuppression();
+      this.pulse("action");
+    }
     return true;
   }
 
@@ -231,6 +258,7 @@ export class DomInputAdapter {
 
   clearDomState() {
     this.keys.clear();
+    this.clearPointerClickSuppression();
     const movePointer = this.movePointer;
     const actionPointer = this.actionPointer;
     this.movePointer = null;
