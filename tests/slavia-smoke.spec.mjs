@@ -593,6 +593,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
   await captureEvidence(page, testInfo, "slavia-certification");
   await input.activateUi(page.locator("#dialogButton"));
+  await moveAxisTo(page, input, "y", 520);
   await moveTo(page, input, 1630, 520, "enter-event");
   await performAction(page, input);
 
