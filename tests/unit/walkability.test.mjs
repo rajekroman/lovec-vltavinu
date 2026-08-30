@@ -29,7 +29,7 @@ test("rect, circle and polygon blocked zones reject points", () => {
 
 test("player clearance expands obstacles and insets outer walkable bounds", () => {
   assert.equal(isWalkablePoint(level, { x: 65, y: 60 }, 16), false, "rectangle clearance should block near edge");
-  assert.equal(isWalkablePoint(level, { x: 260, y: 200 }, 16), true, "point outside expanded circle remains walkable");
+  assert.equal(isWalkablePoint(level, { x: 258, y: 200 }, 16), true, "point outside expanded circle remains walkable");
   assert.equal(isWalkablePoint(level, { x: 8, y: 150 }, 16), false, "outer bounds respect player clearance");
   assert.equal(isWalkablePoint(level, { x: 40, y: 180 }, 16), true);
 });
