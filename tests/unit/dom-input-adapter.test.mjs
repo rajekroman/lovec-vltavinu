@@ -58,6 +58,10 @@ class FakeElement extends FakeTarget {
     this.capturedPointer = pointerId;
   }
 
+  releasePointerCapture(pointerId) {
+    if (this.capturedPointer === pointerId) this.capturedPointer = null;
+  }
+
   getBoundingClientRect() {
     return { left: 0, top: 0, width: 100, height: 100 };
   }
@@ -124,50 +128,89 @@ function createAdapter() {
   return { adapter, document, window, input };
 }
 
-test("mobile action remains owned by its first pointer and lifecycle resets clear the pressed visual", () => {
-  const { adapter, document, window, input } = createAdapter();
+test("mobile action commits exactly once only after its owning pointer is released", () => {
+  const { adapter, document, input } = createAdapter();
   const action = document.getElementById("actionButton");
 
-  action.dispatch("pointerdown", { pointerId: 11 });
-  assert.deepEqual(input.presses, ["action"]);
+  const down = action.dispatch("pointerdown", { pointerId: 11 });
+  assert.equal(down.defaultPrevented, true);
+  assert.deepEqual(input.presses, []);
+  assert.deepEqual(input.releases, []);
   assert.equal(action.classList.contains("active"), true);
   assert.equal(action.capturedPointer, 11);
 
   action.dispatch("pointerdown", { pointerId: 22 });
   action.dispatch("pointerup", { pointerId: 22 });
-  assert.deepEqual(input.presses, ["action"]);
+  assert.deepEqual(input.presses, []);
   assert.deepEqual(input.releases, []);
   assert.equal(action.classList.contains("active"), true);
+  assert.equal(adapter.actionPointer, 11);
+
+  const up = action.dispatch("pointerup", { pointerId: 11 });
+  assert.equal(up.defaultPrevented, true);
+  assert.deepEqual(input.presses, ["action"]);
+  assert.deepEqual(input.releases, ["action"]);
+  assert.equal(action.classList.contains("active"), false);
+  assert.equal(action.capturedPointer, null);
+  assert.equal(adapter.actionPointer, null);
 
   action.dispatch("pointerup", { pointerId: 11 });
+  assert.deepEqual(input.presses, ["action"]);
   assert.deepEqual(input.releases, ["action"]);
-  assert.equal(action.classList.contains("active"), false);
-
-  action.dispatch("pointerdown", { pointerId: 33 });
-  assert.equal(action.classList.contains("active"), true);
-  window.dispatch("blur");
-  assert.deepEqual(input.resets, ["window-blur"]);
-  assert.equal(action.classList.contains("active"), false);
-  assert.equal(adapter.actionPointer, null);
-
-  action.dispatch("pointerup", { pointerId: 33 });
-  assert.deepEqual(input.releases, ["action"]);
-
-  action.dispatch("pointerdown", { pointerId: 44 });
-  assert.equal(action.classList.contains("active"), true);
-  window.dispatch("pagehide");
-  assert.equal(action.classList.contains("active"), false);
-  assert.equal(adapter.actionPointer, null);
-  assert.deepEqual(input.resets, ["window-blur"]);
-
-  action.dispatch("pointerup", { pointerId: 44 });
-  assert.deepEqual(input.releases, ["action"]);
-  action.dispatch("pointerdown", { pointerId: 55 });
-  assert.deepEqual(input.presses, ["action", "action", "action", "action"]);
 
   adapter.dispose();
+});
+
+test("cancel, blur and pagehide clear mobile action ownership without firing gameplay", () => {
+  const { adapter, document, window, input } = createAdapter();
+  const action = document.getElementById("actionButton");
+
+  action.dispatch("pointerdown", { pointerId: 21 });
+  action.dispatch("pointercancel", { pointerId: 21 });
+  assert.deepEqual(input.presses, []);
+  assert.deepEqual(input.releases, []);
   assert.equal(action.classList.contains("active"), false);
+  assert.equal(adapter.actionPointer, null);
+
+  action.dispatch("pointerdown", { pointerId: 22 });
+  window.dispatch("blur");
+  assert.deepEqual(input.presses, []);
+  assert.deepEqual(input.releases, []);
+  assert.deepEqual(input.resets, ["window-blur"]);
+  assert.equal(action.classList.contains("active"), false);
+  assert.equal(adapter.actionPointer, null);
+  action.dispatch("pointerup", { pointerId: 22 });
+  assert.deepEqual(input.presses, []);
+
+  action.dispatch("pointerdown", { pointerId: 23 });
+  window.dispatch("pagehide");
+  assert.deepEqual(input.presses, []);
+  assert.deepEqual(input.releases, []);
+  assert.deepEqual(input.resets, ["window-blur"]);
+  assert.equal(action.classList.contains("active"), false);
+  assert.equal(adapter.actionPointer, null);
+  action.dispatch("pointerup", { pointerId: 23 });
+  assert.deepEqual(input.presses, []);
+
+  adapter.dispose();
   assert.deepEqual(input.resets, ["window-blur", "dom-dispose"]);
+});
+
+test("keyboard action semantics remain press on keydown and release on keyup", () => {
+  const { adapter, window, input } = createAdapter();
+
+  const down = window.dispatch("keydown", { code: "Space", repeat: false });
+  assert.equal(down.defaultPrevented, true);
+  assert.deepEqual(input.presses, ["action"]);
+  assert.deepEqual(input.releases, []);
+
+  window.dispatch("keydown", { code: "Space", repeat: true });
+  assert.deepEqual(input.presses, ["action"]);
+
+  window.dispatch("keyup", { code: "Space" });
+  assert.deepEqual(input.releases, ["action"]);
+
+  adapter.dispose();
 });
 
 test("keyboard movement aggregates simultaneous keys and releases them independently", () => {
