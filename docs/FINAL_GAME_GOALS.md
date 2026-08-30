@@ -91,11 +91,15 @@ Projekt je dokončen pouze tehdy, když:
 
 ## Navazující pracovní proudy
 
-- dokončené integrační důkazy: PR #296, PR #301, PR #315 a PR #321 jsou sloučené do `main`; nejsou samostatnou otevřenou release bránou;
-- zbývající produktové assety: vlastní transparentní pětisnímkový atlas Milana a skutečné vícesnímkové atlasové sekvence hráče pro `pick-up`, `caught`, `dig` a `celebration`;
-- finální výběr poroty a zachování deseti nálezů: kryté sloučeným full-flow důkazem PR #321;
-- mobilní stabilita: #270;
-- UI/UX a animační čitelnost: #275;
+- dokončené integrační důkazy a produktové opravy jsou sloučené do `main`; historické PR a assetové workstreamy nejsou samostatnou otevřenou release bránou;
+- finální výběr poroty, zachování deseti nálezů, mobilní automatizované průchody, atlasové animace a produkční assetové zapojení jsou kryté aktuálními testy a integrační historií;
+- automatická QA autorita: #334; každý nový `main` SHA vyžaduje vlastní plnou validaci a PASS se nepřenáší ze staršího SHA;
+- manual audio a potvrzení práv/provenance: #269;
+- real macOS Safari a real iPhone Safari: #272;
+- UI/UX a animační čitelnost ve finálním vizuálním auditu: #275;
 - produkční QA matice: #280;
 - dokumentace a release notes: #279;
-- ruční vizuální release audit: #226; začne až po integraci zbývajících assetů a zmrazení jediného `RELEASE_SHA`.
+- ochrana `main` před source freeze: #354;
+- nominace jediného frozen `RELEASE_SHA` a nezávislá A6 brána: #335.
+
+Historický audit #226 patří vydanému `v7.0.0` a není release bránou současného kandidáta. Dokud nejsou manual/device brány, ochrana větve, frozen `RELEASE_SHA` a nezávislý A6 PASS doložené nad stejným SHA, je release stav `BLOCK`.
