@@ -855,7 +855,7 @@
     },
     "transparent": false,
     "metrics": {
-      "bytes": 243420
+      "bytes": 550624
     },
     "budget": {
       "bytes": 1650000,
@@ -863,7 +863,7 @@
       "textureMax": 2048
     },
     "disposeOwner": "LevelScene:slavia",
-    "sha256": "70678a885d33cf6c1e0804a55a5c49553b3bb0a808b029d7d3e832de676957fd"
+    "sha256": "1cb16b2d89c9213d2be8d9c6088b49111efabfce2477c16a66058b214fbc2c82"
   },
   {
     "id": "foreground-slavia-event-edge-v7",

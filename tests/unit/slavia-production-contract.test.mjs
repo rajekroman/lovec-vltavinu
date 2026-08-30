@@ -10,8 +10,6 @@ const manifest = JSON.parse(read("assets/manifests/assets.json"));
 const scene = read("src/scenes/SlaviaScene.js");
 const serviceWorker = read("sw.js");
 const slaviaSmoke = read("tests/slavia-smoke.spec.mjs");
-const productionPipeline = read("tools/art/build-slavia-v7-art.mjs");
-const pngGenerator = read("tools/art/build-slavia-v7-png.mjs");
 const artPipelineDocs = read("docs/ART_PIPELINE.md");
 
 const V7_ASSETS = Object.freeze(["terrain-slavia-event-plate-v7", "foreground-slavia-event-edge-v7"]);
@@ -41,24 +39,12 @@ test("Slavia V7 production art is a repository-owned bounded bitmap pack", () =>
   assert.equal(byId.get("terrain-slavia-event-plate-v7").transparent, false);
 });
 
-test("Slavia production art has one canonical build command with automatic WebP verification and cleanup", () => {
-  assert.match(productionPipeline, /build-slavia-v7-png\.mjs/);
-  assert.match(productionPipeline, /run\("cwebp"/);
-  assert.match(productionPipeline, /-alpha_q/);
-  assert.match(productionPipeline, /buffer\.byteLength !== entry\.metrics\?\.bytes/);
-  assert.match(productionPipeline, /digest !== entry\.sha256/);
-  assert.match(productionPipeline, /fs\.rmSync\(file, \{ force: true \}\)/);
-  assert.match(productionPipeline, /\.webp\.generated|\$\{asset\.webp\}\.generated/);
-
-  assert.match(pngGenerator, /encodePng\(buildPlate\(\)\)/);
-  assert.match(pngGenerator, /slavia-event-plate-v7\.png/);
-  assert.match(pngGenerator, /slavia-event-edge-v7\.png/);
-
-  assert.match(artPipelineDocs, /node tools\/art\/build-slavia-v7-art\.mjs/);
-  assert.match(artPipelineDocs, /cwebp/);
+test("Slavia production art is an authored bitmap asset with no generator pipeline", () => {
+  assert.match(artPipelineDocs, /authored bitmap/);
   assert.match(artPipelineDocs, /SHA-256/);
-  assert.match(artPipelineDocs, /mezilehlé PNG.*odstran/i);
-  assert.doesNotMatch(artPipelineDocs, /Převeď výstup na WebP:/);
+  assert.doesNotMatch(artPipelineDocs, /build-slavia-v7-art\.mjs/);
+  assert.ok(!fs.existsSync(new URL("tools/art/build-slavia-v7-art.mjs", rootUrl)));
+  assert.ok(!fs.existsSync(new URL("tools/art/build-slavia-v7-png.mjs", rootUrl)));
 });
 
 test("the plate keeps the plate/world aspect so no authored pixel is stretched off-axis", () => {
