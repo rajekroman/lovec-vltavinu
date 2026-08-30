@@ -73,6 +73,32 @@ test("NPC state reports the requested animation name", () => {
   assert.equal(npc.getState().animation, "talk");
 });
 
+test("full-atlas sprite specs still slice Franta by the canonical 120px frame width", () => {
+  const texture = createTexture(600);
+  const renderer = {
+    createSprite(map) {
+      return { material: { map, needsUpdate: false } };
+    }
+  };
+  const npc = createAnimatedNPC(
+    {},
+    renderer,
+    "thief_franta",
+    { assetId: "npc-thief-franta-atlas", width: 600, height: 160, texture },
+    { width: 82, height: 108 }
+  );
+
+  npc.playAnimation("idle");
+  assert.equal(npc.getState().currentFrame, 3);
+  assert.equal(texture.repeat.x, 0.2, "one frame must occupy exactly 120/600 of the atlas width");
+  assert.equal(texture.offset.x, 0.6, "idle frame 3 must start at x=360px => u=0.6");
+
+  npc.playAnimation("react_warning");
+  assert.equal(npc.getState().currentFrame, 4);
+  assert.equal(texture.repeat.x, 0.2);
+  assert.equal(texture.offset.x, 0.8, "warning frame 4 must start at x=480px => u=0.8");
+});
+
 test("non-looping reactions return to idle after completion", () => {
   const npc = createNpc("thief_franta");
   npc.playAnimation("idle");
