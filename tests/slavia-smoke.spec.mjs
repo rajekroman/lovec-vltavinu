@@ -502,9 +502,7 @@ async function completeBesednice(page, input, testInfo) {
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
-test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
-  // The test walks the full physical distance through four large maps using real input.
-  // Mobile touch runs need headroom for the final Slavia certification sequence.
+test("Chlum → Nesměň → Besednice → Slavia certifies 10 findings and submits exactly four to the jury", async ({ page }, testInfo) => {
   test.setTimeout(900_000);
   const input = createInputDriver(page, testInfo);
   const pageErrors = [];
@@ -521,21 +519,22 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
-  expect(arrived.session.findings.map(finding => finding.locality)).toEqual([
-    "chlum",
-    "chlum",
-    "chlum",
-    "nesmen",
-    "nesmen",
-    "nesmen",
-    "besednice",
-    "besednice",
-    "besednice",
-    "besednice"
-  ]);
-  expect(arrived.session.score).toBe(
-    arrived.session.findings.reduce((total, finding) => total + finding.score, 0)
-  );
+  const collectionBeforeJury = arrived.session.findings.map(finding => ({ ...finding }));
+  const scoreBeforeJury = arrived.session.score;
+  expect(collectionBeforeJury).toHaveLength(10);
+  expect(new Set(collectionBeforeJury.map(finding => finding.findingId)).size).toBe(10);
+  expect(collectionBeforeJury.filter(finding => finding.locality === "chlum")).toHaveLength(3);
+  expect(collectionBeforeJury.filter(finding => finding.locality === "nesmen")).toHaveLength(3);
+  expect(collectionBeforeJury.filter(finding => finding.locality === "besednice")).toHaveLength(4);
+  for (const finding of collectionBeforeJury) {
+    expect(Object.keys(finding).sort()).toEqual(["findingId", "locality", "rarity", "score", "weight"]);
+    expect(finding.findingId).toBeTruthy();
+    expect(["chlum", "nesmen", "besednice"]).toContain(finding.locality);
+    expect(["A", "B", "C"]).toContain(finding.rarity);
+    expect(Number.isFinite(finding.weight)).toBe(true);
+    expect(Number.isFinite(finding.score)).toBe(true);
+  }
+  expect(scoreBeforeJury).toBe(collectionBeforeJury.reduce((total, finding) => total + finding.score, 0));
   expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
@@ -561,16 +560,66 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await input.activateUi(page.locator("#dialogButton"));
   await moveTo(page, input, 1630, 520, "enter-event");
   await performAction(page, input);
+
+  await expect(page.locator("#juryScreen")).toHaveClass(/visible/);
+  await expect(page.locator("#resultScreen")).not.toHaveClass(/visible/);
+  const beforeSelection = await runtimeSnapshot(page);
+  expect(beforeSelection.slavia.flow.phase).toBe("jury-selection");
+  expect(beforeSelection.slavia.flow.complete).toBe(false);
+  expect(beforeSelection.slavia.flow.jurySubmitted).toBe(false);
+  expect(beforeSelection.session.findings).toEqual(collectionBeforeJury);
+  expect(beforeSelection.session.score).toBe(scoreBeforeJury);
+
+  const juryOptions = page.locator(".jury-finding-option input");
+  await expect(juryOptions).toHaveCount(10);
+  const selectedIndexes = [0, 3, 6, 9];
+  const selectedIds = selectedIndexes.map(index => collectionBeforeJury[index].findingId);
+  const selectOption = async index => {
+    const option = juryOptions.nth(index);
+    if (input.desktop) await option.check();
+    else await touchLocator(page, option);
+  };
+
+  for (const index of selectedIndexes.slice(0, 3)) await selectOption(index);
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 3/4");
+  await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+
+  await selectOption(selectedIndexes[3]);
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+  await expect(page.locator("#jurySubmitButton")).toBeEnabled();
+
+  await selectOption(1);
+  await expect(juryOptions.nth(1)).not.toBeChecked();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+  await captureEvidence(page, testInfo, "slavia-jury-selection");
+
+  await input.activateUi(page.locator("#jurySubmitButton"));
+  await expect(page.locator("#juryScreen")).not.toHaveClass(/visible/);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   await expect(page.locator("#resultKicker")).toHaveText("NA ZELENÉ VLNĚ — FINÁLE");
   await expect(page.locator("#againButton")).toHaveText("NOVÁ VÝPRAVA");
   await captureEvidence(page, testInfo, "slavia-final-result");
 
   const completed = await runtimeSnapshot(page);
+  const selectedFindings = collectionBeforeJury.filter(finding => selectedIds.includes(finding.findingId));
+  const selectedScore = selectedFindings.reduce((total, finding) => total + finding.score, 0);
+  const selectedWeight = Number(selectedFindings.reduce((total, finding) => total + finding.weight, 0).toFixed(2));
+  const rarityWeights = { A: 3, B: 2, C: 1 };
+  const selectedRarityPoints = selectedFindings.reduce((total, finding) => total + rarityWeights[finding.rarity], 0);
+
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
+  expect(completed.slavia.flow.phase).toBe("complete");
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(10);
+  expect(completed.slavia.flow.jurySubmitted).toBe(true);
+  expect(completed.slavia.evaluation.findingCount).toBe(4);
+  expect(completed.slavia.evaluation.submittedFindingIds).toEqual(selectedIds);
+  expect(completed.slavia.evaluation.score).toBe(selectedScore);
+  expect(completed.slavia.evaluation.totalWeight).toBe(selectedWeight);
+  expect(completed.slavia.evaluation.rarityPoints).toBe(selectedRarityPoints);
+  expect(completed.session.findings).toEqual(collectionBeforeJury);
+  expect(completed.session.findings).toHaveLength(10);
+  expect(completed.session.score).toBe(scoreBeforeJury);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
@@ -585,4 +634,48 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await expectReleasedInput(page);
   expect(httpErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
+});
+
+test("Slavia jury selection accepts exactly four findings without clipping", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
+  await page.evaluate(async () => {
+    const { app } = await import("./src/bootstrap.js");
+    const { ScreenController } = await import("./src/ui/ScreenController.js");
+    app.stop();
+    const screens = new ScreenController(document);
+    const findings = ["a", "b", "c", "d", "e", "f"].map((findingId, index) => ({
+      findingId,
+      locality: ["chlum", "nesmen", "besednice"][index % 3],
+      rarity: ["A", "B", "C"][index % 3],
+      weight: 1 + index / 10,
+      score: 60 + index * 20
+    }));
+    window.__jurySubmittedIds = null;
+    screens.showJurySelection({
+      findings,
+      required: 4,
+      onSubmit: ids => { window.__jurySubmittedIds = ids; }
+    });
+  });
+
+  const jury = page.locator("#juryScreen");
+  await expect(jury).toHaveClass(/visible/);
+  await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+  const options = page.locator(".jury-finding-option input");
+  for (let index = 0; index < 4; index++) await options.nth(index).check();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+  await expect(page.locator("#jurySubmitButton")).toBeEnabled();
+  await options.nth(4).click();
+  await expect(options.nth(4)).not.toBeChecked();
+
+  await page.locator("#jurySubmitButton").scrollIntoViewIfNeeded();
+  const box = await page.locator("#jurySubmitButton").boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  await page.locator("#jurySubmitButton").click();
+  await expect.poll(() => page.evaluate(() => window.__jurySubmittedIds)).toEqual(["a", "b", "c", "d"]);
 });
