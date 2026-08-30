@@ -1,4 +1,3 @@
-const STORAGE_KEY = "lovec-vltavinu-locale";
 const SUPPORTED_LOCALES = ["cs", "en"];
 const DEFAULT_LOCALE = "cs";
 
@@ -23,9 +22,6 @@ export class I18n {
     if (!SUPPORTED_LOCALES.includes(locale)) return;
     if (locale === this.#locale) return;
     this.#locale = locale;
-    try {
-      localStorage.setItem(STORAGE_KEY, locale);
-    } catch {}
     this.#listeners.forEach(fn => fn(locale));
   }
 
@@ -43,15 +39,7 @@ export class I18n {
     this.#listeners.add(fn);
     return () => this.#listeners.delete(fn);
   }
-
-  static getSavedLocale() {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return SUPPORTED_LOCALES.includes(saved) ? saved : DEFAULT_LOCALE;
-    } catch {
-      return DEFAULT_LOCALE;
-    }
-  }
 }
 
 export const SUPPORTED = SUPPORTED_LOCALES;
+export const DEFAULT = DEFAULT_LOCALE;

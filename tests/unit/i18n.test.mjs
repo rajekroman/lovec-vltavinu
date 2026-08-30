@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { I18n, SUPPORTED } from "../../src/core/I18n.js";
+import { I18n, SUPPORTED, DEFAULT } from "../../src/core/I18n.js";
 
 const CS = {
   title: "Lovec vltavínů",
@@ -96,4 +96,8 @@ test("I18n does not call listener if locale unchanged", () => {
 test("SUPPORTED exports cs and en locales", () => {
   assert.ok(SUPPORTED.includes("cs"));
   assert.ok(SUPPORTED.includes("en"));
+});
+
+test("DEFAULT exports cs as default locale", () => {
+  assert.equal(DEFAULT, "cs");
 });
