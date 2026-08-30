@@ -1063,16 +1063,16 @@
     "loop": false,
     "volume": 0.72,
     "metrics": {
-      "bytes": 2969
+      "bytes": 12717
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
-    "sha256": "d4c4d8e9bf166e018f5865e22d664081f6234f666e3e245d20a6200d8e987735",
+    "sha256": "e3e56f547f06cbbe2aa18f4fca51878eba96145bae137936d7bccb1aa079e831",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1085,16 +1085,16 @@
     "loop": false,
     "volume": 0.72,
     "metrics": {
-      "bytes": 3387
+      "bytes": 12717
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
-    "sha256": "b289670d108f8a8a6ad93fe75014461db5c889a0199a0520e96b3b06b73ded2a",
+    "sha256": "7705360d0a45f914c8132e93a9bb8f3fb0cbfad002f287b3a83db553faeeb872",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1107,16 +1107,16 @@
     "loop": false,
     "volume": 0.72,
     "metrics": {
-      "bytes": 2969
+      "bytes": 12717
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
-    "sha256": "760831d8a0fdecaae07078c2057a91cf495b019c5d402f05cd554874c3a88745",
+    "sha256": "5b529f32e4e28037450bf9ff26cfb6225fa06d77718f52360bcf6caadb2c1af5",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1129,16 +1129,16 @@
     "loop": false,
     "volume": 0.62,
     "metrics": {
-      "bytes": 3805
+      "bytes": 12717
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
-    "sha256": "f203cd17940576f91e295b63cb977d1488ad5ff69da3acd0ed8fb212b9d7ace3",
+    "sha256": "a5e78f9bd03f1ccb1619c1a5ee873d3421e93c0e063cd39769c02b7808689bc2",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1151,16 +1151,16 @@
     "loop": false,
     "volume": 0.58,
     "metrics": {
-      "bytes": 4641
+      "bytes": 25389
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 32768
     },
-    "sha256": "a58daceb3b892db9073e5be6cc41c9e9ced2fa5e84f9e9a0779820f01188a2bc",
+    "sha256": "27ef605b19f1d2642628b9111ec91cd41b55480755b4c1d9b49383626de7aadf",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1173,16 +1173,16 @@
     "loop": false,
     "volume": 0.64,
     "metrics": {
-      "bytes": 5895
+      "bytes": 25389
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 32768
     },
-    "sha256": "296e0c334fc892a8fe86becf649d1df228aeeafd64c993267eace345cadca2ac",
+    "sha256": "27ef605b19f1d2642628b9111ec91cd41b55480755b4c1d9b49383626de7aadf",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1195,16 +1195,16 @@
     "loop": false,
     "volume": 0.7,
     "metrics": {
-      "bytes": 7985
+      "bytes": 25389
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 32768
     },
-    "sha256": "99208524ae93c9483c09f9529f738a0265df7c79c4266b70d4bae080975e86d3",
+    "sha256": "c3c8e3b6be54eff0bf656a8ace29a32d07c198b67bda3fbeab1355d9ac212845",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1217,16 +1217,16 @@
     "loop": false,
     "volume": 0.68,
     "metrics": {
-      "bytes": 6731
+      "bytes": 12717
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 16384
     },
-    "sha256": "328b39997cec8d3ca01ca804eabf0539aeddc43c46fdc900988ad6b73952bf34",
+    "sha256": "05013022d0273f49aa69e4ff5559864075e4bc4611a770e5f9ed9a4270244221",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1239,16 +1239,16 @@
     "loop": false,
     "volume": 0.58,
     "metrics": {
-      "bytes": 7985
+      "bytes": 17901
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 32768
     },
-    "sha256": "66ff3669130641d5b8ea84813e04ee8c27a8a645cce615ab570f21502e8333f7",
+    "sha256": "c31fc6491bdccb69b856bfe1191fa8459af95398a60a8c0624ed51e28fce1c5c",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1264,7 +1264,7 @@
       "bytes": 6731
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 16384
     },
     "sha256": "d1a1c5b7c9b313ec29a13165adfdcb9db034e005ba686efbe4fad8c8b5c0b049",
     "disposeOwner": "AudioEngine",
@@ -1286,7 +1286,7 @@
       "bytes": 7149
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 16384
     },
     "sha256": "a4f95a3150912278f8066b62b90e2a35c68a69d1c36cf9d9b5a35b5951d82334",
     "disposeOwner": "AudioEngine",
@@ -1327,16 +1327,16 @@
     "loop": false,
     "volume": 0.68,
     "metrics": {
-      "bytes": 4641
+      "bytes": 78381
     },
     "budget": {
-      "bytes": 8192
+      "bytes": 131072
     },
-    "sha256": "d1de0e336f4ff0988cbeaa642950832bcf8843de31060b951f8b7bd83e870f96",
+    "sha256": "9ae1420419d4b174bfa534e225c1aa10b8569f9a2a3e5b17823ab259b69e4a9a",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1352,7 +1352,7 @@
       "bytes": 2551
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
     "sha256": "05d1d39d83e271b3d7ad473ce86f83b6f81742bb082971145df94a1b9573891c",
     "disposeOwner": "AudioEngine",
@@ -1374,7 +1374,7 @@
       "bytes": 3387
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
     "sha256": "df07df368eaeb8bc7e6c9f928d1121d6280e3f24301e27078c514a9e8b726140",
     "disposeOwner": "AudioEngine",
@@ -1396,7 +1396,7 @@
       "bytes": 3387
     },
     "budget": {
-      "bytes": 4096
+      "bytes": 16384
     },
     "sha256": "5a98fd2c9653658a2cb30c4beb90e11259a8ae5be93b18cbe0270d18dc2edf28",
     "disposeOwner": "AudioEngine",
@@ -1437,16 +1437,16 @@
     "loop": true,
     "volume": 0.28,
     "metrics": {
-      "bytes": 145493
+      "bytes": 598509
     },
     "budget": {
-      "bytes": 160000
+      "bytes": 750000
     },
-    "sha256": "290270e6ec30c8450a1e6185a35609bd9cb65e068a8eb6d65e1474ee61fa3623",
+    "sha256": "f159d529caced4a698ce348d8d4abfd375653f210deca94486fdaa2ccda854bc",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1459,16 +1459,16 @@
     "loop": true,
     "volume": 0.28,
     "metrics": {
-      "bytes": 145493
+      "bytes": 598509
     },
     "budget": {
-      "bytes": 160000
+      "bytes": 750000
     },
-    "sha256": "319b66d5d80bc781bc551b6102deb9bcc081265f73abf2d7c2dbe41c1fc4a292",
+    "sha256": "53ab8786387dda318c9d50f21db30c3f74586321fc1fe3113df385c3f70d0e0b",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1481,16 +1481,16 @@
     "loop": true,
     "volume": 0.28,
     "metrics": {
-      "bytes": 145493
+      "bytes": 598509
     },
     "budget": {
-      "bytes": 160000
+      "bytes": 750000
     },
-    "sha256": "6bcecaa29e8bc5daf3cec08ea1d9181e57cb8e5c5bd5277cc212b962c53d6873",
+    "sha256": "4669ebe70bab8004ad26bf016add8663d6224f99b854dd60f4058aa2a84d2216",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   },
@@ -1503,16 +1503,16 @@
     "loop": true,
     "volume": 0.28,
     "metrics": {
-      "bytes": 145493
+      "bytes": 284589
     },
     "budget": {
-      "bytes": 160000
+      "bytes": 750000
     },
-    "sha256": "f3b2da94a330bbad377a8018a514190403b1ee20b88640f2736a2e55205f6744",
+    "sha256": "1534b563cdab5ef4c19f4ab13999fee8bbf61e38240b78d24996ad5c8084e1b9",
     "disposeOwner": "AudioEngine",
     "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
+      "spdx": "NOASSERTION",
+      "source": "User-supplied production audio; upstream origin/license not asserted by repository metadata.",
       "notice": "./assets/audio/LICENSE.md"
     }
   }
