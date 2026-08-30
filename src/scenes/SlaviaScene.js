@@ -289,6 +289,7 @@ export class SlaviaScene {
   updateObjectives() {
     const state = this.flow.snapshot();
     this.session.setObjectiveProgress(this.objectiveProgress(state), state.complete);
+    if (state.phase === "jury-selection" && !this.resultShown && !this.evaluation) this.showJurySelection();
     if (state.complete && !this.resultShown) this.showFinalResult();
   }
 
@@ -422,7 +423,10 @@ export class SlaviaScene {
     const venue = this.entityByExternalId.get("kd-slavia");
     const destination = this.app.world.get(venue, "destination");
     if (destination) destination.entered = true;
-    if (this.session.state.findings.length <= 4) this.evaluation = evaluateSlaviaCollection(this.session.state);
+    if (this.session.state.findings.length <= 4) {
+      this.evaluation = evaluateSlaviaCollection(this.session.state);
+      this.flow.completeJurySelection();
+    }
   }
 
   syncInteractions() {
@@ -448,7 +452,8 @@ export class SlaviaScene {
   }
 
   objectiveProgress(state) {
-    if (state.complete) return 7;
+    if (state.complete) return 8;
+    if (state.enteredEvent) return 7;
     if (state.certificateReceived) return 6;
     if (state.thiefDefeated) return 5;
     if (state.expertConsulted) return 4;
@@ -503,6 +508,7 @@ export class SlaviaScene {
       onSubmit: ids => {
         this.jurySelection = new Set(ids);
         this.evaluation = evaluateSlaviaCollection(this.session.state, ids);
+        this.flow.completeJurySelection();
         this.modal = null;
         this.showFinalResult();
       }
@@ -549,13 +555,14 @@ export class SlaviaScene {
       "thief-recovery": "Zastav Frantu a získej nález zpět",
       certification: "Vyzvedni certifikát poroty",
       "event-entry": "Vstup do KD Slavia",
+      "jury-selection": "Vyber přesně 4 nálezy pro porotu",
       complete: "Finální hodnocení dokončeno"
     };
     return {
       missionNumber: this.level.order + 1,
       placeLabel: this.level.name,
       objective: labels[state.phase],
-      objectiveProgress: this.objectiveProgress(state) / 7,
+      objectiveProgress: this.objectiveProgress(state) / 8,
       findings: this.session.state.findings.length,
       danger: state.phase === "thief-recovery" ? 0.7 : 0,
       dangerMessage: state.phase === "thief-recovery" ? "FRANTA ODNÁŠÍ NÁLEZ · ZASTAV HO" : "",
