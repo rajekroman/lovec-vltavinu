@@ -86,7 +86,7 @@ test("bootstrap integration uses canonical GameSession and objective evaluator",
 
   assert.equal(session.state.findings[0].findingId, "finding-1");
   assert.equal(session.state.score, 120);
-  const objective = evaluateObjective("chlum", { permit: true, searched: true, findings: 1 });
+  const objective = evaluateObjective("chlum", { permit: true, searched: true, findings: 3 });
   assert.equal(objective.complete, true);
 });
 

@@ -35,10 +35,10 @@ const definitions = [
     theme: "field",
     music: "field",
     text: "Déšť omyl tmavou ornici. Nejdříve je nutné získat souhlas hospodáře a teprve potom hledat mimo dráhu traktoru.",
-    goal: "Získej povolení, prohledej povrch pole a najdi první vltavín.",
+    goal: "Získej povolení, prohledej povrch pole a najdi tři vltavíny.",
     briefing: {
       context: "Majitel pole Václav je přímo na místě a traktor už znovu vyráží do brázd.",
-      goal: "Promluv s Václavem, prohledej označené místo a odnes povrchový nález."
+      goal: "Promluv s Václavem, prohledej tři místa a odnes všechny povrchové nálezy."
     },
     spawn: { x: 120, y: 380 },
     bounds: { x: 0, y: 0, width: 1600, height: 1200 },
@@ -46,12 +46,16 @@ const definitions = [
     objective: { id: "chlum-permission-and-find", type: "chlum-permission-and-find", required: 1 },
     objectives: [
       objective("permission", "dialog", "farmer-vaclav", 1),
-      objective("search-surface", "discover", "chlum-search-site", 1),
-      objective("record-finding", "collect", "chlum-search-site", 1)
+      objective("search-surface", "discover", "chlum-search-site", 3),
+      objective("record-finding", "collect", "chlum-search-site", 3)
     ],
     targets: [
       target("farmer-vaclav", "npc", [{ x: 560, y: 410 }]),
-      target("chlum-search-site", "surface-search", [{ x: 1020, y: 720 }])
+      target("chlum-search-site", "surface-search", [
+        { x: 1020, y: 720 },
+        { x: 760, y: 920 },
+        { x: 1320, y: 860 }
+      ])
     ],
     hazards: ["tractor"],
     assetGroups: ["common", "level:chlum"],

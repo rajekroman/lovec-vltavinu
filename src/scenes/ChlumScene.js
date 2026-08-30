@@ -33,9 +33,10 @@ export class ChlumScene {
     this.externalIdByEntity = new Map();
     this.playerEntity = null;
     this.farmerEntity = null;
-    this.searchEntity = null;
+    this.searchEntities = [];
     this.tractorEntity = null;
     this.findingEntity = null;
+    this.activeFinding = null;
     this.availableInteraction = null;
     this.collisions = [];
     this.modal = null;
@@ -82,9 +83,10 @@ export class ChlumScene {
     this.externalIdByEntity.clear();
     this.playerEntity = null;
     this.farmerEntity = null;
-    this.searchEntity = null;
+    this.searchEntities = [];
     this.tractorEntity = null;
     this.findingEntity = null;
+    this.activeFinding = null;
     this.availableInteraction = null;
     this.collisions = [];
     this.modal = null;
@@ -157,7 +159,9 @@ export class ChlumScene {
     }
     this.playerEntity = this.entityByExternalId.get("player");
     this.farmerEntity = this.entityByExternalId.get("farmer-vaclav");
-    this.searchEntity = this.entityByExternalId.get("chlum-search-site");
+    this.searchEntities = CHLUM_ENTITY_DEFINITIONS
+      .filter(definition => definition.components.searchSpot)
+      .map(definition => this.entityByExternalId.get(definition.id));
     this.tractorEntity = this.entityByExternalId.get("tractor");
   }
 
@@ -199,8 +203,10 @@ export class ChlumScene {
     this.sparkleEmitter = createSparkleEmitter(THREE, { color: 0xD4AF37, maxParticles: 40 });
     this.renderer.add(this.dustEmitter.object, "effects");
     this.renderer.add(this.sparkleEmitter.object, "effects");
-    const marker = this.modelFactory.bind(this.searchEntity, this.model("model-chlum-field-marker"), { assetId: "model-chlum-field-marker", layer: "props", rotationX: Math.PI / 2, scale: 48, z: 3 });
-    marker.visible = false;
+    for (const searchEntity of this.searchEntities) {
+      const marker = this.modelFactory.bind(searchEntity, this.model("model-chlum-field-marker"), { assetId: "model-chlum-field-marker", layer: "props", rotationX: Math.PI / 2, scale: 48, z: 3 });
+      marker.visible = false;
+    }
     this.modelFactory.bind(this.tractorEntity, this.model("model-chlum-tractor-no-driver"), { assetId: "model-chlum-tractor-no-driver", layer: "actors", rotationX: Math.PI / 2, scale: 44, z: 8 });
   }
 
@@ -273,12 +279,12 @@ export class ChlumScene {
     const available = this.interactions.update(this.app.world, this.playerEntity, input.actions.action?.pressed === true);
     this.availableInteraction = available;
     if (available?.performed) this.performInteraction(available);
-    else if (input.actions.action?.pressed === true && this.radarEnabled && !this.surfaceSearched) this.activateRadar();
+    else if (input.actions.action?.pressed === true && this.radarEnabled) this.activateRadar();
   }
 
   updateObjectives() {
     const objective = this.objectives.update({ searched: this.surfaceSearched });
-    if (objective.complete && !this.resultShown) this.showResult();
+    if (objective.complete && this.remainingSearchSites() === 0 && this.findingEntity === null && !this.resultShown) this.showResult();
   }
 
   updateAnimations(dt) {
@@ -330,10 +336,12 @@ export class ChlumScene {
   }
 
   activateRadar() {
-    if (!this.radarEnabled || this.surfaceSearched) return;
+    if (!this.radarEnabled || this.findingEntity !== null) return;
     const player = this.app.world.get(this.playerEntity, "transform");
-    const searchTransform = this.app.world.get(this.searchEntity, "transform");
-    const searchSpot = this.app.world.get(this.searchEntity, "searchSpot");
+    const searchEntity = this.nearestUnsearchedSearchEntity(player);
+    if (searchEntity === null) return;
+    const searchTransform = this.app.world.get(searchEntity, "transform");
+    const searchSpot = this.app.world.get(searchEntity, "searchSpot");
     const distance = Math.hypot(player.x - searchTransform.x, player.y - searchTransform.y);
     this.radarPulseCount += 1;
     if (distance > searchSpot.detectionRange) {
@@ -358,26 +366,50 @@ export class ChlumScene {
         size: 2
       });
     }
-    this.spawnFinding();
+    this.spawnFinding(searchEntity);
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("surface-searched");
     this.emitHud(true);
   }
 
-  spawnFinding() {
+  remainingSearchSites() {
+    return this.searchEntities.filter(entity => this.app.world.get(entity, "searchSpot")?.searched !== true).length;
+  }
+
+  nearestUnsearchedSearchEntity(player) {
+    let nearest = null;
+    let nearestDistance = Infinity;
+    for (const entity of this.searchEntities) {
+      if (this.app.world.get(entity, "searchSpot")?.searched === true) continue;
+      const transform = this.app.world.get(entity, "transform");
+      const distance = Math.hypot(player.x - transform.x, player.y - transform.y);
+      if (distance < nearestDistance) {
+        nearest = entity;
+        nearestDistance = distance;
+      }
+    }
+    return nearest;
+  }
+
+  spawnFinding(searchEntity) {
     if (this.findingEntity !== null) return;
-    const searchTransform = this.app.world.get(this.searchEntity, "transform");
-    this.findingEntity = this.app.world.createEntity({
+    const searchTransform = this.app.world.get(searchEntity, "transform");
+    const searchSpot = this.app.world.get(searchEntity, "searchSpot");
+    const surfaceQuality = this.rng();
+    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
+    const findingEntity = this.app.world.createEntity({
       transform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
       previousTransform: { x: searchTransform.x + 22, y: searchTransform.y + 12, rotation: 0, scale: 1 },
-      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 70, priority: 80, enabled: true }
+      interaction: { kind: "collect", label: "SEBRAT", action: "action", range: 96, priority: 80, enabled: true }
     });
-    this.externalIdByEntity.set(this.findingEntity, "chlum-finding-1");
-    this.texture("finding-vltavin-standard").then(texture => {
-      if (this.findingEntity === null) return;
-      const sprite = this.renderer.createSprite(texture, { width: 48, height: 48, z: 14, anchorX: 0.5, anchorY: 0.2, assetId: "finding-vltavin-standard" });
-      this.renderer.bindEntity(this.findingEntity, sprite, "effects");
+    this.findingEntity = findingEntity;
+    this.activeFinding = { findingId: searchSpot.findingId, surfaceQuality, variant };
+    this.externalIdByEntity.set(findingEntity, searchSpot.findingId);
+    this.texture(variant.assetId).then(texture => {
+      if (this.findingEntity !== findingEntity) return;
+      const sprite = this.renderer.createSprite(texture, { width: 48, height: 48, z: 14, anchorX: 0.5, anchorY: 0.2, assetId: variant.assetId });
+      this.renderer.bindEntity(findingEntity, sprite, "effects");
     });
   }
 
@@ -385,9 +417,9 @@ export class ChlumScene {
     if (this.findingEntity === null) return;
     const entity = this.findingEntity;
     const transform = this.app.world.get(entity, "transform");
-    const surfaceQuality = this.rng();
-    const variant = resolveVariant(CHLUM_FINDING_VARIANTS, surfaceQuality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "chlum-finding-1", "chlum", surfaceQuality));
+    const finding = this.activeFinding;
+    if (!finding) return;
+    this.objectives.recordFinding(createFinding(finding.variant, finding.findingId, "chlum", finding.surfaceQuality));
     if (this.sparkleEmitter && transform) {
       this.sparkleEmitter.emitBurst(transform.x, transform.y, 14, 15, { speed: 4, spread: 0.8, lifetime: 0.6 });
     }
@@ -395,7 +427,12 @@ export class ChlumScene {
     this.app.world.destroyEntity(entity);
     this.externalIdByEntity.delete(entity);
     this.findingEntity = null;
-    this.radarMessage = "Vltavín byl bezpečně sebrán.";
+    this.activeFinding = null;
+    const remaining = this.remainingSearchSites();
+    this.radarEnabled = remaining > 0;
+    this.radarMessage = remaining > 0
+      ? `Vltavín byl sebrán. Radar hlásí ještě ${remaining} ${remaining === 1 ? "místo" : "místa"}.`
+      : "Všechny tři vltavíny byly bezpečně sebrány.";
     this.availableInteraction = null;
     this.interactions.clear();
     this.app.input.reset("finding-collected");
@@ -409,8 +446,8 @@ export class ChlumScene {
     this.app.input.reset("chlum-complete");
     this.screens.showLevelResult({
       kicker: "CHLUM DOKONČEN",
-      title: "První vltavín je v bezpečí",
-      text: "Václavovo povolení platí a nález je připravený pro další cestu. Nesměň bude zapojena v samostatném balíku.",
+      title: "Tři vltavíny jsou v bezpečí",
+      text: "Václavovo povolení platí a všechny tři povrchové nálezy jsou připravené pro další cestu.",
       score: this.session.state.score,
       stats: [
         { label: "POVOLENÍ", value: "ANO" },
@@ -487,6 +524,7 @@ export class ChlumScene {
       runtime: {
         modal: this.modal,
         searched: this.surfaceSearched,
+        searchedCount: this.searchEntities.length - this.remainingSearchSites(),
         radar: { enabled: this.radarEnabled, pulses: this.radarPulseCount, message: this.radarMessage },
         resultShown: this.resultShown,
         player: player ? { x: player.x, y: player.y } : null,

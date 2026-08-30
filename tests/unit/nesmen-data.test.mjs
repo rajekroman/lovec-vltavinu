@@ -8,6 +8,8 @@ import {
   isLevelTargetReachable
 } from "../../src/data/levels.js";
 import { getDialogueDefinition } from "../../src/data/dialogues.js";
+import { createGameSession } from "../../src/gameplay/GameSession.js";
+import { evaluateObjective } from "../../src/gameplay/Objectives.js";
 import {
   NESMEN_ENTITY_DEFINITIONS,
   NESMEN_FINDING_VARIANTS,
@@ -72,9 +74,13 @@ test("Nesměň entity data contains one player, one forester and exactly three d
     assert.equal(profile.components.digSpot.profileIndex, index);
     assert.equal(profile.components.digSpot.dug, false);
     assert.equal(profile.components.digSpot.filled, false);
-    if (profile.components.digSpot.findingId) seededFindings.push(profile.components.digSpot.findingId);
+    assert.equal(profile.components.digSpot.variantId, "nesmen-standard");
+    seededFindings.push(profile.components.digSpot.findingId);
   }
-  assert.deepEqual(seededFindings, ["nesmen-finding-1"]);
+  // Every profile yields its own moldavite: recordFinding rejects duplicate
+  // findingId values, so these must stay distinct.
+  assert.deepEqual(seededFindings, ["nesmen-finding-1", "nesmen-finding-2", "nesmen-finding-3"]);
+  assert.equal(new Set(seededFindings).size, seededFindings.length);
 });
 
 test("all Nesměň transforms are reachable inside canonical level bounds", () => {
@@ -120,4 +126,25 @@ test("Nesměň canonical definitions are deeply frozen serializable data", () =>
   const parsed = JSON.parse(serialized);
   assert.equal(parsed.entities.length, 5);
   assert.equal(parsed.findings.length, 3);
+});
+
+test("all three Nesměň profiles can be collected into one session", () => {
+  const session = createGameSession();
+  const ids = NESMEN_PROFILE_IDS.map(id => getNesmenEntityDefinition(id).components.digSpot.findingId);
+
+  // The whole point: recordFinding throws on a duplicate findingId, so a shared
+  // id would make the second profile crash the run instead of scoring.
+  for (const findingId of ids) session.recordFinding(createNesmenFinding("nesmen-standard", findingId));
+
+  const state = session.state;
+  assert.equal(state.findings.length, 3);
+  assert.deepEqual(state.findings.map(entry => entry.findingId), ids);
+  assert.equal(state.findings.every(entry => entry.locality === "nesmen"), true);
+  assert.equal(state.score, state.findings.reduce((total, entry) => total + entry.score, 0));
+
+  // One finding still completes the level; the other two are optional score.
+  const single = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 });
+  assert.equal(single.complete, true);
+  const none = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 });
+  assert.equal(none.complete, false);
 });
