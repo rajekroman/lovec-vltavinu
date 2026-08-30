@@ -57,7 +57,8 @@ const definitions = [
         ],
         probe: { x: 330, y: 260 }
       },
-      { id: "chlum-hay-bale", kind: "prop", shape: "circle", x: 1280, y: 925, radius: 42, probe: { x: 1280, y: 925 } },
+      { id: "chlum-hay-bale-west", kind: "prop", shape: "circle", x: 1280, y: 925, radius: 42, probe: { x: 1280, y: 925 } },
+      { id: "chlum-hay-bale-east", kind: "prop", shape: "circle", x: 1360, y: 860, radius: 36, probe: { x: 1360, y: 860 } },
       { id: "chlum-far-verge", kind: "vegetation", shape: "rect", x: 1210, y: 990, width: 300, height: 120, probe: { x: 1350, y: 1030 } }
     ],
     objective: { id: "chlum-permission-and-find", type: "chlum-permission-and-find", required: 1 },
