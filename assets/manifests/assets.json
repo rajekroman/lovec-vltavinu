@@ -1027,94 +1027,6 @@
     "sha256": "8cea3c9422e08c790710cd5108ff0116a41578ef58175c1793c2e1430e510e1c"
   },
   {
-    "id": "audio-music-journey",
-    "type": "audio",
-    "url": "./assets/audio/journey-loop.mp3",
-    "preload": "audio:gesture",
-    "role": "music",
-    "loop": true,
-    "volume": 0.34,
-    "metrics": {
-      "bytes": 4353
-    },
-    "budget": {
-      "bytes": 8192
-    },
-    "sha256": "58e6b38769998ecfc281f8a7d8fce4b55b648a7e2fabf7e09cfdc6f2a36e03d4",
-    "disposeOwner": "AudioEngine",
-    "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
-      "notice": "./assets/audio/LICENSE.md"
-    }
-  },
-  {
-    "id": "audio-sfx-dig-hit",
-    "type": "audio",
-    "url": "./assets/audio/dig-hit.mp3",
-    "preload": "audio:gesture",
-    "role": "effect",
-    "loop": false,
-    "volume": 0.72,
-    "metrics": {
-      "bytes": 1010
-    },
-    "budget": {
-      "bytes": 4096
-    },
-    "sha256": "32cd46cd2d1e509fb1e162e9eb005f2bbf9b6bf6542fdbd64dcab2ac08197ea3",
-    "disposeOwner": "AudioEngine",
-    "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
-      "notice": "./assets/audio/LICENSE.md"
-    }
-  },
-  {
-    "id": "audio-sfx-finding",
-    "type": "audio",
-    "url": "./assets/audio/finding-chime.mp3",
-    "preload": "audio:gesture",
-    "role": "effect",
-    "loop": false,
-    "volume": 0.62,
-    "metrics": {
-      "bytes": 2101
-    },
-    "budget": {
-      "bytes": 4096
-    },
-    "sha256": "ec0c5df491128adc4b53758892aa541cded50df60942ac1db347670b811fb525",
-    "disposeOwner": "AudioEngine",
-    "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
-      "notice": "./assets/audio/LICENSE.md"
-    }
-  },
-  {
-    "id": "audio-sfx-danger",
-    "type": "audio",
-    "url": "./assets/audio/danger-pulse.mp3",
-    "preload": "audio:gesture",
-    "role": "effect",
-    "loop": false,
-    "volume": 0.58,
-    "metrics": {
-      "bytes": 2185
-    },
-    "budget": {
-      "bytes": 4096
-    },
-    "sha256": "5f8e3fd38e3196c7dca7c5909ac8344dc8b8cae214ca22b0de194b6eaeb096fe",
-    "disposeOwner": "AudioEngine",
-    "license": {
-      "spdx": "CC0-1.0",
-      "source": "Project-original procedural synthesis; no external samples.",
-      "notice": "./assets/audio/LICENSE.md"
-    }
-  },
-  {
     "id": "npc-guide-milan-atlas",
     "type": "spritesheet",
     "url": "./assets/sprites/npcs/guide-milan-atlas.png",
@@ -1141,5 +1053,467 @@
     },
     "disposeOwner": "LevelScene:besednice",
     "sha256": "3e370ae041707bddeea162f6a22cbbacc18a286264d32f410d19d93fc2534746"
+  },
+  {
+    "id": "audio-sfx-dig-hard",
+    "type": "audio",
+    "url": "./assets/audio/dig-impact-hard.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.72,
+    "metrics": {
+      "bytes": 2969
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "d4c4d8e9bf166e018f5865e22d664081f6234f666e3e245d20a6200d8e987735",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-dig-wet",
+    "type": "audio",
+    "url": "./assets/audio/dig-impact-wet.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.72,
+    "metrics": {
+      "bytes": 3387
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "b289670d108f8a8a6ad93fe75014461db5c889a0199a0520e96b3b06b73ded2a",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-dig-stone",
+    "type": "audio",
+    "url": "./assets/audio/dig-impact-stone.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.72,
+    "metrics": {
+      "bytes": 2969
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "760831d8a0fdecaae07078c2057a91cf495b019c5d402f05cd554874c3a88745",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-dig-miss",
+    "type": "audio",
+    "url": "./assets/audio/dig-miss.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.62,
+    "metrics": {
+      "bytes": 3805
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "f203cd17940576f91e295b63cb977d1488ad5ff69da3acd0ed8fb212b9d7ace3",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-finding-c",
+    "type": "audio",
+    "url": "./assets/audio/finding-c.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.58,
+    "metrics": {
+      "bytes": 4641
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "a58daceb3b892db9073e5be6cc41c9e9ced2fa5e84f9e9a0779820f01188a2bc",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-finding-b",
+    "type": "audio",
+    "url": "./assets/audio/finding-b.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.64,
+    "metrics": {
+      "bytes": 5895
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "296e0c334fc892a8fe86becf649d1df228aeeafd64c993267eace345cadca2ac",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-finding-a",
+    "type": "audio",
+    "url": "./assets/audio/finding-a.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.7,
+    "metrics": {
+      "bytes": 7985
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "99208524ae93c9483c09f9529f738a0265df7c79c4266b70d4bae080975e86d3",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-dig-perfect",
+    "type": "audio",
+    "url": "./assets/audio/dig-perfect.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.68,
+    "metrics": {
+      "bytes": 6731
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "328b39997cec8d3ca01ca804eabf0539aeddc43c46fdc900988ad6b73952bf34",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-danger-chlum",
+    "type": "audio",
+    "url": "./assets/audio/danger-chlum.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.58,
+    "metrics": {
+      "bytes": 7985
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "66ff3669130641d5b8ea84813e04ee8c27a8a645cce615ab570f21502e8333f7",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-danger-nesmen",
+    "type": "audio",
+    "url": "./assets/audio/danger-nesmen.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.58,
+    "metrics": {
+      "bytes": 6731
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "d1a1c5b7c9b313ec29a13165adfdcb9db034e005ba686efbe4fad8c8b5c0b049",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-danger-besednice",
+    "type": "audio",
+    "url": "./assets/audio/danger-besednice.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.58,
+    "metrics": {
+      "bytes": 7149
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "a4f95a3150912278f8066b62b90e2a35c68a69d1c36cf9d9b5a35b5951d82334",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-danger-slavia",
+    "type": "audio",
+    "url": "./assets/audio/danger-slavia.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.58,
+    "metrics": {
+      "bytes": 9239
+    },
+    "budget": {
+      "bytes": 16384
+    },
+    "sha256": "d5c2ae5a333bcb3fe67c2daccbb4b4042adb6ca0345f9197bebe939dd86d0061",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-sfx-danger-caught",
+    "type": "audio",
+    "url": "./assets/audio/danger-caught.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.68,
+    "metrics": {
+      "bytes": 4641
+    },
+    "budget": {
+      "bytes": 8192
+    },
+    "sha256": "d1de0e336f4ff0988cbeaa642950832bcf8843de31060b951f8b7bd83e870f96",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ui-click",
+    "type": "audio",
+    "url": "./assets/audio/ui-click.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.45,
+    "metrics": {
+      "bytes": 2551
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "05d1d39d83e271b3d7ad473ce86f83b6f81742bb082971145df94a1b9573891c",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ui-open",
+    "type": "audio",
+    "url": "./assets/audio/ui-open.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.48,
+    "metrics": {
+      "bytes": 3387
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "df07df368eaeb8bc7e6c9f928d1121d6280e3f24301e27078c514a9e8b726140",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ui-close",
+    "type": "audio",
+    "url": "./assets/audio/ui-close.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.48,
+    "metrics": {
+      "bytes": 3387
+    },
+    "budget": {
+      "bytes": 4096
+    },
+    "sha256": "5a98fd2c9653658a2cb30c4beb90e11259a8ae5be93b18cbe0270d18dc2edf28",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ui-result",
+    "type": "audio",
+    "url": "./assets/audio/ui-result.mp3",
+    "preload": "audio:gesture",
+    "role": "effect",
+    "loop": false,
+    "volume": 0.62,
+    "metrics": {
+      "bytes": 12582
+    },
+    "budget": {
+      "bytes": 16384
+    },
+    "sha256": "a32b9df73a12cbda89693dc5f2f96987e8b37783e4533dc468bd697080678658",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ambient-chlum",
+    "type": "audio",
+    "url": "./assets/audio/ambient-chlum.mp3",
+    "preload": "audio:gesture",
+    "role": "ambient",
+    "loop": true,
+    "volume": 0.28,
+    "metrics": {
+      "bytes": 145493
+    },
+    "budget": {
+      "bytes": 160000
+    },
+    "sha256": "290270e6ec30c8450a1e6185a35609bd9cb65e068a8eb6d65e1474ee61fa3623",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ambient-nesmen",
+    "type": "audio",
+    "url": "./assets/audio/ambient-nesmen.mp3",
+    "preload": "audio:gesture",
+    "role": "ambient",
+    "loop": true,
+    "volume": 0.28,
+    "metrics": {
+      "bytes": 145493
+    },
+    "budget": {
+      "bytes": 160000
+    },
+    "sha256": "319b66d5d80bc781bc551b6102deb9bcc081265f73abf2d7c2dbe41c1fc4a292",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ambient-besednice",
+    "type": "audio",
+    "url": "./assets/audio/ambient-besednice.mp3",
+    "preload": "audio:gesture",
+    "role": "ambient",
+    "loop": true,
+    "volume": 0.28,
+    "metrics": {
+      "bytes": 145493
+    },
+    "budget": {
+      "bytes": 160000
+    },
+    "sha256": "6bcecaa29e8bc5daf3cec08ea1d9181e57cb8e5c5bd5277cc212b962c53d6873",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
+  },
+  {
+    "id": "audio-ambient-slavia",
+    "type": "audio",
+    "url": "./assets/audio/ambient-slavia.mp3",
+    "preload": "audio:gesture",
+    "role": "ambient",
+    "loop": true,
+    "volume": 0.28,
+    "metrics": {
+      "bytes": 145493
+    },
+    "budget": {
+      "bytes": 160000
+    },
+    "sha256": "f3b2da94a330bbad377a8018a514190403b1ee20b88640f2736a2e55205f6744",
+    "disposeOwner": "AudioEngine",
+    "license": {
+      "spdx": "CC0-1.0",
+      "source": "Project-original procedural synthesis; no external samples.",
+      "notice": "./assets/audio/LICENSE.md"
+    }
   }
 ]
