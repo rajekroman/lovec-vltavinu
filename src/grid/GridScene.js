@@ -261,10 +261,11 @@ export class GridScene {
 
       // Handle danger
       if (digResult.danger) {
-        this.events.emit("danger:triggered", digResult.danger);
-        this.session.setPhase("danger");
+        const previous = this.session.state.danger;
+        const dangerValue = Math.min(100, previous + (digResult.danger.damage ?? 25));
+        this.session.setDanger(dangerValue);
+        this.events.emit("danger:changed", { previous, current: dangerValue, cause: "dig" });
         this.screens.showDanger(digResult.danger.message, () => {
-          this.session.setPhase("playing");
           this.screens.show(null, { playing: true });
         });
       }
@@ -273,7 +274,8 @@ export class GridScene {
       if (digResult.finding) {
         this.levelFindings.push(digResult.finding);
         this.currentScore += digResult.score;
-        this.events.emit("finding:resolved", digResult.finding);
+        this.session.recordFinding(digResult.finding);
+        this.events.emit("finding:collected", digResult.finding);
 
         const rarityIcons = { A: "💎", B: "⭐", C: "🔑" };
         const icon = rarityIcons[digResult.finding.rarity] || "🔑";
@@ -293,10 +295,13 @@ export class GridScene {
   }
 
   emitDugEvent(gridX, gridY) {
+    const spotId = `${gridX},${gridY}`;
     this.events.emit("dig:hit", {
-      position: this.grid.gridToIsometric(gridX, gridY)
+      spot: spotId,
+      hit: 3,
+      requiredHits: 3,
+      quality: 0.8
     });
-    this.events.emit("dig:clean", {});
   }
 
   performNPCDialog(npcId) {
