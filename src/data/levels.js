@@ -72,7 +72,7 @@ const definitions = [
       target("chlum-search-site", "surface-search", [
         { x: 1020, y: 720 },
         { x: 760, y: 920 },
-        { x: 1320, y: 860 }
+        { x: 1240, y: 820 }
       ])
     ],
     hazards: ["tractor"],
