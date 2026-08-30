@@ -18,12 +18,20 @@
     .primary-button,.secondary-button,.text-button{min-height:44px}
     #resultScreen{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
     #againButton{min-height:48px}
+    #juryScreen{overflow:auto;padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l))}
+    #juryScreen .small-card{max-height:min(720px,calc(100dvh - var(--safe-t) - var(--safe-b) - 32px));overflow:auto}
+    .jury-finding-list{display:grid;gap:8px;margin:12px 0}
+    .jury-finding-option{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border:1px solid rgba(212,175,55,.38);border-radius:12px;text-align:left}
+    .jury-finding-option input{width:24px;height:24px;flex:0 0 auto}
     @media(max-width:430px) and (orientation:portrait){
       #resultScreen .result-card{padding:18px}
       #resultScreen .score-ring{width:124px;height:124px;margin:12px auto;border-width:6px}
       #resultScreen .result-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin:11px 0}
     }
     @media(orientation:landscape) and (max-height:520px){
+      #juryScreen .small-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,1.2fr);gap:6px 18px;max-width:820px;padding:12px 18px}
+      #juryScreen .jury-finding-list{grid-column:2;grid-row:1/5;margin:0;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}
+      #juryScreen .primary-button{grid-column:1}
       #resultScreen{place-items:stretch center;padding:calc(8px + var(--safe-t)) calc(12px + var(--safe-r)) calc(8px + var(--safe-b)) calc(12px + var(--safe-l))}
       #resultScreen .result-card{align-self:center;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(118px,.7fr);grid-template-areas:"kicker score" "title score" "text score" "stats stats" "action action";gap:6px 14px;max-width:780px;padding:14px 18px;text-align:left}
       #resultKicker{grid-area:kicker;margin:0}
@@ -136,6 +144,17 @@
       <p id="resultText"></p>
       <div id="resultStats" class="result-stats" role="list"></div>
       <button id="againButton" class="primary-button" type="button">NOVÁ VÝPRAVA</button>
+    </div>
+  </section>
+
+  <section id="juryScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="juryTitle" aria-describedby="juryText">
+    <div class="small-card">
+      <p class="eyebrow">POROTA KD SLAVIA</p>
+      <h2 id="juryTitle">Vyber čtyři soutěžní nálezy</h2>
+      <p id="juryText">Výběr platí jen pro finální hodnocení. Tvoje sbírka zůstane beze změny.</p>
+      <p id="jurySelectionStatus" role="status" aria-live="polite">VYBRÁNO 0/4</p>
+      <div id="juryFindingList" class="jury-finding-list"></div>
+      <button id="jurySubmitButton" class="primary-button" type="button" disabled aria-disabled="true">PŘEDAT POROTĚ</button>
     </div>
   </section>
 
