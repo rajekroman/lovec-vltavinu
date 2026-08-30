@@ -113,7 +113,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         run: |
           if [ "${{ matrix.project }}" = "desktop-firefox" ]; then
-            xvfb-run -a npm run test:smoke -- --project="${{ matrix.project }}"
+            LIBGL_ALWAYS_SOFTWARE=1 xvfb-run --auto-servernum npm run test:smoke -- --project="${{ matrix.project }}"
           else
             npm run test:smoke -- --project="${{ matrix.project }}"
           fi
