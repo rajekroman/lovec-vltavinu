@@ -84,6 +84,7 @@ export class SlaviaScene {
     this.resultShown = false;
     this.restartPending = false;
     this.evaluation = null;
+    this.jurySelection = new Set();
     this.hudRevision = this.hudRevision ?? 0;
     this.hudSignature = "";
   }
@@ -421,7 +422,7 @@ export class SlaviaScene {
     const venue = this.entityByExternalId.get("kd-slavia");
     const destination = this.app.world.get(venue, "destination");
     if (destination) destination.entered = true;
-    this.evaluation = evaluateSlaviaCollection(this.session.state);
+    if (this.session.state.findings.length <= 4) this.evaluation = evaluateSlaviaCollection(this.session.state);
   }
 
   syncInteractions() {
@@ -455,6 +456,10 @@ export class SlaviaScene {
   }
 
   showFinalResult() {
+    if (!this.evaluation && this.session.state.findings.length > 4) {
+      this.showJurySelection();
+      return;
+    }
     this.resultShown = true;
     this.session.setPhase("finale");
     const result = this.evaluation ?? evaluateSlaviaCollection(this.session.state);
@@ -482,6 +487,24 @@ export class SlaviaScene {
         this.restartPending = true;
         this.session.reset();
         this.app.changeScene("title").catch(error => console.error("Scene transition:", error));
+      }
+    });
+  }
+
+  showJurySelection() {
+    if (this.modal === "jury-selection") return;
+    this.modal = "jury-selection";
+    this.app.input.reset("slavia-jury-selection");
+    this.screens.showJurySelection({
+      findings: this.session.state.findings,
+      selectedFindingIds: [...this.jurySelection],
+      required: 4,
+      onSelectionChange: ids => { this.jurySelection = new Set(ids); },
+      onSubmit: ids => {
+        this.jurySelection = new Set(ids);
+        this.evaluation = evaluateSlaviaCollection(this.session.state, ids);
+        this.modal = null;
+        this.showFinalResult();
       }
     });
   }
@@ -562,6 +585,7 @@ export class SlaviaScene {
       session: this.session.state,
       flow: this.flow.snapshot(),
       evaluation: this.evaluation,
+      jurySelection: [...this.jurySelection],
       runtime: {
         modal: this.modal,
         visualMode: this.visualMode,
@@ -613,6 +637,7 @@ export class SlaviaScene {
 
   async exit() {
     this.modal = null;
+    this.jurySelection.clear();
     this.interactions.clear();
     this.app.input.reset("slavia-exit");
     this.destroyVisualWorld();

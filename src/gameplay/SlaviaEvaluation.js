@@ -28,17 +28,37 @@ function normalizeFinding(finding) {
   });
 }
 
-export function evaluateSlaviaCollection(sessionState) {
+export function selectJuryFindings(findings, selectedFindingIds = null, limit = 4) {
+  if (!Array.isArray(findings)) throw new TypeError("Findings must be an array.");
+  if (!Number.isInteger(limit) || limit < 1) throw new RangeError("Jury limit must be a positive integer.");
+  const normalized = findings.map(normalizeFinding);
+  const byId = new Map(normalized.map(finding => [finding.findingId, finding]));
+  if (byId.size !== normalized.length) throw new Error("Session findings must have unique findingId values.");
+  if (normalized.length <= limit) return Object.freeze(normalized);
+  if (!Array.isArray(selectedFindingIds) || selectedFindingIds.length !== limit) {
+    throw new RangeError(`Jury submission must contain exactly ${limit} finding IDs.`);
+  }
+  const uniqueIds = new Set(selectedFindingIds.map(id => String(id ?? "").trim()));
+  if (uniqueIds.size !== limit || uniqueIds.has("")) throw new Error("Jury finding IDs must be unique and non-empty.");
+  const selected = [...uniqueIds].map(id => {
+    const finding = byId.get(id);
+    if (!finding) throw new Error(`Unknown jury finding ID: ${id}`);
+    return finding;
+  });
+  return Object.freeze(selected);
+}
+
+export function evaluateSlaviaCollection(sessionState, selectedFindingIds = null) {
   if (!sessionState || typeof sessionState !== "object" || Array.isArray(sessionState)) {
     throw new TypeError("Session state must be an object.");
   }
 
-  const findings = Array.isArray(sessionState.findings)
-    ? sessionState.findings.map(normalizeFinding)
-    : [];
-  const score = Math.round(finiteNonNegative(sessionState.score ?? 0, "score"));
-  const uniqueIds = new Set(findings.map(finding => finding.findingId));
-  if (uniqueIds.size !== findings.length) throw new Error("Session findings must have unique findingId values.");
+  const allFindings = Array.isArray(sessionState.findings) ? sessionState.findings : [];
+  const findings = selectJuryFindings(allFindings, selectedFindingIds);
+  const sessionScore = Math.round(finiteNonNegative(sessionState.score ?? 0, "score"));
+  const score = allFindings.length > findings.length
+    ? findings.reduce((total, finding) => total + finding.score, 0)
+    : sessionScore;
 
   const rarityPoints = findings.reduce((total, finding) => total + RARITY_WEIGHT[finding.rarity], 0);
   const totalWeight = Number(findings.reduce((total, finding) => total + finding.weight, 0).toFixed(2));
@@ -66,6 +86,7 @@ export function evaluateSlaviaCollection(sessionState) {
     rarityPoints,
     score,
     bestFindingId: bestFinding?.findingId ?? null,
+    submittedFindingIds: Object.freeze(findings.map(finding => finding.findingId)),
     award
   });
 }

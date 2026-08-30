@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluateSlaviaCollection } from "../../src/gameplay/SlaviaEvaluation.js";
+import { evaluateSlaviaCollection, selectJuryFindings } from "../../src/gameplay/SlaviaEvaluation.js";
 
 const finding = (findingId, locality, rarity, weight, score) => ({ findingId, locality, rarity, weight, score });
 
@@ -22,10 +22,36 @@ test("Slavia evaluation deterministically ranks the complete collection", () => 
     rarityPoints: 7,
     score: 570,
     bestFindingId: "besednice-hedgehog-1",
+    submittedFindingIds: ["chlum-finding-1", "nesmen-finding-1", "besednice-hedgehog-1"],
     award: "grand-prize"
   });
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result.localities), true);
+});
+
+test("jury submission evaluates exactly four selected findings without mutating the session", () => {
+  const findings = [
+    finding("a", "chlum", "C", 1, 50),
+    finding("b", "chlum", "B", 1.2, 90),
+    finding("c", "nesmen", "B", 1.5, 120),
+    finding("d", "besednice", "A", 2.8, 240),
+    finding("e", "besednice", "C", 0.8, 40)
+  ];
+  const state = { score: 540, findings };
+  const result = evaluateSlaviaCollection(state, ["b", "c", "d", "e"]);
+  assert.equal(result.findingCount, 4);
+  assert.equal(result.score, 490);
+  assert.deepEqual(result.submittedFindingIds, ["b", "c", "d", "e"]);
+  assert.equal(state.findings, findings);
+  assert.equal(state.findings.length, 5);
+});
+
+test("jury selection requires four distinct known IDs only when the collection exceeds four", () => {
+  const findings = ["a", "b", "c", "d", "e"].map((id, index) => finding(id, "chlum", "C", 1, 10 + index));
+  assert.throws(() => selectJuryFindings(findings), /exactly 4/);
+  assert.throws(() => selectJuryFindings(findings, ["a", "a", "b", "c"]), /unique/);
+  assert.throws(() => selectJuryFindings(findings, ["a", "b", "c", "missing"]), /Unknown jury finding ID/);
+  assert.deepEqual(selectJuryFindings(findings.slice(0, 4)).map(entry => entry.findingId), ["a", "b", "c", "d"]);
 });
 
 test("Slavia evaluation has deterministic lower award thresholds", () => {

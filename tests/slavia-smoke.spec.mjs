@@ -570,3 +570,46 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(httpErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
+
+test("Slavia jury selection accepts exactly four findings without clipping", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
+  await page.evaluate(async () => {
+    const { app } = await import("./src/bootstrap.js");
+    const { ScreenController } = await import("./src/ui/ScreenController.js");
+    app.stop();
+    const screens = new ScreenController(document);
+    const findings = ["a", "b", "c", "d", "e", "f"].map((findingId, index) => ({
+      findingId,
+      locality: ["chlum", "nesmen", "besednice"][index % 3],
+      rarity: ["A", "B", "C"][index % 3],
+      score: 60 + index * 20
+    }));
+    window.__jurySubmittedIds = null;
+    screens.showJurySelection({
+      findings,
+      required: 4,
+      onSubmit: ids => { window.__jurySubmittedIds = ids; }
+    });
+  });
+
+  const jury = page.locator("#juryScreen");
+  await expect(jury).toHaveClass(/visible/);
+  await expect(page.locator("#jurySubmitButton")).toBeDisabled();
+  const options = page.locator(".jury-finding-option input");
+  for (let index = 0; index < 4; index++) await options.nth(index).check();
+  await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
+  await expect(page.locator("#jurySubmitButton")).toBeEnabled();
+  await options.nth(4).click();
+  await expect(options.nth(4)).not.toBeChecked();
+
+  await page.locator("#jurySubmitButton").scrollIntoViewIfNeeded();
+  const box = await page.locator("#jurySubmitButton").boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  await page.locator("#jurySubmitButton").click();
+  await expect.poll(() => page.evaluate(() => window.__jurySubmittedIds)).toEqual(["a", "b", "c", "d"]);
+});
