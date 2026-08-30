@@ -528,7 +528,6 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
     "nesmen",
     "nesmen",
     "nesmen",
-    "nesmen",
     "besednice",
     "besednice",
     "besednice",
