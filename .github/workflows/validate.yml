@@ -107,7 +107,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         run: |
           npx playwright install --with-deps --only-shell chromium
-          npx playwright install --with-deps --only-shell firefox
+          npx playwright install --with-deps firefox
 
       - name: Run ${{ matrix.project }}
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
