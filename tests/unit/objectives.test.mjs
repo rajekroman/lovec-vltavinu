@@ -2,11 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateObjective, isObjectiveComplete } from "../../src/gameplay/Objectives.js";
 
-test("Chlum vyžaduje povolení, povrchové hledání i nález", () => {
+test("Chlum vyžaduje povolení, povrchové hledání i tři nálezy", () => {
   assert.equal(evaluateObjective("chlum", { permit: false, searched: true, findings: 1 }).text, "Promluv s Václavem");
   assert.equal(evaluateObjective("chlum", { permit: true, searched: false, findings: 0 }).text, "Aktivuj radar a hledej signál");
   assert.equal(isObjectiveComplete("chlum", { permit: true, searched: false, findings: 1 }), false);
-  assert.equal(isObjectiveComplete("chlum", { permit: true, searched: true, findings: 1 }), true);
+  assert.equal(isObjectiveComplete("chlum", { permit: true, searched: true, findings: 2 }), false);
+  assert.equal(isObjectiveComplete("chlum", { permit: true, searched: true, findings: 3 }), true);
 });
 
 test("Nesměň vyžaduje povolení, kopání, zahrabání i nález", () => {

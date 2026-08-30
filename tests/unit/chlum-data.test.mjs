@@ -7,16 +7,20 @@ import { CHLUM_ENTITY_DEFINITIONS, CHLUM_FINDING_VARIANTS, createChlumFinding, g
 
 const ASSET_MANIFEST = JSON.parse(readFileSync(new URL("../../assets/manifests/assets.json", import.meta.url), "utf8"));
 
-test("Chlum entity data contains one canonical player, permission target, surface search site and tractor", () => {
+test("Chlum entity data contains one canonical player, permission target, three surface search sites and tractor", () => {
   const ids = CHLUM_ENTITY_DEFINITIONS.map(entity => entity.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(ids, ["player", "farmer-vaclav", "chlum-search-site", "tractor"]);
+  assert.deepEqual(ids, ["player", "farmer-vaclav", "chlum-search-site", "chlum-search-site-2", "chlum-search-site-3", "tractor"]);
   assert.equal(getChlumEntityDefinition("farmer-vaclav").components.npc.dialogueId, "chlum-permission");
   assert.equal(getChlumEntityDefinition("farmer-vaclav").components.interaction.action, CONTEXT_ACTION);
-  const search = getChlumEntityDefinition("chlum-search-site");
-  assert.equal(search.components.interaction, undefined);
-  assert.equal(search.components.searchSpot.searched, false);
-  assert.equal(search.components.searchSpot.detectionRange, 240);
+  const searches = CHLUM_ENTITY_DEFINITIONS.filter(entity => entity.components.searchSpot);
+  assert.equal(searches.length, 3);
+  assert.equal(new Set(searches.map(entity => entity.components.searchSpot.findingId)).size, 3);
+  for (const search of searches) {
+    assert.equal(search.components.interaction, undefined);
+    assert.equal(search.components.searchSpot.searched, false);
+    assert.equal(search.components.searchSpot.detectionRange, 240);
+  }
   assert.equal(getChlumEntityDefinition("tractor").components.hazard.kind, "tractor");
 });
 

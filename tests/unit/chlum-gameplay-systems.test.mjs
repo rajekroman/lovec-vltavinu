@@ -59,7 +59,7 @@ test("DigSystem rejects alternate hit counts and completes on the third successf
   assert.equal(dig.finish().hits, 3);
 });
 
-test("ObjectiveSystem writes permission and one finding to GameSession without owning a parallel collection", () => {
+test("ObjectiveSystem writes permission and three findings to GameSession without owning a parallel collection", () => {
   const events = strictEvents();
   const completed = [];
   const levels = [];
@@ -73,14 +73,16 @@ test("ObjectiveSystem writes permission and one finding to GameSession without o
   assert.equal(objective.update({ searched: false }).complete, false);
   assert.equal(objective.update({ searched: true }).complete, false);
   objective.recordFinding({ findingId: "chlum-1", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
+  objective.recordFinding({ findingId: "chlum-2", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
+  objective.recordFinding({ findingId: "chlum-3", locality: "chlum", rarity: "B", weight: 1.2, score: 90 });
   const result = objective.update({ searched: true });
 
   assert.equal(result.complete, true);
-  assert.equal(session.state.findings.length, 1);
-  assert.equal(session.state.score, 90);
+  assert.equal(session.state.findings.length, 3);
+  assert.equal(session.state.score, 270);
   assert.equal(session.state.objective.complete, true);
   assert.deepEqual(completed, [{ id: "chlum-permission-and-find", levelId: "chlum" }]);
-  assert.deepEqual(levels, [{ levelId: "chlum", nextLevelId: "nesmen", score: 90 }]);
+  assert.deepEqual(levels, [{ levelId: "chlum", nextLevelId: "nesmen", score: 270 }]);
   assert.throws(() => objective.recordFinding({ findingId: "chlum-1", locality: "chlum", rarity: "B", weight: 1.2, score: 90 }), /already recorded/);
 });
 

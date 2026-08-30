@@ -352,24 +352,30 @@ async function completeChlum(page, input, testInfo) {
   await expect(page.locator("#dialogName")).toHaveText("VÁCLAV");
   await input.activateUi(page.locator("#dialogButton"));
 
-  let revealed = false;
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    await moveAxisTo(page, input, "x", 1020);
-    await moveAxisTo(page, input, "y", 410);
-    await waitForTractorLeftOf(page);
-    await moveAxisTo(page, input, "y", 720);
+  const sites = [
+    { x: 1020, y: 720 },
+    { x: 760, y: 920 },
+    { x: 1320, y: 860 }
+  ];
+  await moveAxisTo(page, input, "x", sites[0].x);
+  await moveAxisTo(page, input, "y", 410);
+  await waitForTractorLeftOf(page);
+
+  for (const [index, site] of sites.entries()) {
+    await moveAxisTo(page, input, "x", site.x);
+    await moveAxisTo(page, input, "y", site.y);
     await expect(page.locator("#actionButton")).toHaveAttribute("aria-label", "RADAR");
     if (!input.desktop) await expect(page.locator("#actionButton")).toHaveAttribute("aria-disabled", "false");
     await input.contextualAction();
     await expectReleasedInput(page);
-    revealed = activeRuntime(await runtimeSnapshot(page))?.searched === true;
-    if (!revealed) continue;
-    await captureEvidence(page, testInfo, "chlum-radar-finding");
-    break;
+    await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.searchedCount).toBe(index + 1);
+    if (index === 0) await captureEvidence(page, testInfo, "chlum-radar-finding");
+    await expect.poll(async () => activeRuntime(await runtimeSnapshot(page))?.available?.kind ?? null).toBe("collect");
+    await performAction(page, input);
+    await expect.poll(async () => (
+      (await runtimeSnapshot(page)).session.findings.filter(finding => finding.locality === "chlum").length
+    )).toBe(index + 1);
   }
-  expect(revealed).toBe(true);
-  await moveTo(page, input, 1042, 732, "collect");
-  await performAction(page, input);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
 }
 
@@ -517,9 +523,16 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
-  expect(arrived.session.findings).toHaveLength(3);
-  expect(arrived.session.score).toBeGreaterThanOrEqual(100);
-  expect(arrived.session.score).toBeLessThanOrEqual(800);
+  expect(arrived.session.findings.map(finding => finding.locality)).toEqual([
+    "chlum",
+    "chlum",
+    "chlum",
+    "nesmen",
+    "besednice"
+  ]);
+  expect(arrived.session.score).toBe(
+    arrived.session.findings.reduce((total, finding) => total + finding.score, 0)
+  );
   expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
@@ -554,7 +567,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.session.phase).toBe("finale");
   expect(completed.session.flags.slaviaCertificate).toBe(true);
   expect(completed.slavia.flow.complete).toBe(true);
-  expect(completed.slavia.evaluation.findingCount).toBe(3);
+  expect(completed.slavia.evaluation.findingCount).toBe(5);
 
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#titleScreen")).toHaveClass(/visible/);

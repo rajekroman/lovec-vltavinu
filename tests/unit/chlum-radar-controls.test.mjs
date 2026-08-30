@@ -18,13 +18,13 @@ test("Chlum uses action-driven radar and never opens the digging minigame", () =
   assert.match(scene, /detectionRange/);
   assert.match(scene, /actionLabel: available\?\.interaction\.label \?\? \(this\.radarEnabled \? "RADAR" : "AKCE"\)/);
   assert.match(scene, /Radar odhalil vltavín/);
-  assert.match(levels, /objective\("search-surface", "discover", "chlum-search-site", 1\)/);
+  assert.match(levels, /objective\("search-surface", "discover", "chlum-search-site", 3\)/);
   assert.doesNotMatch(levels, /objective\("dig-finding", "dig", "chlum-/);
 });
 
 test("the full-flow test reveals Chlum by radar and keeps rhythmic digging in Nesměň", () => {
   assert.match(smoke, /toHaveAttribute\("aria-label", "RADAR"\)/);
-  assert.match(smoke, /revealed = activeRuntime\(await runtimeSnapshot\(page\)\)\?\.searched === true/);
+  assert.match(smoke, /searchedCount\)\.toBe\(index \+ 1\)/);
   assert.match(smoke, /captureEvidence\(page, testInfo, "chlum-radar-finding"\)/);
   assert.match(smoke, /waitForTractorLeftOf\(page, maxX = 620, timeout = 75_000\)/);
   assert.match(smoke, /async function completeNesmen/);
