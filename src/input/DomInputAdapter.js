@@ -106,11 +106,10 @@ export class DomInputAdapter {
       this.actionPointer = event.pointerId;
       try { action.setPointerCapture?.(event.pointerId); } catch {}
       action.classList.add("active");
-      this.input.press("action");
     });
-    this.listen(action, "pointerup", event => this.releaseAction(event));
-    this.listen(action, "pointercancel", event => this.releaseAction(event));
-    this.listen(action, "lostpointercapture", event => this.releaseAction(event));
+    this.listen(action, "pointerup", event => this.releaseAction(event, true));
+    this.listen(action, "pointercancel", event => this.releaseAction(event, false));
+    this.listen(action, "lostpointercapture", event => this.releaseAction(event, false));
     this.listen(action, "click", event => {
       if (event.detail !== 0) return;
       event.preventDefault?.();
@@ -119,11 +118,11 @@ export class DomInputAdapter {
 
     this.listen(this.window, "pointerup", event => {
       this.releaseMove(event);
-      this.releaseAction(event);
+      this.releaseAction(event, true);
     });
     this.listen(this.window, "pointercancel", event => {
       this.releaseMove(event);
-      this.releaseAction(event);
+      this.releaseAction(event, false);
     });
 
     this.listen(pause, "click", event => {
@@ -164,14 +163,14 @@ export class DomInputAdapter {
     return true;
   }
 
-  releaseAction(event) {
+  releaseAction(event, commit = false) {
     if (this.actionPointer === null || event?.pointerId !== this.actionPointer) return false;
     event.preventDefault?.();
     const pointerId = this.actionPointer;
     this.actionPointer = null;
     try { this.elements.action.releasePointerCapture?.(pointerId); } catch {}
     this.elements.action.classList.remove("active");
-    this.input.release("action");
+    if (commit) this.pulse("action");
     return true;
   }
 
