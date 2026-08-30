@@ -1113,5 +1113,33 @@
       "source": "Project-original procedural synthesis; no external samples.",
       "notice": "./assets/audio/LICENSE.md"
     }
+  },
+  {
+    "id": "npc-guide-milan-atlas",
+    "type": "spritesheet",
+    "url": "./assets/sprites/npcs/guide-milan-atlas.png",
+    "preload": "level:besednice",
+    "dimensions": {
+      "width": 600,
+      "height": 160
+    },
+    "frames": {
+      "columns": 5,
+      "rows": 1,
+      "width": 120,
+      "height": 160
+    },
+    "transparent": true,
+    "alphaTest": 0.02,
+    "metrics": {
+      "bytes": 110714
+    },
+    "budget": {
+      "bytes": 200000,
+      "triangles": 0,
+      "textureMax": 1024
+    },
+    "disposeOwner": "LevelScene:besednice",
+    "sha256": "3e370ae041707bddeea162f6a22cbbacc18a286264d32f410d19d93fc2534746"
   }
 ]

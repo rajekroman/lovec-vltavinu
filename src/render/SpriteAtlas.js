@@ -212,6 +212,54 @@ export const NPC_SPRITES = Object.freeze({
         loop: false
       }
     }
+  },
+
+  guide_milan: {
+    name: "Milan (Guide)",
+    assetId: "npc-guide-milan-atlas",
+    width: 120,
+    height: 160,
+    frameBounds: [
+      { slot: 0, x0: 104, x1: 120 },
+      { slot: 1, x0: 0, x1: 120 },
+      { slot: 2, x0: 0, x1: 120 },
+      { slot: 3, x0: 0, x1: 120 },
+      { slot: 4, x0: 0, x1: 16 }
+    ],
+    frames: {
+      neutral: 0,
+      talking: 1,
+      concerned: 2,
+      welcoming: 3,
+      pointing: 4
+    },
+    animations: {
+      idle: {
+        frames: [0],
+        fps: 1,
+        loop: true
+      },
+      talk: {
+        frames: [1, 0, 1, 0],
+        fps: 3,
+        loop: true
+      },
+      react_concerned: {
+        frames: [2],
+        fps: 1,
+        loop: false
+      },
+      react_welcoming: {
+        frames: [3],
+        fps: 1,
+        loop: false
+      },
+      action_point: {
+        frames: [4, 3, 4],
+        fps: 4,
+        loop: false
+      }
+    }
   }
 });
 

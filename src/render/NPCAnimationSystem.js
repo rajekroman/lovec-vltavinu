@@ -3,7 +3,7 @@
  * Integrates SpriteAtlas metadata with Three.js sprite rendering
  */
 
-import { getCharacterAnimation, getCharacterFrame, SpriteAnimator } from "./SpriteAtlas.js";
+import { getCharacterAnimation, getCharacterFrame, SpriteAnimator, NPC_SPRITES } from "./SpriteAtlas.js";
 
 const activeDialogueAnimations = new Set();
 const dialogueAdvancers = new WeakMap();
@@ -53,7 +53,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
       animationName !== "idle" && animSpec.loop === false
     );
     animator.playAnimation(animSpec);
-    updateSpriteFrame(sprite, animator.getCurrentFrame(), width);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), width, characterKey);
     return true;
   };
 
@@ -62,7 +62,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
 
     const wasPlaying = animator.isPlaying;
     const isPlaying = animator.update(deltaMs);
-    updateSpriteFrame(sprite, animator.getCurrentFrame(), width);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), width, characterKey);
 
     if (wasPlaying && !isPlaying && returnToIdleOnComplete && currentAnimationName !== "idle") {
       startAnimation("idle", { returnToIdle: false });
@@ -87,7 +87,7 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
         returnToIdleOnComplete = false;
         animator.isPlaying = false;
         animator.currentFrame = frameIdx;
-        updateSpriteFrame(sprite, frameIdx, width);
+        updateSpriteFrame(sprite, frameIdx, width, characterKey);
       }
     },
 
@@ -132,7 +132,7 @@ export function getActiveDialogueAnimationCount() {
   return activeDialogueAnimations.size;
 }
 
-function updateSpriteFrame(sprite, frameIndex, frameWidth) {
+function updateSpriteFrame(sprite, frameIndex, frameWidth, characterKey) {
   if (!sprite || !sprite.material) return;
 
   const material = sprite.material;
@@ -142,10 +142,21 @@ function updateSpriteFrame(sprite, frameIndex, frameWidth) {
   const framesPerRow = Math.floor(atlasWidth / frameWidth);
 
   const col = frameIndex % framesPerRow;
-  const u = (col * frameWidth) / atlasWidth;
+
+  let u = (col * frameWidth) / atlasWidth;
+  let repeatX = frameWidth / atlasWidth;
+
+  // Apply frameBounds if available
+  const character = characterKey ? NPC_SPRITES[characterKey] : null;
+  if (character?.frameBounds?.[frameIndex]) {
+    const bound = character.frameBounds[frameIndex];
+    const boundWidth = bound.x1 - bound.x0;
+    u = bound.x0 / atlasWidth;
+    repeatX = boundWidth / atlasWidth;
+  }
 
   material.map.offset.x = u;
-  material.map.repeat.x = frameWidth / atlasWidth;
+  material.map.repeat.x = repeatX;
 
   material.needsUpdate = true;
 }
