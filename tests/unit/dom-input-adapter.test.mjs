@@ -36,12 +36,19 @@ class FakeTarget {
     const event = {
       type,
       defaultPrevented: false,
+      immediatePropagationStopped: false,
       preventDefault() {
         this.defaultPrevented = true;
       },
+      stopImmediatePropagation() {
+        this.immediatePropagationStopped = true;
+      },
       ...init
     };
-    for (const handler of [...(this.listeners.get(type) ?? [])]) handler(event);
+    for (const handler of [...(this.listeners.get(type) ?? [])]) {
+      handler(event);
+      if (event.immediatePropagationStopped) break;
+    }
     return event;
   }
 }
@@ -85,9 +92,26 @@ class FakeDocument extends FakeTarget {
 }
 
 class FakeWindow extends FakeTarget {
+  constructor() {
+    super();
+    this.nextTimerId = 1;
+    this.timers = new Map();
+  }
+
   setTimeout(handler) {
-    handler();
-    return 1;
+    const id = this.nextTimerId++;
+    this.timers.set(id, handler);
+    return id;
+  }
+
+  clearTimeout(id) {
+    this.timers.delete(id);
+  }
+
+  flushTimers() {
+    const timers = [...this.timers.values()];
+    this.timers.clear();
+    for (const handler of timers) handler();
   }
 }
 
@@ -157,6 +181,50 @@ test("mobile action commits exactly once only after its owning pointer is releas
   action.dispatch("pointerup", { pointerId: 11 });
   assert.deepEqual(input.presses, ["action"]);
   assert.deepEqual(input.releases, ["action"]);
+
+  adapter.dispose();
+});
+
+test("mobile action suppresses exactly one pointer compatibility click after commit", () => {
+  const { adapter, document, input } = createAdapter();
+  const action = document.getElementById("actionButton");
+
+  action.dispatch("pointerdown", { pointerId: 31 });
+  action.dispatch("pointerup", { pointerId: 31 });
+  assert.deepEqual(input.presses, ["action"]);
+  assert.deepEqual(input.releases, ["action"]);
+  assert.equal(adapter.suppressPointerClick, true);
+
+  const compatibilityClick = document.dispatch("click", { detail: 1 });
+  assert.equal(compatibilityClick.defaultPrevented, true);
+  assert.equal(compatibilityClick.immediatePropagationStopped, true);
+  assert.equal(adapter.suppressPointerClick, false);
+
+  const laterPointerClick = document.dispatch("click", { detail: 1 });
+  assert.equal(laterPointerClick.defaultPrevented, false);
+
+  action.dispatch("pointerdown", { pointerId: 32 });
+  action.dispatch("pointerup", { pointerId: 32 });
+  const assistiveClick = document.dispatch("click", { detail: 0 });
+  assert.equal(assistiveClick.defaultPrevented, false);
+  assert.equal(adapter.suppressPointerClick, true);
+
+  adapter.dispose();
+  assert.equal(adapter.suppressPointerClick, false);
+});
+
+test("compatibility click suppression expires if the browser emits no click", () => {
+  const { adapter, document, window } = createAdapter();
+  const action = document.getElementById("actionButton");
+
+  action.dispatch("pointerdown", { pointerId: 41 });
+  action.dispatch("pointerup", { pointerId: 41 });
+  assert.equal(adapter.suppressPointerClick, true);
+
+  window.flushTimers();
+  assert.equal(adapter.suppressPointerClick, false);
+  const laterPointerClick = document.dispatch("click", { detail: 1 });
+  assert.equal(laterPointerClick.defaultPrevented, false);
 
   adapter.dispose();
 });
