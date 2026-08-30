@@ -33,6 +33,7 @@ export class DomInputAdapter {
     this.keys = new Set();
     this.movePointer = null;
     this.actionPointer = null;
+    this.actionClickReady = false;
     this.resizeTimer = null;
     this.controller = new AbortController();
     this.root = this.document.documentElement ?? null;
@@ -103,6 +104,7 @@ export class DomInputAdapter {
     this.listen(action, "pointerdown", event => {
       if (!isPrimaryPointer(event) || this.actionPointer !== null) return;
       event.preventDefault?.();
+      this.actionClickReady = false;
       this.actionPointer = event.pointerId;
       try { action.setPointerCapture?.(event.pointerId); } catch {}
       action.classList.add("active");
@@ -111,8 +113,13 @@ export class DomInputAdapter {
     this.listen(action, "pointercancel", event => this.releaseAction(event, false));
     this.listen(action, "lostpointercapture", event => this.releaseAction(event, false));
     this.listen(action, "click", event => {
-      if (event.detail !== 0) return;
       event.preventDefault?.();
+      if (event.detail === 0) {
+        this.pulse("action");
+        return;
+      }
+      if (!this.actionClickReady) return;
+      this.actionClickReady = false;
       this.pulse("action");
     });
 
@@ -163,14 +170,14 @@ export class DomInputAdapter {
     return true;
   }
 
-  releaseAction(event, commit = false) {
+  releaseAction(event, armClick = false) {
     if (this.actionPointer === null || event?.pointerId !== this.actionPointer) return false;
     event.preventDefault?.();
     const pointerId = this.actionPointer;
     this.actionPointer = null;
     try { this.elements.action.releasePointerCapture?.(pointerId); } catch {}
     this.elements.action.classList.remove("active");
-    if (commit) this.pulse("action");
+    this.actionClickReady = armClick;
     return true;
   }
 
@@ -235,6 +242,7 @@ export class DomInputAdapter {
     const actionPointer = this.actionPointer;
     this.movePointer = null;
     this.actionPointer = null;
+    this.actionClickReady = false;
     if (movePointer !== null) {
       try { this.elements.moveZone.releasePointerCapture?.(movePointer); } catch {}
     }
