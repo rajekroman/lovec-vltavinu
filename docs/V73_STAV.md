@@ -1,7 +1,7 @@
 # V7.3 — stav rozpracované práce
 
-Revize: **1.1.0 · 22. 8. 2026**
-Větev: `claude/v73-accessibility-pwa-dokončit`
+Revize: **1.2.0 · 30. 8. 2026**
+Větev: `claude/dokoncit-zbyvajici-levely-704apq` (předchozí kolo sloučeno v PR #289)
 
 Tento dokument nahrazuje šestnáct rozporuplných status/plán souborů, které se
 nahromadily v kořeni repozitáře. Autoritativní zůstává `docs/PROJECT_CONTROL.md`
@@ -28,7 +28,7 @@ SHA a zelenou QA maticí — sloučení feature PR release nevytváří.
 | Sekundární obrazovky (deník, nastavení, příběh, pauza) | hotovo | `src/ui/ScreenController.js` |
 | Přístupnost — ARIA, klávesnice, fokus | hotovo v kódu | `src/ui/{ScreenController,HudController}.js` |
 | Barvoslepost, vysoký kontrast, velký text | hotovo | `style.css` (`html[data-colorblind=…]`, `.high-contrast`, `.large-text`) |
-| PWA a offline cache | hotovo | `manifest.webmanifest`, `sw.js` |
+| PWA a offline cache | hotovo, ověřeno za běhu | `manifest.webmanifest`, `sw.js`, `tests/offline-smoke.spec.mjs` |
 | Unit testy | 252 / 252 | `npm test` |
 | Statická validace | 0 chyb, 0 varování | `npm run validate` |
 
@@ -74,7 +74,29 @@ vzoru, který už používal `heatPill` („Pozornost hlídky“).
 Automatizovaná část tedy pokrývá strukturu, ARIA kontrakty a kontrast; zbytek je
 o použitelnosti, kterou nelze změřit bez člověka a zařízení.
 
-### 3.2 Nepřehrávané animace NPC
+### 3.2 Offline režim — ověřeno
+
+Do 30. 8. 2026 nebyl offline režim nikdy otestovaný za běhu: `playwright.config.mjs`
+má globálně `serviceWorkers: "block"`, takže žádný smoke test service workera
+vůbec nespustil. Ověřený byl jen statický soulad seznamu v `sw.js` s runtime grafem.
+
+Nově to kryje `tests/offline-smoke.spec.mjs` v projektu `offline-chromium`
+(jediný, kde je `serviceWorkers: "allow"`). Chlum se hraje **až po odpojení
+sítě** a v samostatném browser contextu — jinak by test byl razítko:
+
+- kdyby se hrálo online před odpojením, network-first fetch handler by si
+  assety nacachoval cestou a chybějící položka v CORE by prošla;
+- kdyby čerstvý klient sdílel context s referenčním během, četl by jeho cache.
+
+Obojí jsem ověřil experimentem: s odebraným `chlum-wet-verge-v7.webp` ze `sw.js`
+obě slabší varianty testu **prošly**, správná varianta selhala. Test navíc
+porovnává množinu načtených assetů online vs. offline — samotné „nespadlo to“
+nestačí, protože scéna běží dál i při tichém selhání textury.
+
+Výsledek na zdravém stromu: 16 assetů Chlumu načtených offline shodně jako
+online, 0 selhaných requestů.
+
+### 3.3 Nepřehrávané animace NPC
 Atlasy definují 16 animací, ale scény pouštějí jen 7. Nikdy se nepřehrají:
 
 ```
@@ -87,7 +109,7 @@ Snímky se tedy stahují, ale nikdy nezobrazí. Napojení vyžaduje **designové
 rozhodnutí**, ve kterých herních momentech se mají spouštět — není to oprava,
 kterou lze udělat mechanicky. Do té doby zůstávají atlasy beze změny.
 
-### 3.3 Mobilní QA matice
+### 3.4 Mobilní QA matice
 Průchod na reálném iPhonu a Androidu v portrait i landscape režimu.
 
 **Pozor na výklad CI:** workflow `Validate game` záměrně přeskakuje projekty

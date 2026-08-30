@@ -33,6 +33,19 @@ export default defineConfig({
       }
     },
     {
+      // The only project that lets the service worker run: it proves the CORE
+      // list in sw.js still covers everything the first level loads.
+      name: "offline-chromium",
+      testMatch: /offline-smoke\.spec\.mjs$/,
+      metadata: { inputMode: "desktop", orientation: "landscape" },
+      use: {
+        ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        viewport: { width: 1280, height: 720 },
+        serviceWorkers: "allow"
+      }
+    },
+    {
       name: "audio-lifecycle-chromium",
       testMatch: /audio-lifecycle\.spec\.mjs$/,
       metadata: { inputMode: "desktop", orientation: "landscape" },
