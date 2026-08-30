@@ -109,7 +109,12 @@ export class GameApp {
       setNpcAnimationsPaused(scene.session?.state?.phase === "paused");
       scene.update?.(dt, time, input);
     }
-    updateActiveDialogueAnimations(Math.max(0, Number(dt) || 0) * 1000);
+
+    if (scene.modal === "dialog") {
+      updateActiveDialogueAnimations(Math.max(0, Number(dt) || 0) * 1000);
+    } else {
+      endActiveDialogueAnimations();
+    }
     setNpcAnimationsPaused(false);
     this.input.endFrame();
   }
