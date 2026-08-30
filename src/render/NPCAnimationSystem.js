@@ -5,6 +5,18 @@
 
 import { getCharacterAnimation, getCharacterFrame, SpriteAnimator } from "./SpriteAtlas.js";
 
+const activeDialogueAnimations = new Set();
+const dialogueAdvancers = new WeakMap();
+let npcAnimationsPaused = false;
+
+export function setNpcAnimationsPaused(paused) {
+  npcAnimationsPaused = paused === true;
+}
+
+export function areNpcAnimationsPaused() {
+  return npcAnimationsPaused;
+}
+
 /**
  * Creates an animated NPC sprite using the sprite atlas system
  * @param {object} THREE - Three.js module
@@ -12,12 +24,11 @@ import { getCharacterAnimation, getCharacterFrame, SpriteAnimator } from "./Spri
  * @param {string} characterKey - NPC key from SpriteAtlas.NPC_SPRITES
  * @param {object} spriteSpec - { assetId, width, height, texture } — texture is the already-loaded atlas texture
  * @param {object} options - Position/scale options
- * @returns {object} { sprite, animator, playAnimation, setFrame }
+ * @returns {object} { sprite, animator, playAnimation, setFrame, update, getState }
  */
 export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, options = {}) {
   const { assetId, width, height, texture } = spriteSpec;
 
-  // Create sprite using atlas texture
   const sprite = renderer.createSprite(texture, {
     width: options.width || width,
     height: options.height || height,
@@ -29,67 +40,98 @@ export function createAnimatedNPC(THREE, renderer, characterKey, spriteSpec, opt
   });
 
   const animator = new SpriteAnimator(0);
+  let currentAnimationName = "none";
+  let returnToIdleOnComplete = false;
+  let api = null;
 
-  // API for animation control
-  return {
+  const startAnimation = (animationName, animationOptions = {}) => {
+    const animSpec = getCharacterAnimation(characterKey, animationName);
+    if (!animSpec) return false;
+
+    currentAnimationName = animationName;
+    returnToIdleOnComplete = animationOptions.returnToIdle ?? (
+      animationName !== "idle" && animSpec.loop === false
+    );
+    animator.playAnimation(animSpec);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), width);
+    return true;
+  };
+
+  const advance = deltaMs => {
+    if (npcAnimationsPaused) return animator.isPlaying;
+
+    const wasPlaying = animator.isPlaying;
+    const isPlaying = animator.update(deltaMs);
+    updateSpriteFrame(sprite, animator.getCurrentFrame(), width);
+
+    if (wasPlaying && !isPlaying && returnToIdleOnComplete && currentAnimationName !== "idle") {
+      startAnimation("idle", { returnToIdle: false });
+    }
+
+    return animator.isPlaying;
+  };
+
+  api = {
     sprite,
     animator,
 
-    /**
-     * Play an animation sequence
-     * @param {string} animationName - Name of animation (e.g., "talk", "idle")
-     */
-    playAnimation(animationName) {
-      const animSpec = getCharacterAnimation(characterKey, animationName);
-      if (animSpec) {
-        animator.playAnimation(animSpec);
-      }
+    playAnimation(animationName, animationOptions = {}) {
+      return startAnimation(animationName, animationOptions);
     },
 
-    /**
-     * Set a static frame/pose
-     * @param {string} poseName - Pose name (e.g., "neutral", "talking")
-     */
     setFrame(poseName) {
       const frameIdx = getCharacterFrame(characterKey, poseName);
       if (frameIdx !== null) {
+        activeDialogueAnimations.delete(api);
+        currentAnimationName = "pose";
+        returnToIdleOnComplete = false;
+        animator.isPlaying = false;
         animator.currentFrame = frameIdx;
         updateSpriteFrame(sprite, frameIdx, width);
       }
     },
 
-    /**
-     * Update animator each frame (call from scene update)
-     * @param {number} deltaMs - Time delta in milliseconds
-     * @returns {boolean} true if animation is still playing
-     */
     update(deltaMs) {
-      const isPlaying = animator.update(deltaMs);
-      updateSpriteFrame(sprite, animator.getCurrentFrame(), width);
-      return isPlaying;
+      if (npcAnimationsPaused || activeDialogueAnimations.has(api)) return animator.isPlaying;
+      return advance(deltaMs);
     },
 
-    /**
-     * Get current animation state
-     * @returns {object} { isPlaying, currentFrame, animation }
-     */
     getState() {
       return {
         isPlaying: animator.isPlaying,
         currentFrame: animator.currentFrame,
-        animation: animator.animation?.name || "none"
+        animation: currentAnimationName
       };
     }
   };
+
+  dialogueAdvancers.set(api, advance);
+  return api;
 }
 
-/**
- * Internal helper to update sprite texture coordinates
- * Assumes single-row sprite sheet layout (frames arranged horizontally)
- * @param {THREE.Sprite} sprite - Sprite object
- * @param {number} frameIndex - Frame index
- * @param {number} frameWidth - Width of each frame in pixels
- */
+export function updateActiveDialogueAnimations(deltaMs) {
+  if (npcAnimationsPaused) return;
+  for (const npc of [...activeDialogueAnimations]) {
+    const advance = dialogueAdvancers.get(npc);
+    if (!advance) {
+      activeDialogueAnimations.delete(npc);
+      continue;
+    }
+    advance(deltaMs);
+  }
+}
+
+export function endActiveDialogueAnimations() {
+  for (const npc of [...activeDialogueAnimations]) {
+    activeDialogueAnimations.delete(npc);
+    npc.playAnimation("idle", { returnToIdle: false });
+  }
+}
+
+export function getActiveDialogueAnimationCount() {
+  return activeDialogueAnimations.size;
+}
+
 function updateSpriteFrame(sprite, frameIndex, frameWidth) {
   if (!sprite || !sprite.material) return;
 
@@ -108,20 +150,21 @@ function updateSpriteFrame(sprite, frameIndex, frameWidth) {
   material.needsUpdate = true;
 }
 
-/**
- * Hook: Play animation when NPC enters dialogue
- * @param {object} npcSprite - Result of createAnimatedNPC()
- * @param {string} dialoguePhase - Phase of dialogue ("start", "middle", "end")
- */
 export function playDialogueAnimation(npcSprite, dialoguePhase = "start") {
+  if (!npcSprite) return;
+
+  if (dialoguePhase === "start" || dialoguePhase === "middle") {
+    npcSprite.playAnimation("talk");
+    activeDialogueAnimations.add(npcSprite);
+    return;
+  }
+
+  activeDialogueAnimations.delete(npcSprite);
   const animMap = {
-    start: "talk",
-    middle: "talk",
     end: "idle",
     react_positive: "react_welcome",
     react_negative: "react_concern"
   };
-
   const animName = animMap[dialoguePhase] || "idle";
   npcSprite.playAnimation(animName);
 }

@@ -333,6 +333,7 @@ export class SpriteAnimator {
       } else {
         this.isPlaying = false;
         this.frameIndex = this.animation.frames.length - 1;
+        this.updateFrame();
         return false; // Animation finished
       }
     } else {
