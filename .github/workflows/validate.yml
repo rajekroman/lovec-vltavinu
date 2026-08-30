@@ -103,11 +103,13 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
         run: npm install --no-audit --no-fund --no-package-lock
 
-      - name: Install browser binaries
-        if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
-        run: |
-          npx playwright install --with-deps --only-shell chromium
-          npx playwright install --with-deps firefox
+      - name: Install Chromium
+        if: ${{ (github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape')) && matrix.project != 'desktop-firefox' }}
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Install Firefox
+        if: ${{ (github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape')) && matrix.project == 'desktop-firefox' }}
+        run: npx playwright install --with-deps firefox
 
       - name: Run ${{ matrix.project }}
         if: ${{ github.event_name != 'pull_request' || (matrix.project != 'iphone-portrait' && matrix.project != 'iphone-landscape') }}
