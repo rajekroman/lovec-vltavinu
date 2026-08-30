@@ -223,12 +223,16 @@ test("DomInputAdapter owns joystick and action pointers until the matching globa
   action.dispatch("pointerdown", event({ pointerId: 5, isPrimary: false, button: 0 }));
   assert.equal(input.action("action").down, false);
   action.dispatch("pointerdown", event({ pointerId: 7, isPrimary: true, button: 0 }));
-  assert.equal(input.action("action").down, true);
+  assert.equal(input.action("action").down, false);
   assert.equal(action.classList.contains("active"), true);
+  assert.equal(input.presses.length, 0);
   window.dispatch("pointerup", event({ pointerId: 8 }));
-  assert.equal(input.action("action").down, true);
+  assert.equal(input.action("action").down, false);
+  assert.equal(input.presses.length, 0);
   window.dispatch("pointerup", event({ pointerId: 7 }));
   assert.equal(input.action("action").down, false);
+  assert.equal(input.presses.length, 1);
+  assert.equal(input.releases.length, 1);
   assert.equal(action.classList.contains("active"), false);
 
   adapter.dispose();
