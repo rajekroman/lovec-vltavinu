@@ -23,6 +23,30 @@ function digHitCount(state) {
   return Number(runtime?.totalDigHits);
 }
 
+function canonicalFindingSnapshot(state) {
+  return state.session.findings.map(({ findingId, locality, rarity, weight, score }) => ({
+    findingId,
+    locality,
+    rarity,
+    weight,
+    score
+  }));
+}
+
+function expectFindingShape(findings) {
+  for (const finding of findings) {
+    expect(typeof finding.findingId).toBe("string");
+    expect(finding.findingId.length).toBeGreaterThan(0);
+    expect(typeof finding.locality).toBe("string");
+    expect(finding.locality.length).toBeGreaterThan(0);
+    expect(["A", "B", "C"]).toContain(finding.rarity);
+    expect(Number.isFinite(finding.weight)).toBe(true);
+    expect(finding.weight).toBeGreaterThanOrEqual(0);
+    expect(Number.isFinite(finding.score)).toBe(true);
+    expect(finding.score).toBeGreaterThanOrEqual(0);
+  }
+}
+
 async function touchLocator(page, locator, scroll = false) {
   await expect(locator).toBeVisible();
   if (scroll) {
@@ -534,13 +558,37 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
 
   await startChlum(page, input);
   await completeChlum(page, input, testInfo);
+
+  const afterChlum = canonicalFindingSnapshot(await runtimeSnapshot(page));
+  expect(afterChlum).toHaveLength(3);
+  expectFindingShape(afterChlum);
+  expect(afterChlum.map(finding => finding.locality)).toEqual(["chlum", "chlum", "chlum"]);
+
   await enterLevel(page, input, "POKRAČOVAT DO NESMĚNĚ", "LOKALITA 2 / 4", "nesmen");
+  expect(canonicalFindingSnapshot(await runtimeSnapshot(page))).toEqual(afterChlum);
+
   await completeNesmen(page, input, testInfo);
+  const afterNesmen = canonicalFindingSnapshot(await runtimeSnapshot(page));
+  expect(afterNesmen).toHaveLength(6);
+  expectFindingShape(afterNesmen);
+  expect(afterNesmen.slice(0, 3)).toEqual(afterChlum);
+  expect(afterNesmen.filter(finding => finding.locality === "nesmen")).toHaveLength(3);
+
   await enterLevel(page, input, "POKRAČOVAT DO BESEDNICE", "LOKALITA 3 / 4", "besednice");
+  expect(canonicalFindingSnapshot(await runtimeSnapshot(page))).toEqual(afterNesmen);
+
   await completeBesednice(page, input, testInfo);
+  const afterBesednice = canonicalFindingSnapshot(await runtimeSnapshot(page));
+  expect(afterBesednice).toHaveLength(10);
+  expectFindingShape(afterBesednice);
+  expect(afterBesednice.slice(0, 6)).toEqual(afterNesmen);
+  expect(afterBesednice.filter(finding => finding.locality === "besednice")).toHaveLength(4);
+  expect(new Set(afterBesednice.map(finding => finding.findingId)).size).toBe(10);
+
   await enterLevel(page, input, "POKRAČOVAT DO SLAVIE", "LOKALITA 4 / 4", "slavia");
 
   const arrived = await runtimeSnapshot(page);
+  expect(canonicalFindingSnapshot(arrived)).toEqual(afterBesednice);
   const canonicalFindingIds = [
     "chlum-finding-1",
     "chlum-finding-2",
@@ -567,7 +615,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   ]);
   expect(arrived.session.findings).toHaveLength(10);
   expect(new Set(arrived.session.findings.map(finding => finding.findingId)).size).toBe(10);
-  expect(arrived.session.findings.map(finding => finding.findingId).sort()).toEqual(canonicalFindingIds.sort());
+  expect(arrived.session.findings.map(finding => finding.findingId).sort()).toEqual(canonicalFindingIds.slice().sort());
   expect(arrived.session.score).toBe(arrived.session.findings.reduce((total, finding) => total + finding.score, 0));
   expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
@@ -601,10 +649,14 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await performAction(page, input);
 
   await expect(page.locator("#juryScreen")).toHaveClass(/visible/);
-  await expect(page.locator(".jury-finding-option input")).toHaveCount(10);
+  const juryInputs = page.locator(".jury-finding-option input");
+  await expect(juryInputs).toHaveCount(10);
+  const displayedJuryIds = await juryInputs.evaluateAll(inputs => inputs.map(input => input.value));
+  expect(displayedJuryIds.slice().sort()).toEqual(afterBesednice.map(finding => finding.findingId).slice().sort());
   await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 0/4");
   await expect(page.locator("#jurySubmitButton")).toBeDisabled();
   const beforeJury = await runtimeSnapshot(page);
+  expect(canonicalFindingSnapshot(beforeJury)).toEqual(afterBesednice);
   expect(beforeJury.session.findings).toEqual(originalFindings);
   expect(beforeJury.session.score).toBe(originalScore);
   expect(beforeJury.slavia.flow.phase).toBe("jury-selection");
@@ -643,6 +695,13 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   await expect(page.locator("#jurySelectionStatus")).toHaveText("VYBRÁNO 4/4");
   await expect(page.locator("#jurySubmitButton")).toBeEnabled();
 
+  const expectedFinalSelection = [
+    "nesmen-finding-1",
+    "besednice-trace-1",
+    "besednice-hedgehog-1",
+    "nesmen-finding-2"
+  ];
+
   await input.activateUi(page.locator("#jurySubmitButton"), true);
   await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
   await expect(page.locator("#resultKicker")).toHaveText("NA ZELENÉ VLNĚ — FINÁLE");
@@ -655,16 +714,16 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(completed.slavia.flow.phase).toBe("complete");
   expect(completed.slavia.flow.complete).toBe(true);
   expect(completed.slavia.flow.jurySubmitted).toBe(true);
+  expect(canonicalFindingSnapshot(completed)).toEqual(afterBesednice);
   expect(completed.session.findings).toEqual(originalFindings);
   expect(completed.session.findings).toHaveLength(10);
   expect(completed.session.score).toBe(originalScore);
   expect(completed.slavia.evaluation.findingCount).toBe(4);
-  expect(completed.slavia.evaluation.submittedFindingIds).toHaveLength(4);
+  expect(completed.slavia.evaluation.submittedFindingIds).toEqual(expectedFinalSelection);
   expect(new Set(completed.slavia.evaluation.submittedFindingIds).size).toBe(4);
 
-  const submittedIds = new Set(completed.slavia.evaluation.submittedFindingIds);
-  const expectedJuryScore = originalFindings
-    .filter(finding => submittedIds.has(finding.findingId))
+  const expectedJuryScore = afterBesednice
+    .filter(finding => expectedFinalSelection.includes(finding.findingId))
     .reduce((total, finding) => total + finding.score, 0);
   expect(completed.slavia.evaluation.score).toBe(expectedJuryScore);
 
@@ -678,7 +737,22 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(restarted.session.score).toBe(0);
   expect(restarted.session.flags).toEqual({});
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
   await expectReleasedInput(page);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("#titleScreen")).toHaveClass(/visible/);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lovecRuntime))).toBe(true);
+  const reloaded = await runtimeSnapshot(page);
+  expect(reloaded.scene).toBe("title");
+  expect(reloaded.session.levelId).toBe("chlum");
+  expect(reloaded.session.phase).toBe("briefing");
+  expect(reloaded.session.findings).toEqual([]);
+  expect(reloaded.session.score).toBe(0);
+  expect(reloaded.session.flags).toEqual({});
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
+
   expect(httpErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
