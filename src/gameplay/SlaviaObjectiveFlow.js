@@ -11,6 +11,7 @@ export const SLAVIA_PHASES = Object.freeze([
   "thief-recovery",
   "certification",
   "event-entry",
+  "jury-selection",
   "complete"
 ]);
 
@@ -34,6 +35,7 @@ export class SlaviaObjectiveFlow {
       thiefDefeated: false,
       certificateReceived: false,
       enteredEvent: false,
+      jurySubmitted: false,
       complete: false
     });
     return this.#state;
@@ -92,10 +94,22 @@ export class SlaviaObjectiveFlow {
 
   enterEvent() {
     if (!this.#state.certificateReceived) throw new Error("A certificate is required before entering the event.");
-    if (this.#state.complete) return this.#state;
+    if (this.#state.enteredEvent) return this.#state;
     this.#state = deepFreeze({
       ...this.#state,
       enteredEvent: true,
+      phase: "jury-selection"
+    });
+    return this.#state;
+  }
+
+  completeJurySelection() {
+    if (!this.#state.enteredEvent) throw new Error("The event must be entered before jury submission.");
+    if (this.#state.complete) return this.#state;
+    if (this.#state.phase !== "jury-selection") throw new Error("Jury submission is only allowed during the jury-selection phase.");
+    this.#state = deepFreeze({
+      ...this.#state,
+      jurySubmitted: true,
       complete: true,
       phase: "complete"
     });

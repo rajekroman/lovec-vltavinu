@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { SLAVIA_PHASES, SlaviaObjectiveFlow } from "../../src/gameplay/SlaviaObjectiveFlow.js";
 
-test("Slavia objective flow enforces canonical phase order", () => {
+test("Slavia objective flow enforces canonical phase order through jury submission", () => {
   const flow = new SlaviaObjectiveFlow();
   assert.deepEqual(SLAVIA_PHASES, [
     "documents",
@@ -10,10 +10,12 @@ test("Slavia objective flow enforces canonical phase order", () => {
     "thief-recovery",
     "certification",
     "event-entry",
+    "jury-selection",
     "complete"
   ]);
   assert.equal(flow.state.phase, "documents");
   assert.throws(() => flow.consultExpert(), /three documents/);
+  assert.throws(() => flow.completeJurySelection(), /event must be entered/i);
 
   flow.collectDocument("slavia-document-chlum");
   flow.collectDocument("slavia-document-nesmen");
@@ -32,9 +34,15 @@ test("Slavia objective flow enforces canonical phase order", () => {
   flow.receiveCertificate();
   assert.equal(flow.state.phase, "event-entry");
   flow.enterEvent();
+  assert.equal(flow.state.phase, "jury-selection");
+  assert.equal(flow.state.enteredEvent, true);
+  assert.equal(flow.state.complete, false);
+  assert.equal(flow.state.jurySubmitted, false);
+
+  flow.completeJurySelection();
   assert.equal(flow.state.phase, "complete");
   assert.equal(flow.state.complete, true);
-  assert.equal(flow.state.enteredEvent, true);
+  assert.equal(flow.state.jurySubmitted, true);
 });
 
 test("Slavia objective actions are idempotent and immutable", () => {
@@ -54,8 +62,10 @@ test("Slavia objective actions are idempotent and immutable", () => {
   assert.equal(flow.defeatThief(), defeated);
   const certified = flow.receiveCertificate();
   assert.equal(flow.receiveCertificate(), certified);
-  const complete = flow.enterEvent();
-  assert.equal(flow.enterEvent(), complete);
+  const entered = flow.enterEvent();
+  assert.equal(flow.enterEvent(), entered);
+  const complete = flow.completeJurySelection();
+  assert.equal(flow.completeJurySelection(), complete);
 });
 
 test("Slavia objective flow rejects invalid shortcuts", () => {
@@ -64,6 +74,7 @@ test("Slavia objective flow rejects invalid shortcuts", () => {
   assert.throws(() => flow.defeatThief(), /has not started/);
   assert.throws(() => flow.receiveCertificate(), /required before certification/);
   assert.throws(() => flow.enterEvent(), /certificate is required/i);
+  assert.throws(() => flow.completeJurySelection(), /event must be entered/i);
 
   flow.collectDocument("a");
   flow.collectDocument("b");

@@ -27,6 +27,7 @@ test("Slavia evaluation deterministically ranks the complete collection", () => 
   });
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result.localities), true);
+  assert.equal(Object.isFrozen(result.submittedFindingIds), true);
 });
 
 test("jury submission evaluates exactly four selected findings without mutating the session", () => {
@@ -37,13 +38,27 @@ test("jury submission evaluates exactly four selected findings without mutating 
     finding("d", "besednice", "A", 2.8, 240),
     finding("e", "besednice", "C", 0.8, 40)
   ];
+  const before = structuredClone(findings);
   const state = { score: 540, findings };
-  const result = evaluateSlaviaCollection(state, ["b", "c", "d", "e"]);
+  const selectedIds = ["b", "c", "d", "e"];
+  const projected = selectJuryFindings(findings, selectedIds);
+  const result = evaluateSlaviaCollection(state, selectedIds);
+
   assert.equal(result.findingCount, 4);
   assert.equal(result.score, 490);
-  assert.deepEqual(result.submittedFindingIds, ["b", "c", "d", "e"]);
+  assert.equal(result.totalWeight, 6.3);
+  assert.equal(result.rarityPoints, 8);
+  assert.deepEqual(result.submittedFindingIds, selectedIds);
+  assert.deepEqual(projected, before.filter(entry => selectedIds.includes(entry.findingId)));
+  for (const selected of projected) {
+    const original = before.find(entry => entry.findingId === selected.findingId);
+    assert.deepEqual(selected, original);
+    assert.deepEqual(Object.keys(selected).sort(), ["findingId", "locality", "rarity", "score", "weight"]);
+  }
   assert.equal(state.findings, findings);
+  assert.deepEqual(state.findings, before);
   assert.equal(state.findings.length, 5);
+  assert.equal(state.score, 540);
 });
 
 test("jury selection requires four distinct known IDs only when the collection exceeds four", () => {
