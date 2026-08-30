@@ -68,7 +68,7 @@ export default defineConfig({
     },
     {
       name: "iphone-portrait-smoke",
-      testMatch: [/mobile-smoke\.spec\.mjs$/, /radar-hud-smoke\.spec\.mjs$/],
+      testMatch: [/mobile-smoke\.spec\.mjs$/, /mobile-animation-smoke\.spec\.mjs$/, /radar-hud-smoke\.spec\.mjs$/],
       metadata: { inputMode: "touch", orientation: "portrait" },
       use: {
         ...iphone13,

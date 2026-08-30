@@ -10,12 +10,21 @@ test("Chlum vyžaduje povolení, povrchové hledání i tři nálezy", () => {
   assert.equal(isObjectiveComplete("chlum", { permit: true, searched: true, findings: 3 }), true);
 });
 
-test("Nesměň vyžaduje povolení, kopání, zahrabání i nález", () => {
+test("Nesměň vyžaduje povolení, tři profily, zasypání i tři nálezy", () => {
   assert.equal(evaluateObjective("nesmen", { permit: false }).text, "Získej souhlas lesníka");
-  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 2, findings: 1 }), false);
-  assert.equal(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 }).text, "Vyzvedni nalezený vltavín");
-  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 }), false);
-  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 }), true);
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 2, findings: 3 }), false);
+  assert.equal(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 }).text, "Nálezy 0/3");
+  assert.equal(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 }).text, "Nálezy 1/3");
+  assert.equal(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 2 }).text, "Nálezy 2/3");
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 }), false);
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 2 }), false);
+  assert.equal(isObjectiveComplete("nesmen", { permit: true, dug: 3, filled: 3, findings: 3 }), true);
+  assert.deepEqual(evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 3 }).target, {
+    permit: true,
+    dug: 3,
+    filled: 3,
+    findings: 3
+  });
 });
 
 test("Besednice používá intro znalce a texty všech fází", () => {

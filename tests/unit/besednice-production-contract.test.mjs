@@ -100,7 +100,7 @@ test("Playwright defines desktop, portrait and landscape projects", () => {
   assert.match(playwrightConfig, /viewport: \{ width: 390, height: 844 \}/);
   assert.match(playwrightConfig, /viewport: \{ width: 844, height: 390 \}/);
   assert.match(playwrightConfig, /name: "iphone-portrait",\s*testMatch: \/slavia-smoke\\\.spec\\\.mjs\$\//);
-  assert.match(playwrightConfig, /name: "iphone-portrait-smoke",\s*testMatch: \[\/mobile-smoke\\\.spec\\\.mjs\$\/, \/radar-hud-smoke\\\.spec\\\.mjs\$\/\]/);
+  assert.match(playwrightConfig, /name: "iphone-portrait-smoke",\s*testMatch: \[\/mobile-smoke\\\.spec\\\.mjs\$\/, \/mobile-animation-smoke\\\.spec\\\.mjs\$\/, \/radar-hud-smoke\\\.spec\\\.mjs\$\/\]/);
   assert.match(validationWorkflow, /name: Playwright — \$\{\{ matrix\.project \}\}/);
   for (const project of ["desktop-chromium", "audio-lifecycle-chromium", "iphone-portrait", "iphone-portrait-smoke", "iphone-landscape"]) {
     assert.match(validationWorkflow, new RegExp(`- ${project}`));
