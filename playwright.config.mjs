@@ -95,7 +95,15 @@ export default defineConfig({
       use: {
         ...devices["Desktop Firefox"],
         browserName: "firefox",
-        viewport: { width: 1280, height: 720 }
+        viewport: { width: 1280, height: 720 },
+        // GitHub-hosted Linux runners are GPU-less. Firefox disables WebGL2
+        // there by default (AllowWebgl2:false), which prevents Three.js from
+        // bootstrapping. Force Firefox's software WebGL path for CI smoke tests.
+        launchOptions: {
+          firefoxUserPrefs: {
+            "webgl.force-enabled": true
+          }
+        }
       }
     }
   ],
