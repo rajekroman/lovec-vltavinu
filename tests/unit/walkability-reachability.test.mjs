@@ -199,10 +199,10 @@ test("reachability fails when a structural barrier cuts the Chlum route", () => 
         kind: "test",
         shape: "rect",
         x: source.walkable.x,
-        y: 600,
+        y: 520,
         width: source.walkable.width,
         height: 80,
-        probe: { x: 800, y: 640 }
+        probe: { x: 800, y: 560 }
       }
     ]
   };
