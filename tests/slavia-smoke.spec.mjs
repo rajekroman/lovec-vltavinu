@@ -418,6 +418,7 @@ async function completeNesmen(page, input, testInfo) {
   let totalHits = 0;
   for (let index = 0; index < profiles.length; index++) {
     const profile = profiles[index];
+    if (index === 0) await moveAxisTo(page, input, "y", profile.y);
     await moveTo(page, input, profile.x, profile.y, "dig");
     if (index === 0) {
       const state = await runtimeSnapshot(page);
@@ -524,8 +525,6 @@ async function completeBesednice(page, input, testInfo) {
 }
 
 test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
-  // The test walks the full physical distance through four large maps using real input.
-  // Mobile touch runs need headroom for the final Slavia certification sequence.
   test.setTimeout(900_000);
   const input = createInputDriver(page, testInfo);
   const pageErrors = [];
@@ -569,9 +568,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
   expect(arrived.session.findings).toHaveLength(10);
   expect(new Set(arrived.session.findings.map(finding => finding.findingId)).size).toBe(10);
   expect(arrived.session.findings.map(finding => finding.findingId).sort()).toEqual(canonicalFindingIds.sort());
-  expect(arrived.session.score).toBe(
-    arrived.session.findings.reduce((total, finding) => total + finding.score, 0)
-  );
+  expect(arrived.session.score).toBe(arrived.session.findings.reduce((total, finding) => total + finding.score, 0));
   expect(arrived.slavia.runtime.visualMode).toBe("event-plaza-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("terrain-slavia-event-plate-v7");
   expect(arrived.slavia.runtime.loadedAssets).toContain("foreground-slavia-event-edge-v7");
