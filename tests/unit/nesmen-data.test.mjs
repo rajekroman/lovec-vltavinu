@@ -132,8 +132,8 @@ test("all three Nesměň profiles can be collected into one session", () => {
   const session = createGameSession();
   const ids = NESMEN_PROFILE_IDS.map(id => getNesmenEntityDefinition(id).components.digSpot.findingId);
 
-  // The whole point: recordFinding throws on a duplicate findingId, so a shared
-  // id would make the second profile crash the run instead of scoring.
+  // recordFinding rejects duplicate findingId values, so the three profiles
+  // must remain distinct and all three are required by the objective contract.
   for (const findingId of ids) session.recordFinding(createNesmenFinding("nesmen-standard", findingId));
 
   const state = session.state;
@@ -142,9 +142,10 @@ test("all three Nesměň profiles can be collected into one session", () => {
   assert.equal(state.findings.every(entry => entry.locality === "nesmen"), true);
   assert.equal(state.score, state.findings.reduce((total, entry) => total + entry.score, 0));
 
-  // One finding still completes the level; the other two are optional score.
-  const single = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 });
-  assert.equal(single.complete, true);
-  const none = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 0 });
-  assert.equal(none.complete, false);
+  const one = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 1 });
+  assert.equal(one.complete, false);
+  const two = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 2 });
+  assert.equal(two.complete, false);
+  const three = evaluateObjective("nesmen", { permit: true, dug: 3, filled: 3, findings: 3 });
+  assert.equal(three.complete, true);
 });
