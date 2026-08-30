@@ -602,7 +602,11 @@ export class NesmenScene {
     const quality = fq.value ?? 0;
     const perfect = fq.perfect === true;
     const variant = resolveVariant(NESMEN_FINDING_VARIANTS, quality, this.rng);
-    this.objectives.recordFinding(createFinding(variant, "nesmen-finding-1", "nesmen", quality, { perfect }));
+    // Each profile carries its own findingId; recordFinding rejects duplicates,
+    // so the hardcoded id would throw on the second collected profile.
+    const findingId = this.externalIdByEntity.get(entity);
+    if (typeof findingId !== "string" || !findingId) throw new Error("Nesměň finding is missing its external id.");
+    this.objectives.recordFinding(createFinding(variant, findingId, "nesmen", quality, { perfect }));
     if (this.sparkleEmitter && transform) {
       this.sparkleEmitter.emitBurst(transform.x, transform.y, 8, 15, {
         speed: 4,
