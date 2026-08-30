@@ -23,11 +23,21 @@ test("every spawn and mandatory target stays inside its environment-specific wal
   }
 });
 
-test("production scenes clamp movement to walkable bounds instead of image bounds", () => {
+test("GameApp owns canonical player walkability resolution after scene movement", () => {
+  const source = fs.readFileSync(path.join(root, "src/core/GameApp.js"), "utf8");
+  assert.match(source, /resolveSceneWalkability\(scene, dt, input\)/);
+  assert.match(source, /previous\.x \+ \(Number\(move\.x\) \|\| 0\) \* speed \* dt/);
+  assert.match(source, /previous\.y \+ \(Number\(move\.y\) \|\| 0\) \* speed \* dt/);
+  assert.match(source, /resolveWalkablePosition\(scene\.level, previous, desired, clearance\)/);
+  assert.match(source, /if \(name === "updateMovement"\) this\.resolveSceneWalkability\(scene, dt, input\)/);
+  assert.match(source, /scene\.setCameraToPlayer\?\.\(\)/);
+});
+
+test("production scenes do not own the canonical Walkability resolver", () => {
   for (const scene of ["ChlumScene.js", "NesmenScene.js", "BesedniceScene.js", "SlaviaScene.js"]) {
     const source = fs.readFileSync(path.join(root, "src/scenes", scene), "utf8");
-    assert.match(source, /const walkable = this\.level\.walkable \?\? this\.level\.bounds/);
-    assert.doesNotMatch(source, /clamp\([^\n]+this\.level\.bounds\.x \+ 28/);
+    assert.doesNotMatch(source, /resolveWalkablePosition/);
+    assert.doesNotMatch(source, /from ["']\.\.\/gameplay\/Walkability\.js["']/);
   }
 });
 
