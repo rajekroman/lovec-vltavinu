@@ -415,7 +415,7 @@ async function completeNesmen(page, input, testInfo) {
   let totalHits = 0;
   for (let index = 0; index < profiles.length; index++) {
     const profile = profiles[index];
-    if (index === 0) await moveAxisTo(page, input, "y", profile.y);
+    if (index <= 1) await moveAxisTo(page, input, "y", profile.y);
     await moveTo(page, input, profile.x, profile.y, "dig");
     if (index === 0) {
       const state = await runtimeSnapshot(page);
