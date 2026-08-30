@@ -579,6 +579,7 @@ test("Chlum → Nesměň → Besednice → Slavia uses the project-native input 
     await moveTo(page, input, document.x, document.y, "collect-document");
     await performAction(page, input);
   }
+  await moveAxisTo(page, input, "y", 430);
   await moveTo(page, input, 1450, 430, "register-collection");
   await performAction(page, input);
   await expect(page.locator("#dialogScreen")).toHaveClass(/visible/);
