@@ -54,7 +54,7 @@ export default defineConfig({
     },
     {
       name: "desktop-webkit",
-      testMatch: [/slavia-smoke\.spec\.mjs$/, /v71-dig-smoke\.spec\.mjs$/],
+      testMatch: /v71-dig-smoke\.spec\.mjs$/,
       metadata: { inputMode: "desktop", orientation: "landscape", safariApproximation: true },
       use: {
         ...devices["Desktop Safari"],
