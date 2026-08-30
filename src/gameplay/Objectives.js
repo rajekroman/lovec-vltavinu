@@ -34,16 +34,16 @@ function nesmen(runtime) {
           ? `Profily ${dug}/3`
           : filled < 3
             ? `Zasypáno ${filled}/3`
-            : findings < 1 ? "Vyzvedni nalezený vltavín" : "Les je uklizený",
-    complete: permit && dug >= 3 && filled >= 3 && findings >= 1,
+            : findings < 3 ? `Nálezy ${findings}/3` : "Les je uklizený",
+    complete: permit && dug >= 3 && filled >= 3 && findings >= 3,
     progress: clamp01(
       (permit ? 0.1 : 0) +
       clamp01(dug / 3) * 0.35 +
       clamp01(filled / 3) * 0.35 +
-      clamp01(findings) * 0.2
+      clamp01(findings / 3) * 0.2
     ),
     current: { permit, dug, filled, findings },
-    target: { permit: true, dug: 3, filled: 3, findings: 1 }
+    target: { permit: true, dug: 3, filled: 3, findings: 3 }
   };
 }
 
