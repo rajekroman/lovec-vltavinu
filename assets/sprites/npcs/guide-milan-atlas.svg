@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="160" viewBox="0 0 600 160">
+  <title>Milan — Besednice quarry guide sprite atlas</title>
+  <desc>Five 120x160 authored vector poses: neutral, talking A, talking B, explaining, approving.</desc>
+  <g id="neutral" transform="translate(0 0) scale(2 1.3333333333)">
+    <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#71845a" stroke-width="1"/>
+    <path d="M20 13 Q30 7 40 13" fill="#7c6a4f" stroke="#4f4332" stroke-width="1"/>
+    <path d="M30 28 Q25 40 25 61 L35 61 Q35 40 30 28" fill="#b67a3c" stroke="#6e4625" stroke-width="1"/>
+    <path d="M25 39 L15 47" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M35 39 L45 47" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 61 L25 81 M33 61 L35 81" stroke="#4a563d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M22 28 L38 28" stroke="#e7b15a" stroke-width="2"/>
+  </g>
+  <g id="talking-a" transform="translate(120 0) scale(2 1.3333333333)">
+    <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#71845a" stroke-width="1"/>
+    <path d="M20 13 Q30 7 40 13" fill="#7c6a4f" stroke="#4f4332" stroke-width="1"/>
+    <path d="M27 22 Q30 25 33 22" fill="none" stroke="#4f4332" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M30 28 Q25 40 25 61 L35 61 Q35 40 30 28" fill="#b67a3c" stroke="#6e4625" stroke-width="1"/>
+    <path d="M25 38 L12 39" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M35 38 L47 31" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="48" cy="30" r="2.4" fill="#d4a574"/>
+    <path d="M27 61 L25 81 M33 61 L35 81" stroke="#4a563d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M22 28 L38 28" stroke="#e7b15a" stroke-width="2"/>
+  </g>
+  <g id="talking-b" transform="translate(240 0) scale(2 1.3333333333)">
+    <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#71845a" stroke-width="1"/>
+    <path d="M20 13 Q30 7 40 13" fill="#7c6a4f" stroke="#4f4332" stroke-width="1"/>
+    <ellipse cx="30" cy="23" rx="2.2" ry="1.4" fill="#4f4332"/>
+    <path d="M30 28 Q25 40 25 61 L35 61 Q35 40 30 28" fill="#b67a3c" stroke="#6e4625" stroke-width="1"/>
+    <path d="M25 38 L14 31" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="13" cy="30" r="2.4" fill="#d4a574"/>
+    <path d="M35 38 L48 40" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 61 L25 81 M33 61 L35 81" stroke="#4a563d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M22 28 L38 28" stroke="#e7b15a" stroke-width="2"/>
+  </g>
+  <g id="explaining" transform="translate(360 0) scale(2 1.3333333333)">
+    <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#71845a" stroke-width="1"/>
+    <path d="M20 13 Q30 7 40 13" fill="#7c6a4f" stroke="#4f4332" stroke-width="1"/>
+    <path d="M30 28 Q25 40 25 61 L35 61 Q35 40 30 28" fill="#b67a3c" stroke="#6e4625" stroke-width="1"/>
+    <path d="M25 38 L10 44" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M35 38 L49 26" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M48 25 L54 23" stroke="#d4a574" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 61 L25 81 M33 61 L35 81" stroke="#4a563d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M22 28 L38 28" stroke="#e7b15a" stroke-width="2"/>
+  </g>
+  <g id="approving" transform="translate(480 0) scale(2 1.3333333333)">
+    <circle cx="30" cy="18" r="10" fill="#d4a574" stroke="#71845a" stroke-width="1"/>
+    <path d="M20 13 Q30 7 40 13" fill="#7c6a4f" stroke="#4f4332" stroke-width="1"/>
+    <path d="M25 22 Q30 27 35 22" fill="none" stroke="#4f4332" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M30 28 Q25 40 25 61 L35 61 Q35 40 30 28" fill="#b67a3c" stroke="#6e4625" stroke-width="1"/>
+    <path d="M25 38 L16 47" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M35 38 L44 47" stroke="#71845a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 61 L25 81 M33 61 L35 81" stroke="#4a563d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M22 28 L38 28" stroke="#e7b15a" stroke-width="2"/>
+  </g>
+</svg>
