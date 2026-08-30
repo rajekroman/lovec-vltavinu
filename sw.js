@@ -1,7 +1,7 @@
 const CACHE = "lovec-vltavinu-v7-3";
 const CORE = [
   "./", "./index.html", "./style.css", "./v7.css", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",
-  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/AudioRegistry.js",
+  "./vendor/three.module.min.js", "./vendor/three.core.min.js", "./src/bootstrap.js", "./src/audio/AudioEngine.js", "./src/audio/V73AudioEngine.js", "./src/audio/AudioRegistry.js",
   "./src/core/EventBus.js", "./src/core/GameEvents.js", "./src/core/GameApp.js", "./src/core/GameLoop.js", "./src/core/SceneManager.js", "./src/core/InputManager.js", "./src/core/AssetLoader.js",
   "./src/ecs/World.js", "./src/systems/CollisionSystem.js", "./src/systems/AnimationSystem.js",
   "./src/data/levels.js", "./src/data/chlum.js", "./src/data/nesmen.js", "./src/data/besednice.js", "./src/data/slavia.js", "./src/data/dialogues.js",
@@ -15,7 +15,7 @@ const CORE = [
   "./assets/textures/terrain/chlum-field.png", "./assets/textures/terrain/chlum-furrows.png", "./assets/textures/terrain/chlum-plate-v7.svg", "./assets/textures/terrain/chlum-plate-v7.webp", "./assets/textures/terrain/nesmen-sand-profile.png", "./assets/textures/terrain/nesmen-forest-plate-v7.webp", "./assets/textures/terrain/besednice-clay-quarry-v7.webp", "./assets/textures/terrain/slavia-event-plate-v7.webp",
   "./assets/models/chlum/tractor-no-driver.glb", "./assets/models/chlum/hay-bale.glb", "./assets/models/chlum/field-marker.glb", "./assets/models/chlum/field-fence-segment.glb",
   "./assets/models/nesmen/profile-marker.glb", "./assets/models/besednice/trace-marker.glb", "./assets/models/besednice/hedgehog-marker.glb", "./assets/models/slavia/kd-slavia.glb", "./assets/models/slavia/document-folder.glb",
-  "./assets/audio/journey-loop.mp3", "./assets/audio/dig-hit.mp3", "./assets/audio/finding-chime.mp3", "./assets/audio/danger-pulse.mp3", "./assets/audio/LICENSE.md"
+  "./assets/audio/dig-impact-hard.mp3", "./assets/audio/dig-impact-wet.mp3", "./assets/audio/dig-impact-stone.mp3", "./assets/audio/dig-miss.mp3", "./assets/audio/finding-c.mp3", "./assets/audio/finding-b.mp3", "./assets/audio/finding-a.mp3", "./assets/audio/dig-perfect.mp3", "./assets/audio/danger-chlum.mp3", "./assets/audio/danger-nesmen.mp3", "./assets/audio/danger-besednice.mp3", "./assets/audio/danger-slavia.mp3", "./assets/audio/danger-caught.mp3", "./assets/audio/ui-click.mp3", "./assets/audio/ui-open.mp3", "./assets/audio/ui-close.mp3", "./assets/audio/ui-result.mp3", "./assets/audio/ambient-chlum.mp3", "./assets/audio/ambient-nesmen.mp3", "./assets/audio/ambient-besednice.mp3", "./assets/audio/ambient-slavia.mp3", "./assets/audio/LICENSE.md"
 ];
 self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE))); self.skipWaiting(); });
 self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });
