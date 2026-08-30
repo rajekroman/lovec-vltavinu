@@ -214,4 +214,4 @@ node tools/validate-manifest.mjs
 - Design artboard: https://claude.ai/code/artifact/8e4d8702-a29f-448b-a25d-a255bc5c15b3
 - SpriteAtlas system: `src/render/SpriteAtlas.js`
 - Animation system: `src/render/NPCAnimationSystem.js`
-- Manifest template: `PHASE_2A_MANIFEST_UPDATES.md`
+- Manifest: `assets/manifests/assets.json` (položky `npc-*-atlas`)

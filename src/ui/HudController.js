@@ -93,6 +93,7 @@ export class HudController {
     elements.dangerBanner.setAttribute("role", "status");
     elements.dangerBanner.setAttribute("aria-live", "polite");
     elements.objectiveProgress.setAttribute("role", "progressbar");
+    elements.objectiveProgress.setAttribute("aria-label", "Postup úkolu");
     elements.toast.setAttribute("role", "status");
     elements.toast.setAttribute("aria-live", "polite");
     elements.toast.setAttribute("aria-hidden", "true");
