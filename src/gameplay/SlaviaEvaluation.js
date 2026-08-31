@@ -28,7 +28,7 @@ function normalizeFinding(finding) {
   });
 }
 
-export function selectJuryFindings(findings, selectedFindingIds = null, limit = 4) {
+export function selectJuryFindings(findings, selectedFindingIds = null, limit = 5) {
   if (!Array.isArray(findings)) throw new TypeError("Findings must be an array.");
   if (!Number.isInteger(limit) || limit < 1) throw new RangeError("Jury limit must be a positive integer.");
   const normalized = findings.map(normalizeFinding);
