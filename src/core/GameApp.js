@@ -65,9 +65,19 @@ export class GameApp {
     this.input.reset("scene-transition");
     if (this.transition) {
       await this.transition.fadeOut(300);
-      const result = await this.scenes.transitionTo(id, context);
-      await this.transition.fadeIn(300);
-      return result;
+      let transitionError = null;
+      try {
+        return await this.scenes.transitionTo(id, context);
+      } catch (error) {
+        transitionError = error;
+        throw error;
+      } finally {
+        try {
+          await this.transition.fadeIn(300);
+        } catch (fadeError) {
+          if (!transitionError) throw fadeError;
+        }
+      }
     }
     return this.scenes.transitionTo(id, context);
   }
