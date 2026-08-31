@@ -42,6 +42,7 @@ export class SceneTransition {
 
   async fadeOut(duration = 300) {
     const overlay = this.ensureOverlay();
+    overlay.style.pointerEvents = "auto";
     overlay.style.opacity = "1";
     await new Promise(resolve => setTimeout(resolve, duration));
   }
@@ -50,6 +51,7 @@ export class SceneTransition {
     const overlay = this.ensureOverlay();
     overlay.style.opacity = "0";
     await new Promise(resolve => setTimeout(resolve, duration));
+    overlay.style.pointerEvents = "none";
   }
 
   dispose() {
