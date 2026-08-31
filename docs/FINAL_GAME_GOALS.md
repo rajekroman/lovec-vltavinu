@@ -1,105 +1,256 @@
-# Lovec vltavínů — cíle finální verze
+# Lovec vltavínů — finální produktový a gameplay kontrakt
 
-Stav dokumentu: závazný cílový a akceptační rámec pro post-release dokončení hry.
-Navázaný issue: [#279](https://github.com/rajekroman/lovec-vltavinu/issues/279).
-Autorita: při rozporu platí `AGENTS.md`, `docs/ARCHITECTURE_CONTRACT.md`, `docs/PROJECT_CONTROL.md` a aktuální výslovné zadání vlastníka.
+Stav: autoritativní cílový návrh pro větev `final-gameplay-synthesis`.
+
+## Zásadní pravidlo zdrojů
+
+Nahraná první verze hry slouží pouze jako **game-design reference**. Z jejího kódu, runtime architektury ani implementačních detailů se nic nekopíruje. Použitelné nápady se implementují znovu v aktuálním projektu.
+
+Aktuální GitHub projekt je technický základ. Produktové zadání vlastníka má přednost před historickými gameplay cíli, které mu odporují.
 
 ## Hlavní cíl
 
-Dokončit Lovce vltavínů jako vizuálně působivou, herně zábavnou a technicky stabilní browserovou hru pro desktop a mobil. Finální verze musí zachovat jedinou Three.js architekturu, čtyři kanonické lokality Chlum, Nesměň, Besednice a Malše/KD Slavia, jednu in-memory `GameSession`, žádnou gameplay persistence a žádné inventářové UI.
+Vytvořit krátkou, jednoduchou, vizuálně kvalitní 3D hru o hledání vltavínů s jasným průchodem:
 
-Dokončení musí být prokázáno automatickými testy a ručními vizuálními důkazy svázanými s přesným finálním SHA. Zelené CI samo o sobě není vizuální schválení.
+**Chlum → Nesměň → Besednice → KD Slavia / Na zelené vlně**
 
-## Neměnné produktové a architektonické podmínky
+Finálním cílem je přijet na vltavínovou akci **Na zelené vlně** a vybrat **5 nejlepších nalezených vltavínů na výstavu**.
 
-- jeden produkční `WebGLRenderer`, jedna `OrthographicCamera`, jeden fixed-step loop a jeden `InputManager`;
-- čtyři lokality v pořadí Chlum → Nesměň → Besednice → Malše/KD Slavia;
-- pohyb a jedno kontextové akční tlačítko pro klávesnici i touch;
-- session stav pouze v paměti otevřené stránky;
-- žádný save systém, gameplay `localStorage`, `sessionStorage`, `indexedDB`, inventář ani paralelní Canvas runtime;
-- všechny runtime assety manifest-driven se stabilním ID, relativní URL, rozpočtem a vlastníkem dispose.
+Hra nemá být RPG, survival ani komplexní simulátor. Každá lokalita má jednu srozumitelnou hlavní mechaniku a vlastní atmosféru.
 
-## 1. Finální podoba čtyř lokalit
+## Společný ovládací princip
 
-- Použít schválené obrazové podklady uložené v kanonickém GitHub repozitáři.
-- Zachovat výrazně odlišnou atmosféru každé lokality a konzistentní styl postav, rekvizit, efektů a HUD.
-- Zajistit čitelnost hráče, NPC, interaktivních míst, nebezpečí a současného cíle na fotografických pozadích.
-- Odstranit viditelné švy, nevhodné ořezy, černé či prázdné okraje, rušivé překryvy, rozpadlé textury a nesoulad perspektivy.
-- Ověřit skutečný in-game render, ne pouze samostatné zdrojové bitmapy.
+- pohyb postavy;
+- jedno kontextové akční tlačítko;
+- když není poblíž přímá interakce, tlačítko může fungovat jako **RADAR / ROZHLÉDNUTÍ**;
+- minimum menu, minimum dlouhých textů;
+- okamžitá vizuální a zvuková odezva na každou významnou akci.
 
-## 2. Smysluplná průchodnost map
+---
 
-- Definovat skutečné průchozí a neprůchozí oblasti, nejen vnější obdélníkové hranice levelu.
-- Zablokovat vodu, budovy, ploty, stromy, skály, srázy a další zřetelné překážky.
-- Viditelná překážka musí odpovídat skutečné kolizi; vizuálně volná cesta nesmí obsahovat neviditelnou bariéru.
-- Všechny povinné NPC, nálezy, profily, stopy a interakční body musejí zůstat dosažitelné.
-- Kolize nesmějí změnit objektivní pravidla ani vytvářet druhý movement systém.
+## 1. CHLUM — povrchový sběr a rozpoznání
 
-## 3. Plynulé a kvalitní animace
+### Prostředí
 
-- Vyladit chůzi hráče ve čtyřech směrech tak, aby frekvence snímků odpovídala rychlosti pohybu.
-- Odstranit klouzání, cukání při změně směru, drift po uvolnění vstupu a nevhodné přepínání idle/walk.
-- Zachovat konzistentní měřítko, ukotvení chodidel, facing a hitbox ve všech lokalitách.
-- Ověřit idle, dialogové, reakční a akční animace NPC.
-- Animace se musejí korektně zastavit nebo resetovat při pauze, dialogu, změně orientace, návratu z pozadí, přechodu scény a dispose.
+Pole v oblasti Chlumu, kvalitní herní prostředí s ornou půdou, brázdami, polní cestou, vegetací a vzdáleným lesem.
 
-## 4. Deset unikátních vltavínů
+### Radar
 
-- Chlum: tři radarová místa a tři unikátní povrchové nálezy.
-- Nesměň: tři profily, rytmické kopání se třemi úspěšnými zásahy a tři unikátní nálezy.
-- Besednice: tři stopy a ježek, celkem čtyři unikátní nálezy.
-- Celý průchod musí vytvořit přesně deset unikátních nálezů v jediné in-memory `GameSession`.
-- Každý nález musí mít stabilní `findingId`, lokalitu, raritu, hmotnost a skóre.
+Akční tlačítko aktivuje krátký vizuální kužel před hráčem podobný světlu baterky. Nejde o elektronický přístroj, ale o herní vyjádření soustředěného rozhlédnutí po zemi.
 
-## 5. Zábavný a srozumitelný průchod
+Radar:
 
-- Chlum stojí na průzkumu, povolení a radaru.
-- Nesměň nabízí čitelné rytmické kopání a obnovu vykopaných míst.
-- Besednice propojuje stopy, profil, kopání, ježka, Karla a návrat.
-- Slavia umožní z deseti nálezů vybrat přesně čtyři a zobrazí uspokojivé finální hodnocení poroty.
-- Každá významná akce poskytne okamžitou vizuální a zvukovou odezvu.
-- Hráč vždy rozumí současnému cíli, dostupné akci a výsledku svého rozhodnutí.
+1. krátce prohledá prostor před postavou;
+2. při zásahu kandidátního místa zobrazí diskrétní červený marker;
+3. hráč musí k markeru dojít;
+4. teprve potom předmět sebere.
 
-## 6. Mobil jako plnohodnotná platforma
+### Obsah mapy
 
-- Stejný průchod musí fungovat na desktopu, iPhone portrait a iPhone landscape.
-- Touch pohyb a kontextové tlačítko musejí být spolehlivé, ergonomické a mimo systémové safe-area.
-- HUD nesmí překrývat důležité cíle ani ovládání.
-- Otočení telefonu, pauza, dialog, návrat z pozadí a přechod scény nesmějí zanechat aktivní nebo zablokovaný vstup.
-- Kamera musí zachovat hráče i relevantní cíl v čitelném prostoru bez odhalení prostoru mimo mapu.
+Na Chlumu je celkem **6 kandidátních nálezů**:
 
-## 7. SHA-bound QA a release evidence
+- **4 skutečné vltavíny**;
+- **2 falešné nálezy**.
 
-- Každý integrační PR uvádí přesný base SHA, head SHA, změněné soubory, kontrakty, testy, mobilní dopad a známá omezení.
-- Finální source freeze se kontroluje před i po sběru důkazů; drift base nebo head SHA znamená BLOCK.
-- Automatická brána obsahuje statickou validaci, module graph, unit suite, desktop/mobile full-flow, portrait touch smoke, offline a audio lifecycle.
-- Nezávislá read-only A6 vizuální brána kontroluje přesný frozen SHA v rozměrech desktop 1280×720, portrait 390×844 a landscape 844×390.
-- Důkazy pokryjí všechny čtyři lokality, postavu v pohybu, průchodnost, HUD, kontextovou akci, radar, kopání, nálezy, přechody a finální porotu.
-- Release může být označen jako hotový pouze při zelených automatických kontrolách a explicitním vizuálním PASS nad stejným SHA.
+Po sebrání kandidáta se zobrazí jen:
 
-## Definition of Done
+- vizuál nálezu;
+- název;
+- několik slov popisu.
 
-Projekt je dokončen pouze tehdy, když:
+Například: `Olivově zelený · matný · nepravidelný povrch`.
 
-1. nový hráč projde bez zásahu do URL nebo konzole všechny čtyři lokality až k porotě a čistému restartu;
-2. průchod vytvoří přesně deset unikátních nálezů a Slavia přijme přesně čtyři;
-3. mapy mají věrohodné průchozí a neprůchozí oblasti a všechny povinné cíle jsou dosažitelné;
-4. animace hráče a NPC působí plynule na desktopu i mobilu;
-5. grafika odpovídá schváleným podkladům a je ručně vizuálně schválena ve třech povinných viewports;
-6. nevznikl druhý renderer, inventář, save systém ani gameplay persistence;
-7. všechny automatické i ruční release brány prošly nad jedním přesně zaznamenaným SHA.
+Hráč zvolí pouze:
 
-## Navazující pracovní proudy
+- **VLTAVÍN**
+- **NENÍ VLTAVÍN**
 
-- dokončené integrační důkazy a produktové opravy jsou sloučené do `main`; historické PR a assetové workstreamy nejsou samostatnou otevřenou release bránou;
-- finální výběr poroty, zachování deseti nálezů, mobilní automatizované průchody, atlasové animace a produkční assetové zapojení jsou kryté aktuálními testy a integrační historií;
-- automatická QA autorita: #334; každý nový `main` SHA vyžaduje vlastní plnou validaci a PASS se nepřenáší ze staršího SHA;
-- manual audio a potvrzení práv/provenance: #269;
-- real macOS Safari a real iPhone Safari: #272;
-- UI/UX a animační čitelnost ve finálním vizuálním auditu: #275;
-- produkční QA matice: #280;
-- dokumentace a release notes: #279;
-- ochrana `main` před source freeze: #354;
-- nominace jediného frozen `RELEASE_SHA` a nezávislá A6 brána: #335.
+Žádná další identifikační minihra ani dlouhý geologický text.
 
-Historický audit #226 patří vydanému `v7.0.0` a není release bránou současného kandidáta. Dokud nejsou manual/device brány, ochrana větve, frozen `RELEASE_SHA` a nezávislý A6 PASS doložené nad stejným SHA, je release stav `BLOCK`.
+### Dokončení
+
+Hráč musí opustit Chlum se **3 správně určenými skutečnými vltavíny**.
+
+Čtvrtý pravý kus a oba falešné kusy vytvářejí lehkou volbu a nejistotu; není nutné vyčistit celou mapu.
+
+---
+
+## 2. NESMĚŇ — hledání, přesné kopání a obnova terénu
+
+### Prostředí
+
+Lesní naleziště s členitým terénem, kořeny, starými výkopy, písčitou/hlinitou půdou, kameny a hustší vegetací.
+
+### Hledání
+
+Hráč pomocí stejného principu radaru / rozhlédnutí objeví tři místa vhodná ke kopání.
+
+### Kopací minihra
+
+Každý výkop používá krátkou timing minihru:
+
+- ukazatel se pohybuje po stupnici;
+- existuje úzká cílová zóna;
+- hráč musí stisknout akční tlačítko ve správném okamžiku;
+- pro dokončení výkopu jsou potřeba **3 úspěšné zásahy**;
+- chybný zásah pouze nezapočítá pokus, nezpůsobuje game over.
+
+Tři úspěchy reprezentují postupné odkopání vrstev půdy.
+
+### Tři profily
+
+Hráč vykopá přesně **3 díry / profily** a získá z nich **3 unikátní vltavíny**.
+
+### Povinné zahrnutí
+
+Po každém výkopu zůstane otevřená díra.
+
+Hráč ji musí kontextovou akcí **ZAHRNOUT / ZAHRABAT**.
+
+Dokud není zahrnuto **3/3**, nelze pokračovat do Besednice.
+
+Toto je závazná charakteristická mechanika levelu.
+
+---
+
+## 3. BESEDNICE — stopy, ježek a zloděj
+
+### Prostředí
+
+Stará terasovitá pískovna s výraznými výškovými rozdíly, odkrytými vrstvami, pískovými stěnami, stopami staré těžby a prorůstající vegetací.
+
+### Průzkum
+
+Hráč nejprve objeví **3 stopy** vedoucí k ježkové vrstvě.
+
+Tyto tři stopy mohou současně představovat tři menší unikátní nálezy / indicie, aby předchozí struktura druhé verze zůstala smysluplná.
+
+Po objevení všech tří stop se odemkne hlavní ježkový profil.
+
+### Velký ježatý vltavín
+
+Hlavní profil používá stejný jednoduchý třízásahový princip kopání.
+
+Výsledkem je **velký ježatý besednický vltavín**, jednoznačně mimořádný kus a vizuální vrchol lovecké části hry.
+
+Besednice tak může dodat celkem **4 unikátní nálezy**: tři menší nálezy/stopy + ježek.
+
+### Zloděj
+
+Po získání ježka se aktivuje krátká scripted událost se zlodějem, který je zjevně pod vlivem drog a pokusí se vltavín ukrást.
+
+Nevytvářet plnohodnotný bojový systém.
+
+Konflikt má být krátký a jednoduchý, například:
+
+- pronásledování;
+- několikeré přiblížení / zachycení;
+- jednoduché vyhýbání;
+- krátká environmentální nebo timing sekvence.
+
+Cíl: získat ježka zpět a pokračovat do Slavie.
+
+---
+
+## 4. KD SLAVIA — Na zelené vlně
+
+### Smysl levelu
+
+Slavia je finále, nikoli čtvrté naleziště.
+
+Po třech přírodních lokalitách se tempo mění. Hráč přichází na vltavínovou akci **Na zelené vlně**.
+
+### Co zde nedělat
+
+Finální flow nemá být zbytečně zatížené dalšími vedlejšími questy, dalším zlodějem ani opakováním loveckých mechanik jen proto, aby byl level delší.
+
+Historické mechaniky typu sbírání dokumentů, druhá krádež před Slavií nebo jiné nadbytečné úkoly nejsou součástí závazného cíle, pokud neprokážou jasný přínos pro finální tempo hry.
+
+### Výstava
+
+Hráč prohlédne svou kolekci ze tří předchozích lokalit a musí vybrat **přesně 5 kusů na výstavu**.
+
+Při současném cílovém průchodu lze zachovat celkem **10 unikátních nálezů**:
+
+- Chlum: 3;
+- Nesměň: 3;
+- Besednice: 4.
+
+Slavia přijme **5 z 10**.
+
+### Hodnocení
+
+Každý vltavín zachovává stabilní:
+
+- `findingId`;
+- lokalitu;
+- raritu;
+- hmotnost;
+- skóre / kvalitu.
+
+Finální hodnocení pracuje pouze s vybranými pěti kusy a zobrazí stručný, uspokojivý výsledek poroty / výstavy.
+
+---
+
+## Core loop
+
+### Chlum
+
+**RADAR → MARKER → SEBRAT → KRÁTKÝ POPIS → PRAVÝ / NEPRAVÝ → ODNÉST 3**
+
+### Nesměň
+
+**RADAR → MÍSTO → 3× PŘESNÝ ZÁSAH → NÁLEZ → ZAHRNOUT → 3 PROFILY**
+
+### Besednice
+
+**3 STOPY → JEŽKOVÝ PROFIL → 3× ZÁSAH → JEŽEK → KRÁDEŽ → ZÍSKAT ZPĚT**
+
+### Slavia
+
+**PŘÍJEZD NA AKCI → PROHLÉDNOUT KOLEKCI → VYBRAT 5 Z 10 → HODNOCENÍ**
+
+---
+
+## Co přebíráme jako nápad z první verze
+
+Pouze designové principy, nikoli kód:
+
+- jedno akční tlačítko měnící význam podle kontextu;
+- rozhlédnutí/radar jako aktivní hledání;
+- timing kopání na tři zásahy;
+- otevřená díra jako stav, který musí hráč napravit;
+- krátký konflikt o mimořádný ježek;
+- rychlé a čitelné interakce bez komplikovaných menu.
+
+## Co z první verze nepřebíráme
+
+- její JavaScript / Canvas kód;
+- její save systém;
+- perk/upgradovací systém;
+- combo systém;
+- Ločenice jako samostatný level;
+- obecný heat/lives systém;
+- opakované boss souboje;
+- druhého zloděje před Slavií;
+- mechaniky, které pouze prodlužují hru bez jasného přínosu.
+
+## Implementační priorita
+
+1. zachovat současný technický základ druhé verze;
+2. sjednotit gameplay podle tohoto kontraktu;
+3. nejdříve upravit Chlum a Slavia, protože Nesměň a Besednice už velkou část cílových mechanik obsahují;
+4. nepřepisovat fungující Nesměň ani Besednici bez důvodu;
+5. grafiku, postavy a levely dále stavět ve vysoké produkční kvalitě, ne jako dočasné placeholdery;
+6. rozsáhlé QA a release evidence provést až po dokončení hlavní herní a vizuální kostry; během stavby udržovat pouze nezbytné smoke/regresní testy dotčených kontraktů.
+
+## Definition of Done gameplay kostry
+
+Hlavní kostra je hotová, když nový hráč bez konzole a zásahu do URL:
+
+1. na Chlumu najde kandidáty radarem, správně určí a odnese 3 pravé vltavíny;
+2. v Nesměni vykopá 3 profily timing minihrou a všechny 3 zahrne;
+3. v Besednici najde 3 stopy, vykope ježka a získá jej zpět od zloděje;
+4. vstoupí na akci Na zelené vlně v KD Slavia;
+5. z celkem 10 unikátních nálezů vybere přesně 5;
+6. dostane finální hodnocení a může čistě ukončit / restartovat průchod.
