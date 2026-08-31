@@ -30,24 +30,25 @@ test("Slavia evaluation deterministically ranks the complete collection", () => 
   assert.equal(Object.isFrozen(result.submittedFindingIds), true);
 });
 
-test("jury submission evaluates exactly four selected findings without mutating the session", () => {
+test("jury submission evaluates exactly five selected findings without mutating the session", () => {
   const findings = [
     finding("a", "chlum", "C", 1, 50),
     finding("b", "chlum", "B", 1.2, 90),
     finding("c", "nesmen", "B", 1.5, 120),
     finding("d", "besednice", "A", 2.8, 240),
-    finding("e", "besednice", "C", 0.8, 40)
+    finding("e", "besednice", "C", 0.8, 40),
+    finding("f", "besednice", "B", 1.1, 80)
   ];
   const before = structuredClone(findings);
-  const state = { score: 540, findings };
-  const selectedIds = ["b", "c", "d", "e"];
+  const state = { score: 620, findings };
+  const selectedIds = ["b", "c", "d", "e", "f"];
   const projected = selectJuryFindings(findings, selectedIds);
   const result = evaluateSlaviaCollection(state, selectedIds);
 
-  assert.equal(result.findingCount, 4);
-  assert.equal(result.score, 490);
-  assert.equal(result.totalWeight, 6.3);
-  assert.equal(result.rarityPoints, 8);
+  assert.equal(result.findingCount, 5);
+  assert.equal(result.score, 570);
+  assert.equal(result.totalWeight, 7.4);
+  assert.equal(result.rarityPoints, 10);
   assert.deepEqual(result.submittedFindingIds, selectedIds);
   assert.deepEqual(projected, before.filter(entry => selectedIds.includes(entry.findingId)));
   for (const selected of projected) {
@@ -57,16 +58,16 @@ test("jury submission evaluates exactly four selected findings without mutating 
   }
   assert.equal(state.findings, findings);
   assert.deepEqual(state.findings, before);
-  assert.equal(state.findings.length, 5);
-  assert.equal(state.score, 540);
+  assert.equal(state.findings.length, 6);
+  assert.equal(state.score, 620);
 });
 
-test("jury selection requires four distinct known IDs only when the collection exceeds four", () => {
-  const findings = ["a", "b", "c", "d", "e"].map((id, index) => finding(id, "chlum", "C", 1, 10 + index));
-  assert.throws(() => selectJuryFindings(findings), /exactly 4/);
-  assert.throws(() => selectJuryFindings(findings, ["a", "a", "b", "c"]), /unique/);
-  assert.throws(() => selectJuryFindings(findings, ["a", "b", "c", "missing"]), /Unknown jury finding ID/);
-  assert.deepEqual(selectJuryFindings(findings.slice(0, 4)).map(entry => entry.findingId), ["a", "b", "c", "d"]);
+test("jury selection requires five distinct known IDs only when the collection exceeds five", () => {
+  const findings = ["a", "b", "c", "d", "e", "f"].map((id, index) => finding(id, "chlum", "C", 1, 10 + index));
+  assert.throws(() => selectJuryFindings(findings), /exactly 5/);
+  assert.throws(() => selectJuryFindings(findings, ["a", "a", "b", "c", "d"]), /unique/);
+  assert.throws(() => selectJuryFindings(findings, ["a", "b", "c", "d", "missing"]), /Unknown jury finding ID/);
+  assert.deepEqual(selectJuryFindings(findings.slice(0, 5)).map(entry => entry.findingId), ["a", "b", "c", "d", "e"]);
 });
 
 test("Slavia evaluation has deterministic lower award thresholds", () => {
