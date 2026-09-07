@@ -69,32 +69,29 @@ test("v7.3 production audio manifest exactly covers the 21 canonical assets", as
   assert.equal(total, audit.total_bytes);
 });
 
-test("technical encoding claims exist only where independently verified", async () => {
+test("canonical procedural audio has verified encoding and CC0 provenance", async () => {
   const { audit } = await loadState();
-  let verified = 0;
-  let integrityOnly = 0;
+
+  assert.equal(audit.files.length, 21);
+  assert.equal(new Set(audit.files.map(row => row.sha256)).size, 21);
 
   for (const row of audit.files) {
-    if (row.technical_metadata_verified === true) {
-      verified += 1;
-      assert.equal(row.codec, "mp3");
-      assert.equal(row.sample_rate_hz, 44_100);
-      assert.equal(row.bit_rate, 128_000);
-      assert.equal(typeof row.duration_seconds, "number");
-      assert.equal(row.duration_seconds > 0, true);
-    } else {
-      integrityOnly += 1;
-      assert.equal(row.technical_metadata_verified, false);
-      assert.equal("codec" in row, false);
-      assert.equal("sample_rate_hz" in row, false);
-      assert.equal("bit_rate" in row, false);
-      assert.equal("duration_seconds" in row, false);
-      assert.equal(row.license_spdx, "NOASSERTION");
-    }
+    assert.equal(row.technical_metadata_verified, true);
+    assert.equal(row.codec, "mp3");
+    assert.equal(row.sample_rate_hz, 44_100);
+    assert.equal(
+      row.bit_rate,
+      row.file.startsWith("ambient-") ? 192_000 : 128_000,
+      `unexpected bitrate for ${row.file}`
+    );
+    assert.equal(typeof row.duration_seconds, "number");
+    assert.equal(row.duration_seconds > 0, true);
+    assert.equal(row.license_spdx, "CC0-1.0");
+    assert.equal(row.license_source, "Project-original procedural synthesis; no external samples.");
   }
 
-  assert.equal(verified > 0, true);
-  assert.equal(integrityOnly > 0, true);
+  const byFile = new Map(audit.files.map(row => [row.file, row]));
+  assert.notEqual(byFile.get("finding-b.mp3").sha256, byFile.get("finding-c.mp3").sha256);
 });
 
 test("offline core contains every canonical v7.3 audio asset and no superseded generic MP3", async () => {
