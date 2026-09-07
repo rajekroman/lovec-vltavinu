@@ -160,6 +160,32 @@ async function expectReleasedInput(page) {
   }, { timeout: 20_000 }).toEqual({ move: 0, action: false, pause: false });
 }
 
+async function waitForSceneReady(page, input, scene) {
+  await expect.poll(async () => (await runtimeSnapshot(page)).scene, {
+    timeout: 20_000,
+    intervals: [30, 60, 100]
+  }).toBe(scene);
+
+  await expect.poll(() => page.evaluate(() => {
+    const overlay = document.getElementById("sceneTransitionOverlay");
+    return !overlay || getComputedStyle(overlay).pointerEvents === "none";
+  }), {
+    timeout: 20_000,
+    intervals: [30, 60, 100]
+  }).toBe(true);
+
+  await expect.poll(() => page.evaluate(() => (
+    document.getElementById("app")?.classList.contains("playing") === true
+  )), {
+    timeout: 20_000,
+    intervals: [30, 60, 100]
+  }).toBe(true);
+
+  if (!input.desktop) {
+    await expect(page.locator("#moveZone")).toBeVisible({ timeout: 20_000 });
+  }
+}
+
 async function toggleJuryFinding(page, input, findingId) {
   const checkbox = page.locator(`.jury-finding-option input[value="${findingId}"]`);
   await expect(checkbox).toBeVisible();
@@ -381,7 +407,7 @@ async function startChlum(page, input) {
   await input.activateUi(page.locator("#playButton"));
   await expect(page.locator("#briefKicker")).toHaveText("LOKALITA 1 / 4");
   await input.activateUi(page.locator("#briefButton"));
-  await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe("chlum");
+  await waitForSceneReady(page, input, "chlum");
 }
 
 async function completeChlum(page, input, testInfo) {
@@ -428,7 +454,7 @@ async function enterLevel(page, input, buttonText, kicker, scene) {
   await input.activateUi(page.locator("#againButton"));
   await expect(page.locator("#briefKicker")).toHaveText(kicker);
   await input.activateUi(page.locator("#briefButton"));
-  await expect.poll(async () => (await runtimeSnapshot(page)).scene).toBe(scene);
+  await waitForSceneReady(page, input, scene);
 }
 
 async function completeNesmen(page, input, testInfo) {
@@ -545,7 +571,17 @@ async function completeBesednice(page, input, testInfo) {
   await performAction(page, input);
   await expect(page.locator("#dialogName")).toHaveText("KAREL");
   await input.activateUi(page.locator("#dialogButton"));
-  await expect(page.locator("#resultScreen")).toHaveClass(/visible/);
+  await expect.poll(async () => {
+    const state = await runtimeSnapshot(page);
+    return {
+      phase: state.session?.phase ?? null,
+      resultShown: state.besednice?.runtime?.resultShown === true
+    };
+  }, {
+    timeout: 20_000,
+    intervals: [50, 100, 200]
+  }).toEqual({ phase: "complete", resultShown: true });
+  await expect(page.locator("#resultScreen")).toHaveClass(/visible/, { timeout: 20_000 });
 }
 
 test("Chlum → Nesměň → Besednice → Slavia uses the project-native input and cleanly restarts", async ({ page }, testInfo) => {
