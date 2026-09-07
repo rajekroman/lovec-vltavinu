@@ -13,7 +13,7 @@ export class TitleScene {
     this.helpOpen = false;
     this.overlayOpen = false;
     this.screens.showTitle();
-    this.document.querySelector(".version").textContent = "v7.0 · Čtyři lokality";
+    this.document.querySelector(".version").textContent = "v7.3 · Čtyři lokality";
 
     this.document.getElementById("playButton").addEventListener("click", event => {
       event.preventDefault();
