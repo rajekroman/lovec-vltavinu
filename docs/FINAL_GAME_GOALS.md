@@ -94,7 +94,7 @@ Projekt je dokončen pouze tehdy, když:
 - dokončené integrační důkazy a produktové opravy jsou sloučené do `main`; historické PR a assetové workstreamy nejsou samostatnou otevřenou release bránou;
 - finální výběr poroty, zachování deseti nálezů, mobilní automatizované průchody, atlasové animace a produkční assetové zapojení jsou kryté aktuálními testy a integrační historií;
 - automatická QA autorita: #334; každý nový `main` SHA vyžaduje vlastní plnou validaci a PASS se nepřenáší ze staršího SHA;
-- manual audio a potvrzení práv/provenance: #269;
+- manual desktop + real-iPhone audio listen-through: #269; audio provenance/rights byly vyřešeny v #372;
 - real macOS Safari a real iPhone Safari: #272;
 - UI/UX a animační čitelnost ve finálním vizuálním auditu: #275;
 - produkční QA matice: #280;
