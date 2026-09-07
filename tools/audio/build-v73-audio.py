@@ -203,6 +203,9 @@ def main() -> None:
             "file": path.name,
             "bytes": len(data),
             "sha256": hashlib.sha256(data).hexdigest(),
+            "technical_metadata_verified": True,
+            "license_spdx": "CC0-1.0",
+            "license_source": "Project-original procedural synthesis; no external samples.",
             **info,
         })
 
@@ -221,8 +224,10 @@ def main() -> None:
             raise SystemExit(f"unexpected bitrate for {row['file']}: {row['bit_rate']}")
 
     audit = {
+        "schema_version": 2,
+        "integrity_auditor": "tools/audio/build-v73-audio.py + ffprobe",
         "generator": "tools/audio/build-v73-audio.py",
-        "source": "project-original procedural synthesis; no external samples",
+        "source": "Project-original procedural synthesis; no external samples.",
         "sample_rate_hz": SR,
         "total_bytes": total,
         "files": rows,
