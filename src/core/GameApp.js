@@ -160,7 +160,7 @@ export class GameApp {
     this.removeCoreRenderer = null;
     await this.scenes.dispose();
     this.input.dispose();
-    this.assets.clear(asset => asset?.dispose?.());
+    this.assets.clear();
     this.world.clear();
     this.collisions.reset();
     this.renderer?.dispose?.();
